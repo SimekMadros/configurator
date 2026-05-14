@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>3D Konfigurator</title>
+
+  <script>
+    (function () {
+      document.documentElement.setAttribute("data-view", "landing");
+    })();
+  </script>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:,">
+</head>
+
+<body>
+
+<header class="topBar">
+  <button type="button" class="brand brandBtn" id="btnTopLogo" aria-label="Jít na výběr pohovky">
+    <img src="./images/madros-logo.png" alt="MADROS" class="brandLogo" />
+  </button>
+
+  <button type="button" class="topCenter topTitleBtn" id="btnTopTitle" aria-label="Jít na výběr pohovky">
+    3D Konfigurátor
+  </button>
+
+  <div class="topRight">
+    <button class="topBtn draftsTopBtn" id="draftsButton" type="button" aria-haspopup="dialog" aria-expanded="false">
+      Rozpracované sestavy <span id="draftsButtonCount" class="draftsButtonCount">(0)</span>
+    </button>
+  </div>
+</header>
+
+<div id="draftsPopover" class="draftsPopover hidden" aria-hidden="true">
+  <section class="draftsPanel" role="dialog" aria-modal="true" aria-labelledby="draftsTitle">
+    <header class="draftsHeader">
+      <div>
+        <h2 id="draftsTitle">Rozpracované sestavy</h2>
+        <p>Lokálně uložené návrhy z tohoto prohlížeče.</p>
+      </div>
+      <button id="draftsClose" class="draftsClose" type="button" aria-label="Zavřít">×</button>
+    </header>
+
+    <div id="draftsList" class="draftsList"></div>
+    <div id="draftsEmpty" class="draftsEmpty hidden">
+      Zatím tu není žádná rozpracovaná sestava.
+    </div>
+  </section>
+</div>
+
+<!-- ===== VIEW: LANDING (ÚVOD) ===== -->
+<div id="viewLanding" class="view">
+
+    <div id="stepBarLanding" class="stepBar">
+
+      <div class="stepDock">
+        <div class="stepTrack" aria-label="Kroky konfigurátoru">
+          <div class="step active" data-step="1"><span class="num">1</span> 🛋️ Model</div>
+          <div class="step" data-step="2"><span class="num">2</span> 🧩 Sestava</div>
+          <div class="step" data-step="3"><span class="num">3</span> ⚙️ Vybavení</div>
+          <div class="step" data-step="4"><span class="num">4</span> 🎨 Materiál</div>
+          <div class="step" data-step="5"><span class="num">5</span> ✅ Rekapitulace</div>
+        </div>
+      </div>
+
+      <button id="stepToggleLanding" class="stepToggle" type="button" aria-label="Sbalit/rozbalit kroky">
+        <span class="chev" aria-hidden="true"></span>
+      </button>
+
+    </div>
+
+  <div class="landingLayout">
+    <!-- Left banner -->
+    <aside class="filterPanel filterBannerPanel" aria-label="MADROS konfigurátor - pohovka na míru">
+      <img
+        class="filterBannerImg"
+        src="./images/Filtr-banner.png"
+        alt="MADROS konfigurátor. Pohovka na míru. Navrhněte si vlastní sestavu podle prostoru, stylu i potřeb."
+        decoding="async"
+      />
+    </aside>
+
+    <!-- Main list -->
+    <main class="productList">
+      <h2 class="pageTitle">Konfigurujte si vlastní sedací soupravu.</h2>
+      <p class="pageSubtitle">Vyberte si model sedačky a upravte si rozložení podle svého.</p>
+
+      <!-- ===== MANILA ===== -->
+      <section class="modelCard" data-model="MANILA">
+        <div class="modelHero heroWithChips" style="--hero-img: url('./images/models/manila/manila-hero.png');">
+          <img class="modelHeroImg" src="./images/models/manila/manila-hero4.png" alt="Manila">
+
+          <!-- malé náhledy vpravo (jen vizuál) -->
+          <div class="heroChips" aria-hidden="true">
+            <div class="heroChip">
+              <img src="./images/models/manila/manila-herochip-3.png" alt="">
+            </div>
+
+            <div class="heroChip">
+              <img src="./images/models/manila/manila-herochip-4.png" alt="">
+            </div>
+          </div>
+        </div>
+
+        <div class="modelBody">
+          <div class="modelHead">
+            <h3 class="modelName">Manila</h3>
+          </div>
+
+          <div class="modelMeta" aria-label="Vlastnosti sedačky">
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">💪</span>
+              <span class="metaLabel">Tuhost sedáku:</span>
+              <span class="metaStars" aria-label="Tuhost 2 z 5">
+                <span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span><span class="star">★</span>
+              </span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">❄️</span>
+              <span class="metaLabel">Typ výplně:</span>
+              <span class="metaValue">studená pěna</span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">🧩</span>
+              <span class="metaValue">Modulární systém</span>
+            </div>
+          </div>
+
+          <div class="popularTitle">Nejoblíbenější sestavy</div>
+
+          <div class="presetRow presetRowTiles">
+            <!-- Vlastní tvar = žádný preset (jen otevřít konfigurátor prázdný) -->
+            <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="">
+              <img class="presetThumb" src="./images/models/manila/Manila-2.png" alt="">
+              <span class="presetLabel">Vlastní tvar</span>
+            </button>
+
+            <!-- Manila 2-1D -->
+            <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-1d">
+              <img class="presetThumb" src="./images/models/manila/manila-1DL-2P.png" alt="">
+              <span class="presetLabel">Manila 2-1D</span>
+            </button>
+
+            <!-- Manila 2-roh-1 -->
+            <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-roh-1">
+              <img class="presetThumb" src="./images/models/manila/manila-2P-roh-1L.png" alt="">
+              <span class="presetLabel">Manila 2-roh-1</span>
+            </button>
+
+            <!-- Manila 2-roh-1MO -->
+            <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-roh-1mo">
+              <img class="presetThumb" src="./images/models/manila/manila-2L-roh-1MO.png" alt="">
+              <span class="presetLabel">Manila 2-roh-1MO</span>
+            </button>
+
+            <!-- Manila 2-roh-2 -->
+            <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-roh-2">
+              <img class="presetThumb" src="./images/models/manila/manila-2L-roh-2P.png" alt="">
+              <span class="presetLabel">Manila 2-roh-2</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MENDOZA ===== -->
+      <section class="modelCard" data-model="MENDOZA">
+
+        <!-- HERO (stejný styl jako Manila) -->
+        <div class="modelHero heroWithChips" style="--hero-img: url('./images/models/mendoza/mendoza-hero.jpg');">
+          <img class="modelHeroImg" src="./images/models/mendoza/mendoza-hero.png" alt="Mendoza">
+
+          <!-- malé náhledy vpravo (jen vizuál) -->
+          <div class="heroChips" aria-hidden="true">
+            <div class="heroChip">
+              <img src="./images/models/mendoza/Mendoza-herochip-1.png" alt="">
+            </div>
+
+            <div class="heroChip">
+              <img src="./images/models/mendoza/Mendoza-herochip-2.png" alt="">
+            </div>
+          </div>
+        </div>
+
+        <div class="modelBody">
+          <div class="modelHead">
+            <h3 class="modelName">Mendoza</h3>
+          </div>
+
+          <!-- META řádek (stejná struktura jako Manila) -->
+          <div class="modelMeta" aria-label="Vlastnosti sedačky">
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">💪</span>
+              <span class="metaLabel">Tuhost sedáku:</span>
+              <span class="metaStars" aria-label="Tuhost 2 z 5">
+                <span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span>
+              </span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">❄️</span>
+              <span class="metaLabel">Typ výplně:</span>
+              <span class="metaValue">studená pěna</span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">🧩</span>
+              <span class="metaValue">Modulární systém</span>
+            </div>
+          </div>
+
+          <div class="popularTitle">Nejoblíbenější sestavy</div>
+
+          <!-- DLAŽDICE jako Manila -->
+          <div class="presetRow presetRowTiles">
+
+            <!-- Vlastní tvar (data-preset prázdné = otevře konfigurátor prázdný) -->
+            <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="">
+              <img class="presetThumb" src="./images/models/mendoza/Mendoza-2.png" alt="">
+              <span class="presetLabel">Vlastní tvar</span>
+            </button>
+
+            <!-- Mendoza 2-1D -->
+            <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-1d">
+              <img class="presetThumb" src="./images/models/mendoza/mendoza-1DL-2P.png" alt="">
+              <span class="presetLabel">Mendoza 2-1D</span>
+            </button>
+
+            <!-- Mendoza 2-roh-1 -->
+            <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-roh-1">
+              <img class="presetThumb" src="./images/models/mendoza/mendoza-2P-roh-1L.png" alt="">
+              <span class="presetLabel">Mendoza 2-roh-1</span>
+            </button>
+
+            <!-- Mendoza 2-roh-1MO -->
+            <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-roh-1mo">
+              <img class="presetThumb" src="./images/models/mendoza/mendoza-2L-roh-1MO.png" alt="">
+              <span class="presetLabel">Mendoza 2-roh-1MO</span>
+            </button>
+
+            <!-- Mendoza 2-roh-2 -->
+            <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-roh-2">
+              <img class="presetThumb" src="./images/models/mendoza/mendoza-2L-roh-2P.png" alt="">
+              <span class="presetLabel">Mendoza 2-roh-2</span>
+            </button>
+
+            <!-- (Volitelně) Mendoza 2-roh-2 – přidej si další tlačítko když budeš mít obrázek + preset -->
+            <!--
+            <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="MENDOZA_ROH_2">
+              <img class="presetThumb" src="./images/presets/mendoza/roh-2.png" alt="">
+              <span class="presetLabel">Mendoza 2-roh-2</span>
+            </button>
+            -->
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MODEL: MELBOURNE ===== -->
+      <section class="modelCard" data-model="MELBOURNE">
+
+        <div class="modelHero heroWithChips">
+          <img class="modelHeroImg" src="./images/models/melbourne/melbourne-hero.png" alt="Melbourne">
+
+          <div class="heroChips" aria-hidden="true">
+            <div class="heroChip">
+              <img src="./images/models/melbourne/melbourne-herochip-1.jpg" alt="">
+            </div>
+            <div class="heroChip">
+              <img src="./images/models/melbourne/melbourne-herochip-2.jpg" alt="">
+            </div>
+          </div>
+        </div>
+
+        <div class="modelBody">
+          <div class="modelHead">
+            <h3 class="modelName">Melbourne</h3>
+          </div>
+
+          <div class="modelMeta">
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">💪</span>
+              <span class="metaLabel">Tuhost sedáku:</span>
+              <span class="metaStars" aria-label="Tuhost 2 z 5">
+                <span class="star on">★</span><span class="star on">★</span><span class="star on">★</span><span class="star">★</span><span class="star">★</span>
+              </span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">❄️</span>
+              <span class="metaLabel">Typ výplně:</span>
+              <span class="metaValue">studená pěna</span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">🧩</span>
+              <span class="metaValue">Modulární systém</span>
+            </div>
+          </div>
+
+          <div class="popularTitle">Nejoblíbenější sestavy</div>
+
+          <div class="presetRow presetRowTiles">
+
+            <!-- Vlastní tvar -->
+            <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="">
+              <img class="presetThumb" src="./images/models/melbourne/Melbourne-2.png" alt="">
+              <span class="presetLabel">Vlastní tvar</span>
+            </button>
+
+            <!-- Melbourne 2-1D -->
+            <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_1D">
+              <img class="presetThumb" src="./images/models/melbourne/melbourne-1D-2P.png" alt="">
+              <span class="presetLabel">Melbourne 2-1D</span>
+            </button>
+
+            <!-- Melbourne 2-roh-1 -->
+            <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_ROH_1">
+              <img class="presetThumb" src="./images/models/melbourne/melbourne-2P-roh-1L.png" alt="">
+              <span class="presetLabel">Melbourne 2-roh-1</span>
+            </button>
+
+            <!-- Melbourne 2-roh-1MO -->
+            <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_ROH_1MO">
+              <img class="presetThumb" src="./images/models/melbourne/melbourne-2L-roh-1MO.png" alt="">
+              <span class="presetLabel">Melbourne 2-roh-1MO</span>
+            </button>
+
+            <!-- Melbourne 2-roh-2 -->
+            <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_ROH_2">
+              <img class="presetThumb" src="./images/models/melbourne/melbourne-2L-roh-2P.png" alt="">
+              <span class="presetLabel">Melbourne 2-roh-2</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MODEL: MANCHESTER ===== -->
+      <section class="modelCard" data-model="MANCHESTER">
+
+        <!-- HERO -->
+        <div class="modelHero heroWithChips">
+          <img class="modelHeroImg" src="./images/models/manchester/manchester-hero.png" alt="Manchester">
+
+          <!-- malé náhledy vpravo (pokud je nechceš, smaž celý div heroChips) -->
+          <div class="heroChips" aria-hidden="true">
+            <div class="heroChip">
+              <img src="./images/models/manchester/manchester-herochip-1.jpg" alt="">
+            </div>
+            <div class="heroChip">
+              <img src="./images/models/manchester/manchester-herochip-2.jpg" alt="">
+            </div>
+          </div>
+        </div>
+
+        <div class="modelBody">
+          <div class="modelHead">
+            <h3 class="modelName">Manchester</h3>
+          </div>
+
+          <!-- META řádek -->
+          <div class="modelMeta" aria-label="Vlastnosti sedačky">
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">💪</span>
+              <span class="metaLabel">Tuhost sedáku:</span>
+              <span class="metaStars" aria-label="Tuhost 2 z 5">
+                <span class="star on">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+              </span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">❄️</span>
+              <span class="metaLabel">Typ výplně:</span>
+              <span class="metaValue">bonellové pružiny</span>
+            </div>
+
+            <div class="metaDivider" aria-hidden="true"></div>
+
+            <div class="metaItem">
+              <span class="metaIcon" aria-hidden="true">🧩</span>
+              <span class="metaValue">Modulární systém</span>
+            </div>
+          </div>
+
+          <div class="popularTitle">Nejoblíbenější sestavy</div>
+
+          <!-- DLAŽDICE -->
+          <div class="presetRow presetRowTiles">
+
+            <!-- Vlastní tvar -->
+            <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="">
+              <img class="presetThumb" src="./images/models/manchester/Manchester-2.png" alt="">
+              <span class="presetLabel">Vlastní tvar</span>
+            </button>
+
+            <!-- Manchester 2-1D -->
+            <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_1D">
+              <img class="presetThumb" src="./images/models/manchester/Manchester-1D-2P.png" alt="">
+              <span class="presetLabel">Manchester 2-1D</span>
+            </button>
+
+            <!-- Manchester 2-roh-1 -->
+            <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_ROH_1">
+              <img class="presetThumb" src="./images/models/manchester/Manchester-2P-roh-1L.png" alt="">
+              <span class="presetLabel">Manchester 2-roh-1</span>
+            </button>
+
+            <!-- Manchester 2-roh-1MO -->
+            <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_ROH_1MO">
+              <img class="presetThumb" src="./images/models/manchester/Manchester-2L-roh-1MO.png" alt="">
+              <span class="presetLabel">Manchester 2-roh-1MO</span>
+            </button>
+
+            <!-- Manchester 2-roh-2 -->
+            <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_ROH_2">
+              <img class="presetThumb" src="./images/models/manchester/Manchester-2L-roh-2P.png" alt="">
+              <span class="presetLabel">Manchester 2-roh-2</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ===== VIEW: CONFIGURATOR (TVŮJ 3D) ===== -->
+<div id="viewConfigurator" class="view">
+
+  <div class="cameraControls" aria-label="Ovládání kamery">
+    <button id="btnCamFit" class="camBtn" type="button" aria-label="Vycentrovat kameru" title="Vycentrovat">
+      ⦿
+    </button>
+
+    <button id="btnCamZoomIn" class="camBtn" type="button" aria-label="Přiblížit" title="Přiblížit">
+      ＋
+    </button>
+
+    <button id="btnCamZoomOut" class="camBtn" type="button" aria-label="Oddálit" title="Oddálit">
+      －
+    </button>
+
+    <button id="btnCamClearAll" class="camBtn camBtnDanger" aria-label="Smazat všechny moduly" title="Smazat všechny moduly">
+      <!-- trash icon (SVG) -->
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 6h18" fill="none"></path>
+        <path d="M8 6V4h8v2" fill="none"></path>
+        <path d="M6 6l1 16h10l1-16" fill="none"></path>
+        <path d="M10 11v7" fill="none"></path>
+        <path d="M14 11v7" fill="none"></path>
+      </svg>
+    </button>
+
+  </div>
+
+  <!-- Confirm modal: smazat všechny moduly -->
+  <div id="clearAllModal" class="hidden confirmModal" aria-hidden="true">
+    <div class="picker-window confirmWindow" role="dialog" aria-modal="true" aria-labelledby="clearAllTitle">
+      <div class="picker-header">
+        <div id="clearAllTitle">Smazat všechny moduly?</div>
+        <button id="clearAllClose" type="button" aria-label="Zavřít">✕</button>
+      </div>
+
+      <div class="confirmText">
+        Opravdu chceš smazat všechny moduly a začít znovu?
+      </div>
+
+      <div class="confirmActions">
+        <button id="clearAllCancel" type="button" class="confirmBtn">Zrušit</button>
+        <button id="clearAllOk" type="button" class="confirmBtn danger">Smazat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step bar -->
+  <div id="stepBar" class="stepBar">
+
+    <div class="stepDock">
+      <div class="stepTrack" aria-label="Kroky konfigurátoru">
+        <div class="step active" data-step="1"><span class="num">1</span> 🛋️ Model</div>
+        <div class="step" data-step="2"><span class="num">2</span> 🧩 Sestava</div>
+        <div class="step" data-step="3"><span class="num">3</span> ⚙️ Vybavení</div>
+        <div class="step" data-step="4"><span class="num">4</span> 🎨 Materiál</div>
+        <div class="step" data-step="5"><span class="num">5</span> ✅ Rekapitulace</div>
+      </div>
+
+    </div>
+
+    <button id="stepToggle" class="stepToggle" type="button" aria-label="Sbalit/rozbalit kroky">
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+    
+  </div>
+
+  <div id="threeRoot"></div>
+
+    <main id="recapView" class="recapView hidden" aria-label="Rekapitulace konfigurace">
+      <section class="recapSheet">
+        <div class="recapHeader">
+          <div>
+            <div class="recapEyebrow">Rekapitulace konfigurace</div>
+            <h1 id="recapSofaName">Sedací souprava</h1>
+            <p id="recapSofaSubtitle">Shrnutí vybrané sestavy</p>
+          </div>
+          <div class="recapHeaderMeta">
+            <span id="recapDate">Konfigurace</span>
+            <strong id="recapHeaderPrice">0 Kč</strong>
+          </div>
+        </div>
+
+        <div class="recapHero">
+          <div class="recapHeroImageWrap">
+            <img id="recapSofaImage" class="recapHeroImage" alt="Náhled vybrané pohovky">
+            <div id="recapImageFallback" class="recapImageFallback">Náhled pohovky se doplní po načtení scény.</div>
+          </div>
+          <div class="recapIntroCard">
+            <h2>Vybraná sestava</h2>
+            <div id="recapQuickFacts" class="recapQuickFacts"></div>
+          </div>
+        </div>
+
+        <div class="recapGrid recapGridTwo">
+          <article class="recapCard recapPlanCard">
+            <div class="recapCardTitle">
+              <span class="recapIcon" data-recap-icon="plan" aria-hidden="true"></span>
+              <button id="recapDimsEditBtn" class="recapEditBtn" type="button" aria-label="Upravit rozmery" title="Upravit rozmery">
+                <span aria-hidden="true"></span>
+              </button>
+              <h2>Půdorys & rozměry</h2>
+            </div>
+            <div class="recapPlanFrame">
+              <svg id="recapPlanSvg" viewBox="0 0 520 260" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+            <div id="recapDimensions" class="recapRows"></div>
+          </article>
+
+          <article class="recapCard">
+            <div class="recapCardTitle">
+              <span class="recapIcon" data-recap-icon="assembly" aria-hidden="true"></span>
+              <h2>Složení sestavy</h2>
+            </div>
+            <div id="recapAssembly" class="recapRows"></div>
+          </article>
+        </div>
+
+        <div class="recapGrid recapGridTwo">
+          <article class="recapCard">
+            <div class="recapCardTitle">
+              <span class="recapIcon" data-recap-icon="equipment" aria-hidden="true"></span>
+              <h2>Vybavení</h2>
+            </div>
+            <div id="recapEquipment" class="recapTiles"></div>
+          </article>
+
+          <article class="recapCard">
+            <div class="recapCardTitle">
+              <span class="recapIcon" data-recap-icon="material" aria-hidden="true"></span>
+              <h2>Materiál</h2>
+            </div>
+            <div id="recapMaterial" class="recapTiles"></div>
+          </article>
+        </div>
+
+        <div class="recapGrid recapGridTwo recapFinalGrid">
+          <article class="recapCard recapPriceCard">
+            <div class="recapCardTitle">
+              <span class="recapIcon" data-recap-icon="price" aria-hidden="true"></span>
+              <h2>Cenové shrnutí</h2>
+            </div>
+            <div id="recapPrice" class="recapRows"></div>
+          </article>
+
+          <aside class="recapActionsCard">
+            <button id="recapPrintBtn" class="recapActionBtn recapActionPrimary" type="button">
+              Uložit / vytisknout PDF
+            </button>
+            <button id="recapEmailBtn" class="recapActionBtn" type="button">
+              Odeslat poptávku
+            </button>
+            <p>Finální vizualizace má ilustrativní charakter. Rozměry a cena vychází z aktuální konfigurace. Barevné odstíny potahových látek, dřevěných prvků, pantů a dalších materiálů v 3D modelu jsou pouze orientační a mohou se lišit od skutečnosti. Přesný vzhled závisí na reálném vzorku, osvětlení i na tom, jak barvy zobrazuje konkrétní monitor nebo displej.</p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <button id="btnStep2Continue" class="step2ContinueBtn hidden" type="button" disabled>
+      Pokračovat
+    </button>
+
+    <button id="btnStep3Continue" class="step2ContinueBtn hidden" type="button">
+      Pokračovat
+    </button>
+
+    <button id="btnStep4Continue" class="step2ContinueBtn hidden" type="button">
+      Pokračovat
+    </button>
+
+    <div id="placementToast" class="toast"></div>
+    <div id="actionMenuBlocker"></div>
+
+    <!-- Bottom menu (krok 3: Vybavení) -->
+    <div id="bottomBar" class="bottomBar is-hidden" aria-label="Vybavení">
+      <div class="bottomDock">
+
+        <button class="bottomToggle" id="bottomToggle" type="button" aria-label="Rozbalit vybavení">
+          <span class="chev" aria-hidden="true"></span>
+        </button>
+
+        <div class="bottomTabs">
+          <!-- KROK 3 -->
+          <button class="bottomTab" data-tab="armrests">Područky a rozměry</button>
+          <button class="bottomTab active" data-tab="legs">Nohy</button>
+          <button class="bottomTab hidden" data-tab="shelf">Polička</button>
+          <button class="bottomTab" data-tab="hinges">Panty</button>
+          <button class="bottomTab" data-tab="extras">Příplatky</button>
+
+          <!-- KROK 4 -->
+          <button type="button" class="bottomTab fabricPriceTab hidden" data-step="4" data-tab="cat1">
+            <span class="fabricPriceTabTitle">Kategorie 1</span>
+            <span class="fabricPriceTabPrice" data-price-for="cat1">—</span>
+          </button>
+
+          <button type="button" class="bottomTab fabricPriceTab hidden" data-step="4" data-tab="cat2">
+            <span class="fabricPriceTabTitle">Kategorie 2</span>
+            <span class="fabricPriceTabPrice" data-price-for="cat2">—</span>
+          </button>
+
+          <button type="button" class="bottomTab fabricPriceTab hidden" data-step="4" data-tab="cat3">
+            <span class="fabricPriceTabTitle">Kategorie 3</span>
+            <span class="fabricPriceTabPrice" data-price-for="cat3">—</span>
+          </button>
+
+          <button type="button" class="bottomTab fabricPriceTab hidden" data-step="4" data-tab="leather">
+            <span class="fabricPriceTabTitle">Kůže</span>
+            <span class="fabricPriceTabPrice" data-price-for="leather">—</span>
+          </button>
+
+        </div>
+
+        <div class="bottomPanel">
+          <div class="bottomContent">
+
+
+            <div class="bottomSection" data-tabpanel="legs">
+
+              <div class="equipWrap" id="legsEquipWrap">
+
+                <!-- 1) NOHY (4 vedle sebe) -->
+                <div class="equipBlock" id="legsTypeBlock">
+                  <div class="equipLabel">Typ nohou</div>
+
+                  <div class="legGrid4" id="legsCardRow"></div>
+
+                  <!-- Select necháme kvůli logice, ale je schovaný -->
+                  <select id="legsTypeSelect" class="visuallyHidden"></select>
+                </div>
+
+                <!-- 2) BARVY (budou se přegenerovávat podle typu nohy) -->
+                <div class="equipBlock" id="legsColorBlock">
+                  <div class="equipLabel">Barva</div>
+
+                  <div class="colorGrid" id="legsColorGrid">
+                    <!-- JS sem doplní kartičky barev podle dřevo/kov -->
+                  </div>
+
+                  <button type="button" id="btnLegsShowAll" class="showAllBtn hidden">
+                    Zobrazit všechny barvy
+                  </button>
+
+                  <!-- Select necháme kvůli logice, ale je schovaný -->
+                  <select id="legsColorSelect" class="visuallyHidden"></select>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="bottomSection" data-tabpanel="armrests">
+              <div class="equipWrap armrestsWrap" id="armrestsEquipWrap">
+
+                <!-- layout: vlevo typy, vpravo šířky -->
+                <div class="armrestsLayout">
+
+                  <!-- LEVÝ SLOUPEC: područky -->
+                  <div class="armrestsLeftCol">
+
+                    <div class="armrestsLeftRow">
+
+                      <!-- Typ područek -->
+                      <div class="equipBlock" id="armrestsTypeBlock">
+                        <div class="equipLabel">Typ područek</div>
+                        <div class="legGrid4" id="armrestsCardRow"></div>
+                        <select id="armrestsTypeSelect" class="visuallyHidden"></select>
+                      </div>
+
+                      <!-- Šířka područky -->
+                      <div class="equipBlock armrestWidthBlock" id="armrestWidthBlock">
+                        <div class="equipLabel">Šířka područky (hranatá)</div>
+
+                        <div class="armrestWidthPanel">
+                          <div class="armrestWidthFixed" id="armrestWidthFixed" style="display:none;">
+                            <button type="button" class="chipBtn chipBig is-active" id="armrestWidthFixedBtn">33 cm</button>
+                          </div>
+
+                          <div class="armrestWidthQuickGrid" id="armrestWidthQuick">
+                            <button type="button" class="chipBtn chipBig" data-armrest-width="10">10 cm</button>
+                            <button type="button" class="chipBtn chipBig is-active" data-armrest-width="15">15 cm</button>
+                            <button type="button" class="chipBtn chipBig" data-armrest-width="20">20 cm</button>
+                            <button type="button" class="chipBtn chipBig" data-armrest-width="25">25 cm</button>
+                          </div>
+
+                          <div class="armrestWidthCustomCol">
+                            <button type="button" class="chipBtn chipBig chipCustom" id="armrestWidthCustomBtn">Jiné</button>
+
+                            <div class="armrestWidthCustom" id="armrestWidthCustom">
+                              <div class="armrestWidthRow">
+                                <input id="armrestWidthRange" type="range" min="10" max="25" step="1" value="15" />
+                                <div class="armrestWidthValue"><span id="armrestWidthValue">15</span> cm</div>
+                              </div>
+                              <div class="armrestWidthHint">10–25 cm</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="armrestWidthNote" id="armrestWidthNote">
+                          Šířka se v náhledu 3D vizuálně nemění. 3D model je zobrazen s šířkou 25 cm pro porovnání proporcí.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- STŘED: půdorys (bez nadpisu a bez hintu) -->
+                  <div class="equipBlock" id="sofaPlanBlock">
+                    <div class="sofaPlanWrap">
+                      <svg id="sofaPlanSvg" viewBox="0 0 320 190" preserveAspectRatio="xMidYMid meet"></svg>
+                    </div>
+                  </div>
+                  
+                  <!-- PRAVÝ SLOUPEC: rozměry sestavy -->
+                  <div class="equipBlock" id="sofaDimsBlock">
+                    <div class="equipLabel">Rozměry sestavy</div>
+
+                    <!-- Sem pak můžeš později dát perokresbu / šipky v 3D atd. -->
+                    <div class="dimsRows" id="sofaDimsRows"></div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div class="bottomSection hidden" data-tabpanel="shelf">
+              <div class="equipWrap shelfWrap" id="shelfEquipWrap">
+                <div class="equipBlock shelfColorBlock" id="shelfColorBlock">
+                  <div class="equipLabel">Barva poličky</div>
+                  <div class="shelfColorGrid" id="shelfColorGrid"></div>
+                  <select id="shelfColorSelect" class="visuallyHidden"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottomSection hidden" data-tabpanel="hinges">
+              <div class="equipWrap" id="hingesEquipWrap">
+
+                <div class="equipBlock" id="hingesTypeBlock">
+                  <div class="equipLabel">Typ pantů</div>
+
+                  <div class="legGrid4" id="hingesCardRow">
+                    <button type="button" class="tileCard is-active" data-hinge="standard">
+                      <img class="tileImg" src="./images/panty/panty-leskle.png" alt="Standard" />
+                      <div class="tileTitle">Lesklé</div>
+                    </button>
+
+                    <button type="button" class="tileCard" data-hinge="softclose">
+                      <img class="tileImg" src="./images/panty/panty-black.png" alt="Soft-close" />
+                      <div class="tileTitle">Černé</div>
+                    </button>
+                  </div>
+
+                  <!-- Select necháme kvůli logice, ale je schovaný -->
+                  <select id="hingesTypeSelect" class="visuallyHidden">
+                    <option value="standard">Standard</option>
+                    <option value="softclose">Soft-close</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="bottomSection hidden" data-tabpanel="extras">
+              <div class="equipWrap" id="extrasEquipWrap">
+                <div class="equipBlock" id="extrasBlock">
+                  <div class="equipLabel">Příplatky podle modulů</div>
+
+                  <div class="extrasList" id="extrasModuleList"></div>
+
+                  <div class="extrasHint hidden" id="extrasEmptyHint">
+                    V sestavě teď není žádný modul, který by šel doplnit o příplatek.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- KROK 4: MATERIÁL (panely) -->
+            <div class="bottomSection hidden" data-tabpanel="cat1">
+              <div class="fabricList" id="fabricListCat1"></div>
+            </div>
+
+            <div class="bottomSection hidden" data-tabpanel="cat2">
+              <div class="fabricList" id="fabricListCat2"></div>
+            </div>
+
+            <div class="bottomSection hidden" data-tabpanel="cat3">
+              <div class="fabricList" id="fabricListCat3"></div>
+            </div>
+
+            <div class="bottomSection hidden" data-tabpanel="leather">
+              <div class="fabricList" id="fabricListLeather"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="moduleActionMenu">
+        <div class="module-action-btn replace">VYMĚNIT</div>
+        <div class="module-action-btn delete">ODSTRANIT</div>
+    </div>
+
+    <div id="summaryBox">
+
+        <div class="title-row">
+          <a
+            id="sumSofaLink"
+            href="https://madros.cz/soupravy-na-miru/161-manila-sedaci-souprava.html"
+            target="_blank"
+            class="title-link"
+            title="Otevřít stránku produktu"
+            rel="noopener"
+          >
+            <span id="sumSofaName" class="title">MANILA</span>
+
+            <span class="link-badge" aria-hidden="true">
+              🔗
+            </span>
+          </a>
+        </div>
+
+        <div class="line">Aktuální cena od: <span id="sumPrice">0 Kč</span></div>
+
+        <div class="line summary-range">
+          Rozsah (min–max):
+          <span class="hint">
+            <span id="sumDimsRange" class="hintValue">0–0 × 0–0 cm</span>
+            <span class="qmark">?</span>
+            <span class="tooltip">Rozsah (min–max) ukazuje, v jakém rozmezí lze sestavu upravit (šířka × hloubka). V posledním kroku si nastavíte přesný rozměr na centimetry – přesně podle vašich potřeb, v rámci tohoto rozsahu.</span>
+          </span>
+        </div>
+
+        <div class="line">
+          Rozměr náhledu:
+          <span class="hint">
+            <span id="sumDims" class="hintValue">0 × 0 cm</span>
+            <span class="qmark">?</span>
+            <span class="tooltip">Rozměr náhledu slouží pouze pro vizuální srovnání aktuální sestavy. Informace o skutečných rozměrech jsou uvedeny v části Rozsah výše.</span>
+          </span>
+        </div>
+    </div>
+</div>
+
+<div id="stepHintPortal" aria-live="polite"></div>
+
+<div id="loadingOverlay" class="loadingOverlay" aria-hidden="true">
+  <div class="loadingCard" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <div id="loadingText" class="loadingText">Načítám…</div>
+  </div>
+</div>
+
+<!-- PICKER OVERLAY -->
+<div id="modulePicker" class="hidden">
+
+    <div class="picker-window">
+
+        <!-- HLAVIČKA -->
+        <div class="picker-header">
+            <span>Vyberte díl</span>
+            <button id="modulePickerClose">✕</button>
+        </div>
+
+        <!-- TABS -->
+        <div class="picker-tabs">
+            <button data-tab="all" class="active">VŠECHNY</button>
+            <button data-tab="insert">VKLÁDACÍ</button>
+            <button data-tab="end">UKONČOVACÍ</button>
+            <button data-tab="solo">SAMOSTATNÉ</button>
+        </div>
+
+        <!-- GRID -->
+        <div id="moduleList" class="picker-grid"></div>
+
+    </div>
+
+</div>
+
+<script src="bundle.js"></script>
+</body>
+</html>
+

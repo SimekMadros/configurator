@@ -1,0 +1,24 @@
+{
+  "scripts": {
+    "dev": "webpack serve --host 0.0.0.0 --mode development",
+    "build": "webpack --mode production",
+    "build:static": "node scripts/build-static.js",
+    "serve:dist": "http-server dist -p 8080 -c-1",
+    "pdf-server": "node pdf-server.js"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.7",
+    "three": "^0.181.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "babel-loader": "^10.0.0",
+    "http-server": "^14.1.1",
+    "puppeteer": "^24.37.5",
+    "serve-handler": "^6.1.6",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
+  }
+}

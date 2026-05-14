@@ -1,0 +1,7436 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --madros-navy: #0B1440;   /* tmavě modrá (hlavní) */
+  --madros-blue: #1B2A6B;   /* doplňková modrá */
+  --madros-accent: #5FB3CE; /* světle modrá (křivka) */
+  --madros-bg: #F4F6FA;     /* světlé pozadí */
+  --madros-card: #FFFFFF;  /* karty */
+  --madros-text: #0F172A;  /* text */
+}
+
+:root{
+  --equip-raise: 0px;
+  --accent: #2b6fff;      /* premium modrá (můžeš změnit) */
+  --accentSoft: rgba(43,111,255,0.12);
+  --equip-anim: 260ms;
+  --equip-ease: cubic-bezier(.22,1,.36,1);
+}
+
+html, body {
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+#summaryBox{
+  position: fixed;
+  left: 18px;
+  bottom: calc(18px + var(--equip-raise, 0px));
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #1f1f1f;
+  min-width: 280px;
+  transition: bottom var(--equip-anim) var(--equip-ease);
+}
+
+#summaryBox .title{
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 16px;
+  line-height: 1;        /* ✅ KLÍČ: zruší baseline problém */
+  margin: 0;             /* ✅ aby flex zarovnání nebylo rozbité */
+}
+
+#summaryBox .line{
+  font-size: 14px;     /* ✅ větší */
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+#summaryBox .summaryRangeBlock{
+  margin-top: 6px;
+}
+
+#summaryBox .summaryRangeTitle{
+  display: block;
+  margin-bottom: 2px;
+}
+
+#summaryBox .summaryMetrics{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#summaryBox .summaryMetric{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 0;
+}
+
+#summaryBox .summaryMetricLabel{
+  flex: 0 0 auto;
+}
+
+#summaryBox .summaryMetric .hint{
+  margin-left: auto;
+}
+
+.toast{
+  position: fixed;
+  left: 50%;
+
+  /* ✅ zvedni toast stejně jako SummaryUI, aby ho nepřekryl bottomBar */
+  bottom: calc(24px + var(--equip-raise, 0px));
+  transition: opacity .18s ease, transform .18s ease, bottom var(--equip-anim) var(--equip-ease);
+
+  transform: translateX(-50%);
+  background: rgba(20,20,20,0.92);
+  color:#fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  opacity: 0;
+  pointer-events: none;
+
+  /* ✅ ať je toast vždy nad bottomBarem */
+  z-index: 9999;
+}
+.toast.show{
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+#moduleActionMenu { 
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+}
+#moduleActionMenu.visible {
+  display: flex;
+}
+
+#moduleActionMenu {
+  pointer-events: auto;   /* ✅ menu jde klikat */
+}
+
+#actionMenuBlocker{
+  position: fixed;
+  inset: 0;
+  z-index: 40;           /* musí být pod menu (menu má 50) */
+  pointer-events: none;  /* defaultně NEchytá kliky */
+}
+
+.module-action-btn.disabled{
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.module-action-btn.disabled:hover{
+  opacity: 0.45; /* aby bylo vidět, že reaguje i když je zakázaný */
+}
+
+.module-action-btn {
+    padding: 10px 18px;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    font-family: sans-serif;
+}
+
+.module-action-btn.replace {
+    background: #4D9FD1;
+}
+
+.module-action-btn.delete {
+    background: #444;
+}
+
+/* Hover efekt */
+.module-action-btn:hover {
+    opacity: 0.8;
+}
+
+/* ====== MODAL ====== */
+
+#modulePicker.hidden {
+    display: none !important;
+}
+
+#modulePicker { cursor: default; }
+#modulePicker .moduleItem { cursor: pointer; }
+#moduleActionMenu { cursor: default; }
+
+/* jen NE-disabled tlačítka mají pointer */
+#moduleActionMenu button:not(.disabled) { cursor: pointer; }
+
+/* disabled tlačítka mají zakázaný kurzor */
+#moduleActionMenu button.disabled { cursor: not-allowed; }
+
+#modulePicker {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+}
+
+/* ====== OKNO ====== */
+
+.picker-window {
+    position: relative;
+    background: white;
+    width: 760px;
+    max-height: 85vh;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.30);
+    z-index: 1;
+}
+
+/* ✅ univerzální schovávání prvků (používá step2ContinueBtn i bottomBar) */
+.hidden{
+  display: none !important;
+}
+
+/* ====== HLAVIČKA ====== */
+
+.picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+#modulePickerClose {
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+/* ====== TABS ====== */
+
+.picker-tabs {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.picker-tabs button {
+    background: none;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: #777;
+    border-bottom: 2px solid transparent;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.picker-tabs button.active {
+    color: black;
+    border-bottom: 2px solid #c40000;
+}
+
+/* ====== GRID ====== */
+
+.picker-grid {
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    padding-right: 10px;
+}
+
+.moduleItem {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.moduleItem:hover {
+    background: #ececec;
+}
+
+.moduleItem img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.moduleItem .title {
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+.moduleItem .price {
+    font-size: 13px;
+    color: #444;
+    margin-top: -4px;
+}
+
+/* =======================
+   DISCOUNT PRICE UI
+   ======================= */
+
+.priceWithDiscount{
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  justify-content: center;
+}
+
+.priceOld{
+  text-decoration: line-through;
+  opacity: 0.55;
+  font-size: 0.9em;
+}
+
+.priceNew{
+  font-weight: 800;
+  font-size: 1.15em;
+  letter-spacing: 0.01em;
+}
+
+.discountBadge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid rgba(196,0,0,0.25);
+  background: rgba(196,0,0,0.10);
+  color: #b00020;
+}
+
+/* aby to v kartě modulu sedělo i při dvou řádcích */
+.moduleItem .price.hasDiscount{
+  margin-top: 2px;
+}
+
+#summaryBox .title-row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;   /* ✅ sem přesuneme odsazení pod titulkem */
+}
+
+#summaryBox .title-link{
+  display: inline-flex;
+  align-items: center;     /* drží střed */
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+
+  line-height: 1.05;       /* ✅ pomůže centrování */
+}
+
+#summaryBox .title-link:hover .title{
+  text-decoration: underline;
+}
+
+#summaryBox .link-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;           /* ✅ stejné jako otazník */
+  height: 20px;
+  border-radius: 999px;
+
+  background: rgba(43,111,255,0.12);
+  border: 1px solid rgba(43,111,255,0.22);
+  color: rgba(43,111,255,0.95);
+
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+
+  transform: translateY(-1px); /* ✅ mikro posun (lepší než top) */
+
+  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+}
+
+#summaryBox .title-link:hover .link-badge{
+  transform: translateY(-1px) scale(1.08);
+  background: rgba(43,111,255,0.18);
+  box-shadow: 0 8px 18px rgba(43,111,255,0.18);
+}
+
+/* ===== TOOLTIP (HINT) ===== */
+#summaryBox .hint{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: help;
+}
+
+#summaryBox .qmark{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+
+  background: var(--accentSoft);              /* ✅ jemná modrá */
+  border: 1px solid rgba(43,111,255,0.22);    /* ✅ outline */
+
+  color: var(--accent);                       /* ✅ text ? modře */
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+
+  opacity: 0.95;
+
+  transition: transform .15s ease, background .15s ease;
+}
+
+#summaryBox .hint:hover .qmark{
+  transform: scale(1.08);                     /* ✅ "pop" */
+  background: rgba(43,111,255,0.18);          /* ✅ víc barvy */
+}
+
+#summaryBox .tooltip{
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 12px);
+
+  min-width: 230px;
+  max-width: 320px;
+
+  padding: 12px 14px;
+  border-radius: 12px;
+
+  background: rgba(20,20,20,0.96);
+  border: 1px solid rgba(255,255,255,0.12);  /* ✅ jemný okraj */
+
+  color: #fff;
+  font-size: 13px;        /* ✅ větší text */
+  line-height: 1.4;
+
+  box-shadow: 0 16px 42px rgba(0,0,0,0.28); /* ✅ výraznější stín */
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translateY(6px) scale(0.98);  /* ✅ pop efekt */
+  transition: opacity .15s ease, transform .15s ease;
+
+  z-index: 999;
+}
+
+#summaryBox .hint:hover .tooltip{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* ===== Tooltip arrow ===== */
+#summaryBox .tooltip::after{
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 100%;
+  width: 10px;
+  height: 10px;
+  background: rgba(20,20,20,0.96);
+  border-left: 1px solid rgba(255,255,255,0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  transform: translateY(-5px) rotate(45deg);
+}
+
+#summaryBox .hint:hover .hintValue{
+  text-decoration: underline;
+  text-decoration-color: rgba(43,111,255,0.45);
+  text-underline-offset: 3px;
+}
+
+/* ===== VIEWS ===== */
+.view{
+  display: none;
+  width: 100%;
+  height: 100%;          /* ✅ nefixuj to na 100vh */
+}
+
+.activeView {
+  display: block;
+}
+
+/* ===== Anti-flash při reloadu (ukáže správný view podle ?view=...) ===== */
+html[data-view="landing"] #viewLanding { display: block; }
+html[data-view="landing"] #viewConfigurator { display: none; }
+
+html[data-view="configurator"] #viewConfigurator { display: block; }
+html[data-view="configurator"] #viewLanding { display: none; }
+
+.brandLogo{
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.logo {
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.topRight {
+  margin-left: auto;   /* ✅ posune celou skupinu tlačítek doprava */
+  display: flex;
+  gap: 8px;
+}
+
+.topBtn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: white;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  /* ❌ margin-left: auto; pryč */
+}
+
+.topBtn:hover{
+  background: rgba(255,255,255,0.14);
+}
+
+.draftsTopBtn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  max-width: min(280px, 42vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+.draftsButtonCount{
+  color: rgba(255,255,255,0.72);
+  font-weight: 700;
+}
+
+.draftsPopover{
+  position: fixed;
+  inset: 0;
+  z-index: 6200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 72px 18px 18px;
+  background: rgba(5, 8, 16, 0.34);
+}
+
+.draftsPopover.hidden{
+  display: none !important;
+}
+
+.draftsPanel{
+  width: min(560px, calc(100vw - 36px));
+  max-height: min(720px, calc(100vh - 92px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #f7f5f1;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  box-shadow: 0 22px 70px rgba(0,0,0,0.28);
+  color: #1f2933;
+}
+
+.draftsHeader{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+}
+
+.draftsHeader h2{
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.draftsHeader p{
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.draftsClose{
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #344054;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.draftsClose:hover{
+  color: #111827;
+}
+
+.draftsList{
+  padding: 16px 22px 22px;
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.draftItem{
+  position: relative;
+  min-height: 116px;
+  display: grid;
+  grid-template-columns: 178px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #fff;
+  cursor: pointer;
+}
+
+.draftItem:hover{
+  border-color: rgba(162, 48, 45, 0.58);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+}
+
+.draftThumb{
+  min-height: 116px;
+  background: #d9e7ef;
+  overflow: hidden;
+}
+
+.draftThumb img{
+  width: 100%;
+  height: 100%;
+  min-height: 116px;
+  object-fit: cover;
+  display: block;
+}
+
+.draftThumbPlaceholder{
+  width: 100%;
+  height: 100%;
+  min-height: 116px;
+  display: grid;
+  place-items: center;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  background: linear-gradient(135deg, #e4ebef, #f8fafc);
+}
+
+.draftBody{
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 16px 44px 16px 0;
+}
+
+.draftName{
+  color: #cf3d39;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.draftPrice{
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.draftMeta{
+  color: #8a94a3;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.draftDelete{
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #98a2b3;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.draftDelete:hover{
+  color: #b42318;
+}
+
+.draftsEmpty{
+  margin: 16px 22px 22px;
+  padding: 22px;
+  border: 1px dashed rgba(15, 23, 42, 0.22);
+  background: #fff;
+  color: #667085;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+@media (max-width: 680px){
+  .topRight{
+    gap: 6px;
+  }
+
+  .topRight .topBtn[aria-label="Hledat"]{
+    display: none;
+  }
+
+  .draftsTopBtn{
+    max-width: 54vw;
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+
+  .draftsPopover{
+    padding: 64px 10px 10px;
+  }
+
+  .draftsPanel{
+    width: 100%;
+    max-height: calc(100vh - 74px);
+  }
+
+  .draftsHeader{
+    padding: 16px;
+  }
+
+  .draftsList{
+    padding: 12px 12px 16px;
+  }
+
+  .draftItem{
+    grid-template-columns: 118px minmax(0, 1fr);
+    min-height: 100px;
+  }
+
+  .draftThumb,
+  .draftThumb img,
+  .draftThumbPlaceholder{
+    min-height: 100px;
+  }
+
+  .draftBody{
+    padding: 12px 36px 12px 0;
+  }
+
+  .draftName{
+    font-size: 14px;
+  }
+
+  .draftPrice{
+    font-size: 12px;
+  }
+}
+
+.filterPanel h3 {
+  margin: 0 0 12px;
+}
+
+.filterGroup {
+  margin-bottom: 16px;
+}
+
+.filterGroup label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  opacity: 0.8;
+}
+
+.filterGroup select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: white;
+}
+
+.filterNote {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ===== PRODUCT LIST ===== */
+.productList {
+  padding: 24px;
+  overflow: visible;  /* ✅ scroll dělá landingLayout */
+  background: var(--madros-bg);
+}
+
+.productList h2 {
+  margin-top: 0;
+}
+
+.sectionTitle {
+  margin-top: 26px;
+  opacity: 0.9;
+}
+
+.productCard {
+  background: var(--madros-card);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 18px;
+  padding: 18px;
+  margin: 12px 0;
+  box-shadow: 0 10px 22px rgba(11,20,64,0.08);
+}
+
+.productCard.special {
+  border: 2px dashed #aaa;
+}
+
+.productTitle {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.productDesc {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.primaryBtn, .secondaryBtn {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  font-weight: 700;
+}
+
+.primaryBtn {
+  background: var(--madros-accent);
+  color: var(--madros-navy);
+}
+.primaryBtn:hover{
+  filter: brightness(0.95);
+}
+
+.secondaryBtn {
+  background: #E7ECF5;
+  color: var(--madros-navy);
+}
+.secondaryBtn:hover{
+  filter: brightness(0.97);
+}
+
+/* ===== STEP BAR ===== */
+#stepBar{
+  position: relative;   /* ✅ stejně jako na landing */
+  height: 56px;
+  background: transparent;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  padding: 0;
+  z-index: 2;
+}
+
+#stepBar .step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  opacity: 1;
+  color: rgba(255,255,255,0.60);
+
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+#stepBar .step .num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+#stepBar .step.active {
+  opacity: 1;
+}
+
+.stepActions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+#threeRoot{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #f2f2f2;
+  padding-top: 0;             /* ✅ už netřeba */
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;  /* vodorovně ne */
+  overflow-y: auto;    /* svisle ANO = scrollbar bude celý */
+}
+
+/* ✅ Když je aktivní konfigurátor, stránka se nesmí scrollovat */
+html[data-view="configurator"],
+html[data-view="configurator"] body{
+  height: 100%;
+  overflow: hidden;
+}
+
+#viewConfigurator {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 76px;     /* výška .topBar (u tebe 76px) :contentReference[oaicite:1]{index=1} */
+  bottom: 0;
+
+  overflow: hidden;
+}
+
+#viewConfigurator canvas {
+  display: block;
+}
+
+/* ===== Step 2: Pokračovat (vpravo dole ve scéně) ===== */
+.step2ContinueBtn{
+  position: fixed;
+  right: 18px;
+
+  bottom: calc(18px + var(--equip-raise, 0px));
+  z-index: 2005;
+  transition: bottom var(--equip-anim) var(--equip-ease);
+
+  padding: 16px 24px;
+  font-size: 16px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(0,0,0,0.12);
+  background: var(--primary);
+  color: var(--primaryText);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+
+  cursor: pointer;
+}
+
+.step2ContinueBtn:disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+}
+
+/* ===== MADROS CLEAN THEME (LANDING LIKE JECH) ===== */
+:root{
+  --bar: #2f2f2f;
+  --barText: #fff;
+  --bg: #F9F9F9;
+  --panel: #eeeeee;
+  --card: #ffffff;
+  --border: rgba(0,0,0,0.12);
+  --shadow: 0 8px 18px rgba(0,0,0,0.08);
+  --primary: #5FB3CE; /* madros světle modrá */
+  --primaryText: #0B1440;
+}
+
+/* top bar like JECH */
+.topBar{
+  height: 76px;                /* vyšší jako JECH */
+  background: #3a3a3a;         /* šedá místo modré */
+  color: #fff;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.topCenter{
+  text-align: center;
+  font-size: 22px;
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+.brand{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandLogo{
+  height: 32px;
+}
+
+/* step bar (same for landing + configurator) */
+.stepBar{
+  height: 56px;
+  background: transparent;      /* ✅ pozadí bude dělat tvar v ::before */
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 22px;
+
+  position: relative;           /* ✅ kvůli pseudo-elementu */
+  z-index: 2;
+}
+
+.stepBar .step{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  /* místo opacity: 0.65; */
+  opacity: 1;
+  color: rgba(255,255,255,0.65);
+
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stepBar .step .num{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.stepBar .step.active{
+  opacity: 1; /* může tu klidně zůstat, ale není potřeba */
+  color: rgba(255,255,255,1);
+
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #5FB3CE;
+  box-shadow: 1 4px 30px rgba(121, 186, 236, 1);
+}
+
+.stepBar .step.active .num{
+  background: rgba(255,255,255,0.35);
+}
+
+.landingLayout{
+  min-height: calc(100vh - 76px - 56px); /* může růst, stránka pak scrolluje */
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  background: var(--bg);
+
+  overflow: visible; /* DŮLEŽITÉ: nezakazuj scroll */
+}
+
+.productList{
+  padding: 24px;
+  padding-bottom: 110px;
+  box-sizing: border-box;
+
+  height: auto;            /* už ne 100% */
+  overflow: visible;       /* už žádný vnitřní scrollbar */
+  background: var(--bg);
+}
+
+.filterPanel h3{
+  margin: 0 0 12px 0;
+  font-size: 16px;
+}
+
+.filterGroup label{
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+
+.filterGroup select{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: white;
+}
+
+.filterPanel{
+  position: relative;   /* NE sticky */
+  height: auto;         /* NE 100% */
+  overflow: visible;    /* NE hidden */
+}
+
+.productList h2{
+  margin-top: 0;
+  font-size: 24px;
+}
+
+/* cards as products */
+.productCard{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  margin: 14px 0;
+  box-shadow: var(--shadow);
+}
+
+.productCard.special{
+  border: 2px dashed rgba(0,0,0,0.25);
+  box-shadow: none;
+  background: #fafafa;
+}
+
+.productTitle{
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.productDesc{
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.78;
+}
+
+/* buttons */
+.primaryBtn, .secondaryBtn{
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  font-weight: 800;
+}
+
+.primaryBtn{
+  background: var(--primary);
+  color: var(--primaryText);
+}
+
+.secondaryBtn{
+  background: #e7e7e7;
+  color: #111;
+}
+.primaryBtn:hover, .secondaryBtn:hover{
+  filter: brightness(0.95);
+}
+
+/* =========================================
+   LANDING – DESIGN JAKO NA MOCKUPU (vpravo karty pod sebou)
+   ========================================= */
+
+/* Béžové pozadí jako v mockupu */
+#viewLanding .landingLayout,
+#viewLanding .filterPanel,
+#viewLanding .productList{
+  background: #D8C8B4;
+}
+
+/* otevřený look – bez oddělovací čáry */
+#viewLanding .filterPanel{
+  border-right: none !important;
+}
+
+/* lepší typografie nadpisů */
+#viewLanding .pageTitle{
+  text-align: center;
+  margin: 8px 0 6px 0;
+  font-size: 34px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.78);
+  letter-spacing: -0.02em;
+}
+#viewLanding .pageSubtitle{
+  text-align: center;
+  margin: 0 0 18px 0;
+  font-size: 16px;
+  color: rgba(0,0,0,0.60);
+}
+
+/* modelCard – dlouhá karta přes šířku */
+#viewLanding .modelCard{
+  background: rgba(255,255,255,0.40);
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 18px;
+  overflow: hidden;
+  margin: 16px 0;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
+}
+
+/* hero pruh */
+#viewLanding .modelHero{
+  height: 150px; /* pruh jako v mockupu */
+  background: rgba(255,255,255,0.35);
+}
+#viewLanding .modelHeroImg{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.95) contrast(0.98);
+}
+
+/* tělo karty */
+#viewLanding .modelBody{
+  padding: 14px 16px 16px 16px;
+}
+
+/* název modelu */
+#viewLanding .modelName{
+  margin: 0 0 10px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.78);
+}
+
+/* hlavní tlačítko */
+#viewLanding .modelPrimaryBtn{
+  width: 100%;
+  max-width: 420px;
+  background: rgba(95,179,206,0.80);
+  color: #0B1440;
+  border: 1px solid rgba(11,20,64,0.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(95,179,206,0.18);
+}
+#viewLanding .modelPrimaryBtn:hover{
+  filter: brightness(0.97);
+}
+
+/* preset tlačítka s thumbnail */
+#viewLanding .presetRow{
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#viewLanding .presetBtn{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.55);
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease;
+}
+
+#viewLanding .presetBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.72);
+}
+
+#viewLanding .presetThumb{
+  width: 52px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.6);
+  display: block;
+}
+
+#viewLanding .presetLabel{
+  font-weight: 700;
+  font-size: 14px;
+  color: rgba(0,0,0,0.70);
+  white-space: nowrap;
+}
+
+/* filtr panel ať působí jemně (není povinné) */
+#viewLanding .filterPanel{
+  border-radius: 16px;
+  padding: 18px;
+
+  position: relative;   /* ✅ už NE sticky */
+  top: auto;            /* ✅ zruší top posun */
+  height: auto;         /* ✅ výšku bude řešit vnitřek */
+}
+
+#viewLanding .filterGroup select{
+  border: 1px solid rgba(0,0,0,0.16);
+  background: rgba(255,255,255,0.78);
+}
+
+/* =========================================================
+   LANDING – FINÁLNÍ LOOK PODLE OBRÁZKU (jen #viewLanding)
+   ========================================================= */
+
+/* TOP BAR – tmavší, "prémiový" gradient */
+#viewLanding .topBar{
+  background: linear-gradient(180deg, #3b3b3b 0%, #2f2f2f 100%);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+}
+
+/* jemnější text v top baru */
+#viewLanding .subtitle{
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+/* tlačítka vpravo (lupa, user) více jako v mockupu */
+#viewLanding .topBtn{
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+#viewLanding .stepBar{
+  /* ✅ podklad pod „výřezy“ = stejné béžové pozadí jako stránka */
+  background: transparent;
+}
+
+#viewLanding .stepBar::before{
+  background: transparent;
+}
+
+#stepBar .stepTrack > *, 
+#stepBarLanding .stepTrack > *{
+  position: relative;
+  z-index: 2;
+}
+
+/* Pozadí – jemný teplý gradient (vypadá víc jako render v mockupu) */
+#viewLanding .landingLayout,
+#viewLanding .filterPanel,
+#viewLanding .productList{
+  background: radial-gradient(1200px 700px at 30% 0%, #e2d4c3 0%, #d8c8b4 55%, #d4c3ae 100%);
+}
+
+/* FILTER PANEL – vystouplá karta */
+#viewLanding .filterPanel{
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+  backdrop-filter: blur(6px);
+
+  border-radius: 18px;
+  margin: 18px;
+
+  position: sticky;
+  top: 150px;          /* nech jak máš */
+
+  align-self: start;
+
+  min-height: calc(100vh - 150px - 150px);
+  padding-bottom: 18px;
+
+}
+
+#viewLanding .filterPanel .filterPanelInner{
+  max-height: calc(100vh - 150px - 36px); /* 150 top + 18 margin nahoře + 18 margin dole */
+  overflow: auto;                         /* když bude víc filtrů, scrolluje se UVNITŘ */
+}
+
+/* selecty "měkčí" */
+#viewLanding .filterGroup select{
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.85);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+#viewLanding .pageTitle{
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+#viewLanding .pageSubtitle{
+  font-weight: 500;
+}
+
+/* =========================================================
+   LANDING – HERO 1 FOTO + 2 "CHIPS" NÁHLEDY (jako na mockupu)
+   ========================================================= */
+
+#viewLanding .modelHero.heroWithChips{
+  position: relative;
+  height: 190px;           /* o trochu vyšší, ať hero působí luxusněji */
+  overflow: hidden;
+}
+
+/* jemné "vyblednutí" doprava – aby chips zapadly */
+#viewLanding .modelHero.heroWithChips::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(90deg,
+    rgba(226,212,195,0) 0%,
+    rgba(226,212,195,0) 55%,
+    rgba(226,212,195,0.55) 78%,
+    rgba(226,212,195,0.85) 100%
+  );
+  pointer-events:none;
+}
+
+/* chips vpravo */
+#viewLanding .heroChips{
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  display: grid;
+  gap: 10px;
+  z-index: 2;
+}
+
+#viewLanding .heroChip{
+  width: 100%;
+  height: 130px;
+  border-radius: 18px;
+  overflow: hidden;
+
+  background: rgba(255,255,255,0.58);
+  border: 1px solid rgba(255,255,255,0.40);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.10);
+
+  display: block;
+  padding: 0;
+}
+
+#viewLanding .heroChip img{
+  width: 100%;
+  height: 100%;
+  display: block;      /* odstraní “mezery” jako u inline img */
+  object-fit: cover;   /* vyplní celý rámeček */
+  object-position: center;
+  padding: 0;          /* ✅ klíč: žádný vnitřní okraj */
+  opacity: 1;
+}
+
+#viewLanding .heroChip span{
+  font-weight: 900;
+  color: rgba(0,0,0,0.55);
+  font-size: 18px;
+  text-align: center;
+  padding-right: 10px;
+}
+
+/* nadpis "Nejoblíbenější sestavy" */
+#viewLanding .popularTitle{
+  margin-top: 15px;
+  margin-left: 3px;
+  font-size: 20px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+  letter-spacing: -0.01em;
+}
+
+/* dolní tlačítka: ať jsou víc "kartičky" a obrázek větší */
+#viewLanding .presetRow{
+  margin-top: 12px;
+  gap: 12px;
+}
+
+#viewLanding .presetBtn{
+  border-radius: 18px;
+  background: rgba(255,255,255,0.55);
+  padding: 12px 14px;
+}
+
+#viewLanding .presetThumb{
+  width: 86px;     /* větší miniatura – ať je tvar hned jasný */
+  height: 54px;
+  border-radius: 14px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.65);
+}
+
+/* HERO – víc místa pro fotku */
+#viewLanding .modelHero.heroWithChips{
+  height: 300px;              /* zkus 240, případně 260 */
+}
+
+/* Kam má fotka mířit (focal point) */
+#viewLanding .modelHero.heroWithChips .modelHeroImg{
+  object-position: 50% 69%;   /* X = střed, Y = víc dolů */
+}
+
+/* =========================================================
+   LANDING – PRESET DLAŽDICE (velký obrázek nahoře, text dole)
+   ========================================================= */
+
+#viewLanding .presetRow{
+  display: grid;
+
+  /* dlaždice budou mít pevnou šířku (jako tvůj červený obdélník) */
+  grid-template-columns: repeat(auto-fit, 220px);
+
+  gap: 16px;
+  align-items: stretch;
+
+  /* když je místa víc, ať se neroztahují – zarovnáme je doleva */
+  justify-content: start;
+}
+
+/* na užší šířce se to samo zalomí */
+@media (max-width: 1100px){
+  #viewLanding .presetRow{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px){
+  #viewLanding .presetRow{ grid-template-columns: 1fr; }
+}
+
+/* DŮLEŽITÉ: stylujeme jen ty tlačítka, co mají presetTile */
+#viewLanding .presetBtn.presetTile{
+  display: grid;
+
+  /* dlaždice pořád stejně vysoká */
+  height: 140px;
+
+  /* obrázek / text */
+  grid-template-rows: 100px 40px;
+
+  padding: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  gap: 0;
+
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.10);
+  backdrop-filter: blur(6px);
+
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+#viewLanding .presetBtn.presetTile:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 22px 46px rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.62);
+}
+
+/* obrázek = celá horní část dlaždice */
+#viewLanding .presetBtn.presetTile .presetThumb{
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  object-fit: cover;          /* lifestyle fotky */
+  object-position: center;
+
+  border: 0;
+  border-radius: 0;
+  background: rgba(255,255,255,0.35);
+
+  filter: saturate(0.98) contrast(0.98);
+}
+
+/* text = spodní část */
+#viewLanding .presetBtn.presetTile .presetLabel{
+  display: flex;
+  align-items: center;      /* svisle na střed */
+  justify-content: center;  /* vodorovně na střed */
+
+  height: 100%;
+  padding: 0 10px;
+  font-size: 16px;
+  line-height: 1.1;
+
+  font-weight: 800;
+  color: rgba(0,0,0,0.62);
+
+  background: rgba(226,212,195,0.20);
+  border-top: 0;
+
+  /* opticky malinko výš (volitelné) */
+  transform: translateY(-1px);
+}
+
+/* CUSTOM dlaždice (otazník/duch) – ať se obrázek neřeže */
+#viewLanding .presetBtn.presetTile[data-preset="CUSTOM"] .presetThumb{
+  object-fit: cover;
+  padding: 0;
+  background: rgba(255,255,255,0.45);
+}
+
+/* =========================================================
+   LANDING – META ŘÁDEK (Tuhost / Výplň / Modulární)
+   ========================================================= */
+#viewLanding .modelMeta{
+  margin: 8px auto 12px auto;
+  padding: 12px 14px;
+
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 16px;
+
+  background: rgba(255,255,255,0.28);
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 16px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+}
+
+#viewLanding .modelMeta .metaItem{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+#viewLanding .modelMeta .metaIcon{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(255,255,255,0.35);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+
+  font-size: 18px;
+  opacity: 0.85;
+}
+
+#viewLanding .modelMeta .metaLabel{
+  font-weight: 800;
+  color: rgba(0,0,0,0.62);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+#viewLanding .modelMeta .metaValue{
+  font-weight: 700;
+  color: rgba(0,0,0,0.62);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+#viewLanding .modelMeta .metaStars{
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-1px);
+}
+
+#viewLanding .modelMeta .metaStars .star{
+  font-size: 16px;
+  color: rgba(0,0,0,0.20);
+  line-height: 1;
+}
+
+#viewLanding .modelMeta .metaStars .star.on{
+  color: rgba(160, 120, 60, 0.75); /* teplá “zlatá” do béžova */
+}
+
+#viewLanding .modelMeta .metaDivider{
+  width: 1px;
+  height: 34px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 2px;
+}
+
+/* když je málo místa, ať se to hezky zalomí */
+@media (max-width: 900px){
+  #viewLanding .modelMeta{
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+  #viewLanding .modelMeta .metaDivider{
+    display: none;
+  }
+}
+
+/* =========================
+   STEP BAR – středový „ostrůvek“ + obloučky
+   ========================= */
+
+/* Kontejner stepbar */
+.stepBar{
+  position: relative;
+  height: 56px;
+}
+
+/* tlačítka vpravo necháme vpravo */
+.stepBar .stepActions{
+  margin-left: auto;            /* ✅ zůstává vpravo */
+  padding-right: 14px;
+  position: relative;
+  z-index: 3;
+}
+
+/* =========================
+   STEP BAR – floating "okýnko" + sbalení
+   ========================= */
+
+#stepBar{
+  position: sticky;
+  top: 76px;
+  z-index: 900;
+  background: transparent;
+  height: 56px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#stepBarLanding{
+  position: fixed;
+  top: 76px;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: transparent;
+  height: 56px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* vpravo tlačítka musí jít klikat */
+#stepBar .stepActions, #stepBarLanding .stepActions{
+  pointer-events: auto;
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+}
+
+/* nový wrapper pro track + toggle */
+#stepBar .stepDock, #stepBarLanding .stepDock{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 500;
+
+  pointer-events: auto; /* kliky jen na ostrůvek */
+
+  transition: transform .28s ease;
+}
+
+/* samotný track – uvnitř jsou kroky */
+#stepBar .stepTrack, #stepBarLanding .stepTrack{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+
+  padding: 10px 22px;
+  background: transparent; /* pozadí dělá ::before */
+  z-index: 1;
+}
+
+/* tvar (náběhy z topbaru + spodní "břicho") */
+#stepBar .stepTrack::before, 
+#stepBarLanding .stepTrack::before{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  width: min(920px, calc(100vw - 120px));
+  height: 74px;
+
+  background: #2f2f2f;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.20);
+
+  z-index: 0;
+  pointer-events: none;
+
+  -webkit-mask-image: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 160' preserveAspectRatio='none'>\
+    <path fill='white' d='\
+      M0 0 \
+      H1000 \
+      C980 0 960 160 880 160 \
+      L120 160 \
+      C40 160 20 0 0 0 \
+      Z'/>\
+  </svg>");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+
+  mask-image: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 160' preserveAspectRatio='none'>\
+    <path fill='white' d='\
+      M0 0 \
+      H1000 \
+      C980 0 960 160 880 160 \
+      L120 160 \
+      C40 160 20 0 0 0 \
+      Z'/>\
+  </svg>");
+  mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+}
+
+/* obsah kroků musí být nad tím tvarem */
+#stepBar .stepTrack > *,
+#stepBarLanding .stepTrack > *{
+  position: relative;
+  z-index: 2;
+}
+
+/* Hezčí toggle "tab" */
+#stepBar .stepToggle, 
+#stepBarLanding .stepToggle{
+  position: fixed;
+  left: 50%;
+  top: 63px;
+  z-index: 1205;
+
+  transform: translateX(-50%) translateY(67px) rotate(0deg);
+
+  width: 56px;
+  height: 30px;
+  border-radius: 999px;
+
+  /* glassy look */
+  background: rgba(47,47,47,0.85);
+  border: 1px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+
+  display: grid;
+  place-items: center;
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  transition: transform .28s ease, box-shadow .28s ease;
+  will-change: transform;
+}
+
+#stepBar .stepToggle:hover,
+#stepBarLanding .stepToggle:hover{
+  box-shadow:
+    0 16px 34px rgba(0,0,0,0.26),
+    inset 0 1px 0 rgba(255,255,255,0.14);
+}
+
+#stepBar .stepToggle:active,
+#stepBarLanding .stepToggle:active{
+  transform: translateX(-50%) translateY(67px) scale(0.96);
+}
+
+/* Šipka (chevron) kreslená CSS */
+#stepBar .stepToggle .chev,
+#stepBarLanding .stepToggle .chev{
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(255,255,255,0.92);
+  border-bottom: 2px solid rgba(255,255,255,0.92);
+  transform: rotate(-135deg); /* v otevřeném stavu míří nahoru */
+  margin-top: 2px;
+  transition: transform .28s ease;
+}
+
+#stepBar.is-collapsed .stepDock, #stepBarLanding.is-collapsed .stepDock{
+  transform: translate(-50%, -50%) translateY(-92px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#stepBar .stepDock, #stepBarLanding .stepDock{
+  opacity: 1;
+  transition: transform .28s ease, opacity .18s ease;
+}
+
+/* ZAVŘENO: šipka vyjede nahoru do topbaru (PLYNULE) */
+#stepBar.is-collapsed .stepToggle, 
+#stepBarLanding.is-collapsed .stepToggle{
+  transform: translateX(-50%) translateY(0px) rotate(180deg);
+}
+
+/* ✅ defaultně summary schovat */
+#summaryBox{
+  display: none;
+}
+
+/* ✅ zobrazit, když je aktivní konfigurátor (řídíš to přes html[data-view]) */
+html[data-view="configurator"] #summaryBox{
+  display: block;
+  z-index: 1700; /* aby bylo nad bottomBar (ten má 1600) */
+}
+
+/* společný layout stepbaru pro landing i konfigurátor */
+.stepBar{
+  height: 56px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+/* aby horní lišty zůstaly vidět při scrollu stránky */
+.topBar{
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+#viewLanding .landingLayout{
+  padding-top: 56px;  /* výška stepbaru */
+}
+
+/* ===== Hezčí scrollbar (globálně pro celou stránku) ===== */
+
+/* Firefox */
+body{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.35) rgba(0,0,0,0.10);
+}
+
+/* Chrome/Edge/Safari */
+body::-webkit-scrollbar{
+  width: 12px;
+}
+body::-webkit-scrollbar-track{
+  background: rgba(0,0,0,0.10);
+  border-radius: 999px;
+}
+body::-webkit-scrollbar-thumb{
+  background: rgba(0,0,0,0.35);
+  border-radius: 999px;
+  border: 3px solid transparent;   /* udělá “mezery” kolem thumb */
+  background-clip: content-box;
+}
+body::-webkit-scrollbar-thumb:hover{
+  background: rgba(0,0,0,0.50);
+  background-clip: content-box;
+}
+
+#viewLanding .landingLayout{
+  transform: none !important;
+}
+
+/* CONFIG: stepbar jako průhledný overlay nad obsahem */
+#viewConfigurator #stepBar{
+  position: fixed;
+  top: 76px;          /* pod topBar (topBar má 76px) */
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: transparent;
+
+  display: block;     /* už ne flex */
+  z-index: 999;
+
+  pointer-events: none; /* ✅ okolo ostrůvku neblokuje scroll/klik */
+}
+
+/* =========================
+   FIX: sjednocené pozadí landing (bez švů)
+   ========================= */
+
+:root{
+  --landing-bg: radial-gradient(1200px 700px at 30% 0%,
+    #e2d4c3 0%,
+    #d8c8b4 55%,
+    #d4c3ae 100%
+  );
+}
+
+/* 1) Jedno pozadí pro celý landing */
+#viewLanding{
+  background: var(--landing-bg);
+  min-height: 100vh;
+}
+
+/* 2) Vnitřní kontejnery už pozadí nenastavují */
+#viewLanding .landingLayout,
+#viewLanding .productList{
+  background: transparent !important;
+}
+
+/* Filter panel je “karta” – necháme mu jeho card look,
+   ale už nebude dělat švy tím, že by měl jiné “page background”. */
+#viewLanding .filterPanel{
+  /* nech si tvoje card styly (rgba + blur + shadow),
+     jen zruš případné page background přebití */
+  background-color: rgba(255,255,255,0.55);
+  background-image: none !important;
+}
+
+#viewLanding .filterBannerPanel{
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent !important;
+  border: 0;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.14);
+  backdrop-filter: none;
+}
+
+#viewLanding .filterBannerImg{
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+}
+
+@media (max-width: 900px){
+  #viewLanding .landingLayout{
+    grid-template-columns: 1fr;
+  }
+
+  #viewLanding .filterBannerPanel{
+    position: relative;
+    top: auto;
+    width: min(320px, calc(100% - 28px));
+    margin: 14px auto 0;
+  }
+
+  #viewLanding .filterBannerImg{
+    max-height: 70vh;
+    object-fit: contain;
+    background: #f3e2ca;
+  }
+}
+
+/* aby pod landingem nikdy "neprosvitla" bílá */
+body{
+  background: var(--landing-bg);
+}
+
+/* ať se landing roztáhne podle obsahu (ne jen min-height) */
+#viewLanding{
+  min-height: auto;          /* přepíše min-height:100vh */
+  padding-bottom: 60px;      /* malý bezpečný prostor dole */
+}
+
+/* Topbar: klikací jen logo + nadpis (jako tlačítka bez vzhledu) */
+.brandBtn,
+.topTitleBtn{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* logo button ať se chová stejně jako původní .brand */
+.brandBtn{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* nadpis: klikací jen text (ne celý topbar) */
+.topTitleBtn{
+  width: fit-content;     /* nebo max-content */
+  justify-self: center;   /* vycentruje ho v grid sloupci */
+  text-align: center;
+  padding: 6px 10px;      /* trochu větší click area, ale jen kolem textu */
+  border-radius: 10px;
+  .brandBtn{ justify-self: start; }
+  .topRight{ justify-self: end; }
+}
+
+/* hezký focus pro klávesnici */
+.brandBtn:focus-visible,
+.topTitleBtn:focus-visible{
+  outline: 2px solid rgba(255,255,255,0.45);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.stepBar .step.locked{
+  opacity: 1; /* důležité: ať to neodopacití i hint */
+  color: rgba(255,255,255,0.45);
+  cursor: not-allowed;
+}
+
+/* nejvyšší dosažený krok (jemné zvýraznění) */
+.stepBar .step.highest{
+  outline: 2px solid rgba(0,0,0,0);
+}
+
+/* hláška pod konkrétním stepem */
+.stepBar .step{
+  position: relative;
+}
+
+.stepBar .step .stepHint{
+  position: absolute;
+
+  /* posun tak, aby byl POD stepem víc dole a nelezl do šipky */
+  top: calc(100% + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+
+  /* širší bublina = víc slov na řádku */
+  width: 340px;
+  max-width: min(440px, calc(100vw - 40px));
+  white-space: normal;
+  text-align: center;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  /* 100% neprůhledné pozadí */
+  background: #151515;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  /* MUSÍ být nad stepToggle (ten má 1205) */
+  z-index: 5000;
+
+  /* aby to “nevypadalo průhledně” */
+  box-shadow: 0 18px 46px rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  pointer-events: none;
+}
+
+/* prázdná hláška nesmí zabírat místo (aby nezůstávala bublina) */
+.stepBar .step .stepHint:empty{
+  display: none !important;
+}
+
+#stepBar .stepDock, #stepBarLanding .stepDock{
+  overflow: visible !important;
+}
+
+#stepBar .stepTrack, #stepBarLanding .stepTrack{
+  overflow: visible !important;
+}
+
+/* pulz upozornění */
+.stepWarn{
+  animation: stepWarnPulse 0.7s ease-in-out;
+  transform-origin: center;
+}
+@keyframes stepWarnPulse{
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.08); }
+  70%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* krok musí být "kotva" pro pseudo-element */
+.stepBar .step{
+  position: relative;
+}
+
+/* badge nad kroky */
+.stepBar .step{ position: relative; }
+
+/* jen pro zamčené */
+.stepBar .step.locked::after{
+  content: "🔒";              /* můžeš nechat emoji, ale dáme mu badge */
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+
+  border-radius: 999px;
+  background: rgba(0,0,0,0.75);  /* barva badge */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+
+  font-size: 12px;
+  line-height: 1;
+
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* =========================
+   STEP HINT PORTAL (VARIANTA A)
+   ========================= */
+
+#stepHintPortal{
+  position: fixed;
+  inset: 0;
+  z-index: 2000;          /* musí být víc než .stepToggle (1205) */
+  pointer-events: none;   /* portal nikdy neblokuje kliky */
+}
+
+#stepHintPortal .stepHint{
+  position: absolute;
+
+  /* vzhled bubliny */
+  background: #151515;    /* 100% neprůhledné */
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  width: 340px;
+  max-width: min(440px, calc(100vw - 40px));
+  white-space: normal;
+  text-align: center;
+
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  box-shadow: 0 18px 46px rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  pointer-events: none;   /* bublina nebere hover/klik */
+}
+
+/* ===== LOADING OVERLAY ===== */
+#loadingOverlay.loadingOverlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2600;                 /* nad modulePickerem a stepbarem */
+  background: rgba(0,0,0,0.35);  /* ztmavení */
+  backdrop-filter: blur(2px);
+}
+
+#loadingOverlay.loadingOverlay.is-visible{
+  display: flex;
+}
+
+#loadingOverlay .loadingCard{
+  background: rgba(20,20,20,0.95); /* neprůhledná karta */
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+}
+
+#loadingOverlay .loadingText{
+  font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  white-space: nowrap;
+  opacity: .95;
+}
+
+#loadingOverlay .spinner{
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,0.25);
+  border-top-color: rgba(255,255,255,0.95);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin{
+  to { transform: rotate(360deg); }
+}
+
+/* ============ Bottom menu (krok 3) ============ */
+.bottomBar{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  z-index: 1600;
+  pointer-events: none;
+}
+
+/* ✅ default (rozbaleno) = šipka dolů => otočíme celé tlačítko */
+.bottomBar{
+  --bt-rot: 180deg;
+}
+
+/* ✅ collapsed (dole) = šipka nahoru => bez otočení */
+.bottomBar.is-collapsed{
+  --bt-rot: 0deg;
+}
+
+.bottomBar .bottomDock{
+  width: min(920px, calc(100% - 24px));
+  margin: 0 auto;
+  pointer-events: auto;
+}
+
+.bottomBar .bottomToggle{
+  display: grid;
+  place-items: center;
+  padding: 0;
+
+  margin: 0 auto;
+  width: 46px;
+  height: 28px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(40,40,40,0.95);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+
+  /* ✅ jeden stabilní transform pro všechny stavy */
+  transform: translateY(var(--dock-dy, 0px)) rotate(var(--bt-rot, 0deg));
+
+  transition: transform var(--equip-anim) var(--equip-ease);
+  will-change: transform;
+}
+
+.bottomBar .bottomPanel{
+  margin-top: 10px;
+  border-radius: 18px;
+  background: rgba(40,40,40,0.95);
+  color: #fff;
+  padding: 14px 14px 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+
+  /* panel má pořád výšku */
+  max-height: 420px;
+  overflow: hidden;
+
+  opacity: 1;
+  transform: translateY(0);
+
+  /* ✅ stejné jako ANIM_TIME v JS */
+  transition: transform var(--equip-anim) var(--equip-ease),
+              opacity   var(--equip-anim) var(--equip-ease);
+  will-change: transform, opacity;
+}
+
+/* ✅ zavírání začne hned (bez delay) */
+#bottomBar.is-hiding .bottomPanel{
+  opacity: 0;
+  transform: translateY(calc(100% + 12px));
+  pointer-events: none;
+}
+
+/* Tabs mizí/ujíždí stejně jako panel */
+#bottomBar.is-hiding .bottomTabs{
+  opacity: 0;
+  transform: translateY(40px);
+  pointer-events: none;
+}
+
+.bottomBar.is-collapsed .bottomPanel{
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+
+  opacity: 0;
+  transform: translateY(40px);
+
+  overflow: hidden !important;
+  pointer-events: none;
+}
+
+.bottomBar.is-collapsed .bottomTabs{
+  max-height: 0 !important;
+  margin: 0 !important;
+
+  opacity: 0;
+  transform: translateY(40px);
+
+  overflow: hidden !important;
+  pointer-events: none;
+}
+
+.bottomBar .bottomToggle .chev{
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(255,255,255,0.92);
+  border-bottom: 2px solid rgba(255,255,255,0.92);
+
+  /* ✅ stejná šipka jako nahoře = stabilní vzhled */
+  transform: rotate(-135deg);
+  margin-top: 4px;
+
+  transition: transform .28s ease;
+}
+
+.bottomTitle{
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.bottomTabs{
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform var(--equip-anim) var(--equip-ease),
+              opacity   var(--equip-anim) var(--equip-ease);
+  will-change: transform, opacity;
+}
+
+.bottomTab{
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+.bottomTab.active{
+  background: rgba(120, 210, 255, 0.35);
+}
+
+.bottomContent .row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.bottomContent select{
+  width: 180px;
+  max-width: 55vw;
+  border-radius: 10px;
+  padding: 6px 8px;
+  border: 0;
+}
+
+/* === Equipment (krok 3) – větší panel + 4 dlaždice === */
+
+.bottomPanel{
+  /* aby to působilo větší a širší */
+  max-width: 1080px;
+}
+
+#bottomBar .bottomDock{
+  /* ať panel zabere víc šířky */
+  width: min(1120px, calc(100% - 40px));
+}
+
+.equipWrap{
+  display: grid;
+  gap: 14px;
+}
+
+.legGrid4{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 sloupce = 2×2 */
+  gap: 12px;
+}
+
+@media (max-width: 900px){
+  .legGrid4{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.colorGrid{
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px){
+  .colorGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* společný vzhled dlaždic (nohy i barvy) */
+.tileCard{
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+  color: #fff;
+
+  display: grid;
+  grid-template-rows: 120px auto;
+  gap: 8px;
+  align-items: center;
+  justify-items: center;
+
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+.tileCard:hover{
+  transform: translateY(-1px);
+  background: rgba(0,0,0,0.26);
+  border-color: rgba(255,255,255,0.16);
+}
+
+.tileCard.is-active{
+  border-color: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+.tileImg{
+  width: 100%;
+  height: 92px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.tileTitle{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  font-size: 14px;
+  opacity: 0.95;
+}
+.showAllBtn{
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.showAllBtn:hover{
+  background: rgba(255,255,255,0.14);
+}
+
+/* když se rozbalí "všechny barvy", uděláme grid hustší */
+.colorGrid.is-expanded{
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+@media (max-width: 900px){
+  .colorGrid.is-expanded{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* úplně schované, ale pořád existují pro JS */
+.visuallyHidden{
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* kartička barvy – ať obrázek dominuje */
+#legsColorGrid .tileCard{
+  padding: 10px;
+}
+
+/* obrázek textury: přes celou šířku + větší výška */
+#legsColorGrid .tileImg{
+  width: 100%;
+  height: 120px;          /* zkus 80–110 podle chuti */
+  object-fit: cover;     /* důležité: vyplní plochu, ukáže strukturu */
+  border-radius: 12px;
+  display: block;
+}
+
+/* název barvy trochu menší, aby to nežralo místo */
+#legsColorGrid .tileTitle{
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* bottom panel ať je nižší */
+#bottomBar .bottomPanel{
+  padding: 12px 16px;
+}
+
+/* zmenšíme mezery uvnitř ať to neroste do výšky */
+#bottomBar .equipWrap{
+  gap: 8px;
+}
+
+/* menší popisky */
+#bottomBar .equipLabel{
+  margin-bottom: 8px;
+}
+
+/* barvy: ať to radši roste do šířky než do výšky */
+#legsColorGrid{
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* když je menší obrazovka, tak 3–4 sloupce */
+@media (max-width: 1100px){
+  #legsColorGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 800px){
+  #legsColorGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* =========================
+   LEGS UI (krok 3) – layout + karty + scroll
+   ========================= */
+
+/* 1) selecty úplně schovej (zůstávají jen pro JS) */
+.visuallyHidden{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+
+/* 2) Panel zmenšit na výšku (ať nezakrývá scénu) */
+.bottomBar .bottomDock{
+  width: min(1120px, calc(100% - 24px)); /* o něco širší */
+}
+
+.bottomPanel{
+  max-height: min(250px, 28vh);
+  overflow: hidden;              /* ✅ scroll NE tady */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 3) Layout POD SEBE (typy nahoře, barvy pod nimi) */
+#legsEquipWrap{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* když dáš "všechny barvy" -> jen barvy */
+#legsEquipWrap.is-colors-only #legsTypeBlock{
+  display: none;
+}
+
+/* TYPY NOHOU – 1 řádek, horizontální scroll */
+#legsCardRow{
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 4px 10px;
+}
+
+/* každá karta typu má fixní šířku */
+#legsCardRow .tileCard{
+  flex: 0 0 160px; /* klidně zkus 180px */
+}
+
+/* BARVY – pod typy, taky 1 řádek, horizontální scroll */
+#legsColorGrid{
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px 4px 6px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* každá karta barvy má fixní šířku */
+#legsColorGrid .tileCard{
+  flex: 0 0 240px;  /* klidně zkus 220px */
+}
+
+/* tlačítko "Zobrazit všechny barvy" ať se nemačká */
+#legsEquipWrap .showAllBtn{
+  flex: 0 0 auto;
+  width: fit-content;
+}
+
+.colorGrid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 sloupce = 2 řádky při 6 barvách */
+  gap: 12px;
+  overflow: auto;
+  max-height: 210px; /* trochu víc místa na 2 řádky */
+  padding-right: 6px;
+}
+
+.colorGrid.is-expanded{
+  grid-template-columns: repeat(6, minmax(0, 1fr)); /* větší kartičky, hezčí */
+  max-height: 240px; /* víc místa, ať se líp scrolluje */
+}
+
+/* 6) Dlaždice (nohy i barvy) */
+.tileCard{
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+  color: #fff;
+
+  display: grid;
+  grid-template-rows: 120px auto;
+  gap: 8px;
+  align-items: center;
+  justify-items: center;
+
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.tileCard:hover{
+  transform: translateY(-1px);
+  background: rgba(0,0,0,0.26);
+  border-color: rgba(255,255,255,0.16);
+}
+.tileCard.is-active{
+  border-color: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+/* 7) Obrázek v kartě – u barev chceme strukturu = cover přes celou plochu */
+#legsColorGrid .tileImg{
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;   /* DŮLEŽITÉ pro strukturu */
+  display: block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* u nohou může být contain (aby byla celá noha vidět) */
+#legsCardRow .tileImg{
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: contain;
+  display: block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.tileTitle{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 8) tlačítko "všechny barvy" */
+.showAllBtn{
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.showAllBtn:hover{ background: rgba(255,255,255,0.14); }
+
+/* 9) responsive – na menších monitorech to spadne pod sebe */
+@media (max-width: 1100px){
+  #legsEquipWrap{ grid-template-columns: 1fr; }
+  .colorGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: 240px; }
+  .colorGrid.is-expanded{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .bottomPanel{ max-height: 46vh; }
+}
+
+/* =========================
+   STEP 3 – menší nohy (kartičky)
+   ========================= */
+
+/* menší horní část dlaždice (obrázek) */
+#legsCardRow .tileCard{
+  grid-template-rows: 64px auto; /* bylo 120px -> cca půl */
+}
+
+/* menší obrázek nohy */
+#legsCardRow .tileImg{
+  height: 64px; /* bylo 120px -> cca půl */
+}
+
+/* menší název (N7/N9/...) ať taky nežere místo */
+#legsCardRow .tileTitle{
+  font-size: 12px;
+}
+
+/* =========================
+   STEP 3 – KOMPAKTNÍ EQUIP MENU (BottomBar)
+   - menší panel (míň místa ve scéně)
+   - záložky připnuté NAD panelem, průhledné + výrazné
+   ========================= */
+
+:root{
+  --equip-accent: #3aa6ff;          /* hlavní modrá */
+  --equip-accent-soft: rgba(58,166,255,.22);
+  --equip-glass: rgba(20,20,20,.22); /* skoro transparentní (sklo) */
+  --equip-border: rgba(255,255,255,.18);
+  --equip-panel: rgba(28,28,28,.92); /* panel necháme čitelný */
+}
+
+/* 2) panel nižší + scroll (ať nezakrývá scénu) */
+#bottomBar .bottomPanel{
+  position: relative;              /* nutné pro absolutní záložky */
+  margin-top: 8px;
+  padding: 12px 12px 10px;
+  border-radius: 16px;
+  background: var(--equip-panel);
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.10);
+
+  height: min(210px, 24vh);   /* pevná výška pro všechny taby */
+  overflow: hidden;
+}
+
+/* bottom tabs = napojené na horní hranu bottom menu */
+#bottomBar .bottomDock{
+  position: relative; /* ✅ kvůli absolutnímu ukotvení záložek */
+}
+
+#bottomBar .bottomTabs{
+  position: absolute;
+
+  /* ✅ ukotvení přímo NAD bottomPanelem */
+  bottom: calc(100% - 1px - 40px);
+  left: 10px;
+
+  display: flex;
+  gap: 10px;
+
+  z-index: 10;
+}
+
+/* ====== TABS – výrazné, jasně klikatelné ====== */
+#bottomBar .bottomTab{
+  border: 1px solid rgba(255,255,255,0.22);
+
+  /* méně průhledné, víc kontrastní */
+  background: rgba(20,20,20,0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  color: rgba(255,255,255,0.92);
+  font-weight: 900;
+  letter-spacing: .2px;
+
+  /* větší klikací plocha */
+  padding: 10px 16px;
+  min-height: 40px;
+
+  border-radius: 999px;
+  cursor: pointer;
+
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+#bottomBar .bottomTab:hover{
+  transform: translateY(-1px);
+  background: rgba(58,166,255,0.18);
+  border-color: rgba(58,166,255,0.55);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.26),
+    0 0 0 2px rgba(58,166,255,0.14);
+}
+
+/* aktivní = plná “primary” */
+#bottomBar .bottomTab.active{
+  background: rgba(58,166,255,0.92);
+  border-color: rgba(255,255,255,0.28);
+  color: #0b1440; /* tmavý text, aby to působilo jako "button primary" */
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.32),
+    0 0 0 2px rgba(58,166,255,0.30);
+}
+
+/* kliknutí */
+#bottomBar .bottomTab:active{
+  transform: translateY(0px) scale(0.98);
+}
+
+/* =========================
+   ANIMACE – záložky spolu s bottom menu
+   ========================= */
+#bottomBar .bottomTabs{
+  transition: opacity 260ms ease, transform 260ms ease;
+  transform: translateY(0);
+  opacity: 1;
+  will-change: transform, opacity;
+}
+
+/* Tabs musí mizet hned při is-hiding (ne čekat na is-collapsed) */
+#bottomBar.is-hiding .bottomTabs,
+#bottomBar.is-collapsed .bottomTabs{
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 700ms cubic-bezier(.22,1,.36,1),
+              transform 700ms cubic-bezier(.22,1,.36,1);
+}
+
+/* FIX: bottomContent ať bere zbytek výšky panelu, ne pevný max-height */
+#bottomBar .bottomContent{
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;          /* KLÍČOVÉ pro správné overflow ve flexu */
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: none;       /* zruší ten limit, co ti vyrábí scrollbar */
+  padding-right: 10px;
+}
+
+/* 6) praktické zmenšení vnitřku (karty a mezery) */
+#bottomBar .equipWrap{ gap: 10px; }
+#bottomBar .equipLabel{ margin-bottom: 6px; font-weight: 800; opacity: .9; }
+
+#bottomBar .tileCard{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 6px;
+  border-radius: 14px;
+  transition: border-color .15s ease, transform .12s ease;
+}
+
+#bottomBar .tileCard:hover{
+  transform: translateY(-1px);
+  border-color: rgba(58,166,255,.45);
+}
+
+#bottomBar .tileCard.active,
+#bottomBar .tileCard.is-active{
+  border-color: #3aa6ff;
+  box-shadow: 0 0 0 1px rgba(58,166,255,.6);
+}
+
+/* =========================
+   BARVY – malé kruhové vzorníky
+   ========================= */
+
+#bottomBar .colorWrap{
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+#bottomBar .colorSwatch{
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease;
+}
+
+#bottomBar .colorSwatch:hover{
+  transform: scale(1.1);
+}
+
+#bottomBar .colorSwatch.active{
+  border-color: #3aa6ff;
+  box-shadow: 0 0 0 2px rgba(58,166,255,.35);
+}
+
+#bottomBar .tileImg{
+  height: 56px;                   /* menší náhled */
+  border-radius: 10px;
+}
+
+#bottomBar .tileTitle{
+  font-size: 12px;
+}
+
+/* 7) Toggle tlačítko trošku subtilnější (aby nezabíralo) */
+#bottomBar .bottomToggle{
+  width: 42px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(20,20,20,.88);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+/* 8) mobil: ještě užší a záložky klidně menší */
+@media (max-width: 520px){
+  #bottomBar .bottomDock{ width: calc(100% - 18px); }
+  #bottomBar .bottomTab{ padding: 8px 10px; font-size: 13px; }
+  #bottomBar .bottomTabs{ top: -42px; gap: 8px; }
+}
+
+/* =========================
+   STEP 3 – WIDE EQUIP MENU (full width)
+   ========================= */
+
+:root{
+  /* používá JS pro posun summaryBox */
+  --equip-raise: 0px;
+}
+
+#bottomBar.bottomBar{
+  left: 0;
+  right: 0;
+  bottom: 0;                 /* úplně dole */
+  padding: 0 14px 14px;      /* bezpečný okraj od kraje + dole */
+  box-sizing: border-box;
+}
+
+/* BottomBar se nikdy nehýbe, jen se schová */
+#bottomBar.is-hidden{
+  display: none !important;
+}
+
+/* FULL WIDTH dock */
+#bottomBar .bottomDock{
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+/* panel může být široký přes celou obrazovku */
+#bottomBar .bottomPanel{
+  max-width: none;
+  border-radius: 18px;
+}
+
+/* =========================
+   CLEAN UI – odstranit zbytečné popisky
+   ========================= */
+
+/* skryj texty jako "Typ nohou", "Barva" */
+#bottomBar .equipLabel{
+  display: none !important;
+}
+
+/* =========================
+   STEP 3 – Layout uvnitř panelu:
+   1) Typy nahoře v 1 řádku (horizontální scroll)
+   2) Barvy pod nimi v 1 řádku
+   + pryč popisky "Typ ..." a "Barva"
+   ========================= */
+
+/* 1) pryč popisky */
+#bottomBar .equipLabel{
+  display: none !important;
+}
+
+/* 2) trochu utáhnout svislé mezery v obsahu */
+#bottomBar .equipGroup{
+  margin: 0;
+  padding: 0;
+}
+
+/* 3) TYPY = jeden horizontální řádek, scroll */
+#bottomBar .tileGrid{
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 4px 10px;
+  scroll-snap-type: x mandatory;
+}
+
+/* pěkný “scroll feeling” */
+#bottomBar .tileGrid::-webkit-scrollbar{ height: 8px; }
+#bottomBar .tileGrid::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.14);
+  border-radius: 999px;
+}
+#bottomBar .tileGrid::-webkit-scrollbar-track{
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+}
+
+/* každá karta typů má fixní šířku, ať je to řádek */
+#bottomBar .tileCard{
+  flex: 0 0 190px;              /* šířka jedné karty */
+  scroll-snap-align: start;
+  border-radius: 14px;
+}
+
+/* 4) BARVY = pod tím, řádek vzorníků */
+#bottomBar .swatchRow{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  overflow-x: auto;
+  padding: 10px 4px 6px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* kruhové swatche */
+#bottomBar .swatch{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.22);
+  flex: 0 0 auto;
+  cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+#bottomBar .swatch:hover{
+  transform: scale(1.08);
+}
+
+/* aktivní barva */
+#bottomBar .swatch.active{
+  border-color: rgba(58,166,255,.95);
+  box-shadow: 0 0 0 2px rgba(58,166,255,.25);
+}
+
+/* =========================
+   LEGS UI (krok 3) – TOP = typy, BOTTOM = barvy (bez scrollbaru)
+   ========================= */
+
+/* selecty schované (zůstávají pro JS) */
+.visuallyHidden{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+
+/* zruš popisky "Typ nohou" + "Barva" (pokud jsou to .equipLabel) */
+#legsTypeBlock .equipLabel,
+#legsColorBlock .equipLabel{
+  display: none !important;
+}
+
+/* panel: nechceme scroll uvnitř panelu */
+.bottomPanel{
+  max-height: min(230px, 26vh);
+  overflow: hidden;              /* ✅ žádný scrollbar */
+  display: flex;
+  flex-direction: column;
+}
+
+/* layout: 2 řádky pod sebou (typy nahoře, barvy dole) */
+#legsEquipWrap{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* =========================
+   DLAŽDICE – společný základ
+   ========================= */
+.tileCard{
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  border-radius: 14px;
+  padding: 8px;
+  cursor: pointer;
+  color: #fff;
+
+  display: grid;
+  gap: 6px;
+  align-items: center;
+  justify-items: center;
+
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+.tileCard:hover{
+  transform: translateY(-1px);
+  background: rgba(0,0,0,0.26);
+  border-color: rgba(255,255,255,0.16);
+}
+
+.tileCard.is-active{
+  border-color: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+.tileTitle{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  font-size: 12px;
+  text-align: center;
+  opacity: 0.95;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   1) TYPOVÉ NOHY – 1 řádek (4 kusy)
+   ========================= */
+#legsCardRow{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* nohy – menší obrázek, ať to žere méně výšky */
+#legsCardRow .tileCard{
+  grid-template-rows: 52px auto;
+}
+
+#legsCardRow .tileImg{
+  width: 100%;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: contain;
+  display: block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* =========================
+   2) BARVY – pod nohama (úzké swatche)
+   ========================= */
+#legsColorGrid{
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+/* barvy – výrazně nižší karta + "proužek" textury */
+#legsColorGrid .tileCard{
+  grid-template-rows: 36px auto;
+  padding: 7px;
+}
+
+#legsColorGrid .tileImg{
+  width: 100%;
+  height: 36px;          /* ✅ úzké = vejde se všechno */
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* tlačítko – ať nezabírá extra řádek */
+.showAllBtn{
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  align-self: start;
+}
+.showAllBtn:hover{
+  background: rgba(255,255,255,0.14);
+}
+
+/* responsivita – když není místo, zmenšíme sloupce */
+@media (max-width: 1100px){
+  #legsColorGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 800px){
+  #legsCardRow{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #legsColorGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* =========================================================
+   OVERRIDE: Step 3 (Nohy) – tlačítko "Zobrazit všechny barvy"
+   vedle barev + bez pravého scrollbaru (když se vše vejde)
+   ========================================================= */
+
+/* Barvy blok = 2 sloupce: (barvy) + (tlačítko) */
+#bottomBar #legsColorBlock{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  align-items: end;
+}
+
+/* Grid barev jde do levého sloupce */
+#bottomBar #legsColorGrid{
+  grid-column: 1;
+  margin: 0;
+}
+
+/* Barvy trochu “užší”, ať se vedle vejde tlačítko */
+#bottomBar #legsColorGrid{
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+/* Když máš menší šířku okna, tak ještě méně sloupců */
+@media (max-width: 1100px){
+  #bottomBar #legsColorGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 800px){
+  #bottomBar #legsColorGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+
+/* =========================================================
+   STEP 3 (Vybavení / Nohy) – JEDINÝ finální styl
+   - normál: barvy + tlačítko vedle sebe
+   - všechny barvy: vlevo scroll (7 sloupců), vpravo fix pruh s tlačítkem uprostřed
+   ========================================================= */
+
+#extrasModuleList{
+  padding-bottom: 12px;
+}
+
+/* ---------- NORMAL MODE (ne "všechny barvy") ---------- */
+#bottomBar #legsColorBlock{
+  display: grid !important;
+  grid-template-columns: 1fr 240px;  /* vpravo pruh pro tlačítko */
+  column-gap: 14px !important;
+  align-items: center !important;
+}
+
+#bottomBar #legsColorGrid{
+  grid-column: 1;
+  margin: 0 !important;
+
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+
+#bottomBar #btnLegsShowAll{
+  grid-column: 2;
+
+  justify-self: center !important;
+  align-self: center !important;
+  margin: 0 !important;
+
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  /* výraznější vzhled */
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-weight: 900;
+  letter-spacing: .2px;
+
+  background: rgba(58,166,255,.22);
+  border: 1px solid rgba(58,166,255,.55);
+  color: #eaf6ff;
+
+  box-shadow: 0 14px 34px rgba(0,0,0,.28);
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+
+#bottomBar #btnLegsShowAll:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 18px 40px rgba(0,0,0,.34);
+}
+#bottomBar #btnLegsShowAll:active{
+  transform: translateY(0px) scale(.98);
+}
+
+/* ---------- ALL COLORS MODE (is-expanded) ---------- */
+#bottomBar #legsColorBlock.is-expanded{
+  display: grid !important;
+  grid-template-columns: 1fr minmax(260px, 20%) !important; /* pravý fix pruh */
+  column-gap: 14px !important;
+
+  height: 220px !important;       /* výška panelu v ALL módu */
+  min-height: 220px !important;
+
+  align-items: stretch !important; /* důležité pro vnitřní scroll */
+}
+
+/* vlevo scrollující grid */
+#bottomBar #legsColorGrid.is-expanded{
+  grid-column: 1 !important;
+
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+
+  height: 100% !important;
+  min-height: 0 !important;          /* ✅ bez toho se často “nedojede dolů” */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  padding-right: 10px !important;    /* prostor pro scrollbar */
+  padding-bottom: 14px !important;   /* ✅ poslední řádek nebude uříznutý */
+  box-sizing: border-box !important;
+}
+
+#bottomBar #legsColorBlock.is-expanded #btnLegsShowAll{
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+
+  justify-self: center !important;
+  align-self: center !important;
+
+  margin-left: auto !important;
+  margin-right: auto !important;
+
+  /* jen v ALL módu bude větší */
+  min-width: 320px;
+  height: 64px;
+  padding: 0 26px;
+
+  border-radius: 18px;
+  font-size: 16px;
+}
+
+/* responzivně – méně sloupců barev když je menší okno */
+@media (max-width: 1100px){
+  #bottomBar #legsColorGrid.is-expanded{
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  #bottomBar #legsColorBlock.is-expanded{
+    grid-template-columns: 1fr minmax(220px, 24%) !important;
+  }
+}
+
+@media (max-width: 800px){
+  /* na mobilu to dej pod sebe */
+  #bottomBar #legsColorBlock.is-expanded{
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+  #bottomBar #legsColorGrid.is-expanded{
+    height: 240px !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  #bottomBar #legsColorBlock.is-expanded #btnLegsShowAll{
+    grid-column: 1 !important;
+    margin-top: 10px !important;
+  }
+}
+
+/* =========================
+   STEP 3 – PODRUČKY/PANTY layout (override)
+   ========================= */
+
+/* =========================
+   STEP 3 – PODRUČKY/PANTY layout (override)
+   ========================= */
+
+/* řádek: karty uprostřed */
+#armrestsCardRow,
+#hingesCardRow{
+  display: flex !important;
+  gap: 14px;
+  justify-content: center;
+  align-items: center; /* aby seděly hezky na střed */
+}
+
+/* ✅ ČTVEREČKY */
+#armrestsCardRow .tileCard,
+#hingesCardRow .tileCard{
+  --cardSize: 200px;
+
+  flex: 0 0 var(--cardSize);
+  width: var(--cardSize);
+  height: var(--cardSize);
+
+  padding: 8px;                 /* méně “rámu” = víc místa pro obrázek */
+  border-radius: 16px;
+  overflow: hidden;
+
+  display: grid;
+  grid-template-rows: 1fr 30px; /* ⬅️ méně pro text, víc pro obrázek */
+  gap: 6px;                     /* menší mezera mezi fotkou a textem */
+}
+
+/* ✅ fotka vyplní celý horní prostor čtverce */
+#armrestsCardRow .tileImg,
+#hingesCardRow .tileImg{
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  object-fit: cover;          /* vyplní */
+  object-position: 50% 50%;   /* ⬅️ posuň si “výřez” (x y) aby byla víc vidět područka */
+
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+}
+
+#armrestsCardRow .tileTitle,
+#hingesCardRow .tileTitle{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+
+  font-size: 16px;     /* větší text */
+  line-height: 2.5;      /* ⬅️ ať text nezabírá zbytečně výšku */
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* =========================
+   STEP 3 – PŘÍPLATKY (karty modulů) – vylepšený design
+   ========================= */
+
+#extrasModuleList{
+  display: grid;
+
+  /* ✅ 3 vedle sebe, ale karty mají "rozumnou" minimální šířku */
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
+
+  gap: 12px;
+
+  overflow: visible;
+  max-height: none;
+  padding-bottom: 2px;
+}
+
+/* když už se to nevejde, spadne to na 2 / 1 */
+@media (max-width: 1100px){
+  #extrasModuleList{ grid-template-columns: repeat(2, minmax(320px, 1fr)); }
+}
+
+@media (max-width: 760px){
+  #extrasModuleList{ grid-template-columns: 1fr; }
+}
+
+.extrasCard{
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 12px;
+
+  align-items: start;     /* ✅ místo center */
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.07);
+
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.extrasCard:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.22);
+}
+
+.extrasThumb{
+  width: 132px;
+  height: 92px;
+
+  border-radius: 14px;
+  overflow: hidden;
+
+  background: rgba(0,0,0,0.28);
+  border: 1px solid rgba(255,255,255,0.10);
+
+  display: flex;              /* ✅ */
+  align-items: center;        /* ✅ vertikálně vystředí img */
+  justify-content: center;    /* ✅ vodorovně vystředí img */
+
+  margin-top: 6px;            /* ✅ malinko dolů? (pokud chceš výš, dej -2px) */
+}
+
+.extrasThumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;     /* ✅ aby nebyla sedačka uříznutá */
+  object-position: 50% 75%; /* ✅ */
+  display: block;
+
+  transform: scale(1.05);
+  transition: transform .15s ease;
+}
+
+.extrasCard:hover .extrasThumb img{
+  transform: scale(1.06);
+}
+
+.extrasTitle{
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1.2;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.extrasStatus{
+  font-size: 12px;
+  opacity: 0.92;
+  margin-bottom: 10px;
+}
+
+.extrasStatus strong{
+  font-weight: 900;
+}
+
+.extrasChips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.extrasChip{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+
+  transition: background .15s ease, border-color .15s ease, transform .12s ease, opacity .15s ease;
+}
+
+.extrasChipLabel{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.extrasChipPrice{
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 999px;
+
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.14);
+  opacity: 0.95;
+}
+
+.extrasChip:hover{
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+
+.extrasChip.is-active{
+  border-color: rgba(58,166,255,0.85);
+  background: rgba(58,166,255,0.22);
+}
+
+.extrasChip.is-active .extrasChipPrice{
+  background: rgba(58,166,255,0.28);
+  border-color: rgba(58,166,255,0.65);
+}
+
+.extrasChip.is-disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.extrasChip.is-disabled:hover{
+  transform: none;
+  background: rgba(255,255,255,0.08);
+}
+
+.extrasHint{
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.step2ContinueBtn.is-locked{
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+}
+
+/* =========================
+   KROK 4 – LÁTKY (grid)
+   ========================= */
+
+.fabricGrid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px){
+  .fabricGrid{
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+.fabricCard{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  cursor: pointer;
+}
+
+.fabricCard.is-active{
+  outline: 2px solid rgba(0,0,0,0.35);
+}
+
+.fabricThumb{
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #f2f2f2;
+}
+
+.fabricName{
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+/* =========================
+   KROK 4 – LÁTKY (sekce + detail)
+   ========================= */
+
+.fabricBrowser{
+  display: grid;
+  grid-template-columns: 7fr 3fr; /* 70/30 */
+  gap: 14px;
+  align-items: stretch;
+}
+
+.fabricBrowserLeft{
+  max-height: 240px;           /* uprav si podle výšky bottombaru */
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.fabricBrowserRight{
+  border-left: 1px solid rgba(0,0,0,0.08);
+  padding-left: 14px;
+}
+
+.fabricSection{
+  padding: 10px 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  margin-bottom: 12px;
+}
+
+.fabricSectionTitle{
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.fabricShadesRow{
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;      /* když bude hodně odstínů, jede to do boku */
+  padding-bottom: 6px;
+}
+
+.fabricShadeBtn{
+  flex: 0 0 auto;
+  width: 74px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.fabricShadeBtn:hover{
+  transform: translateY(-1px);
+}
+
+.fabricShadeSwatch{
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: #f2f2f2;
+}
+
+.fabricShadeLabel{
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* Detail panel */
+.fabricDetailTitle{
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.fabricDetailSub{
+  font-size: 12px;
+  opacity: 0.75;
+  margin-bottom: 10px;
+}
+
+.fabricDetailBox{
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.fabricDetailLine{
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.fabricDetailLine .k{
+  opacity: 0.70;
+  width: 56px;
+}
+
+.fabricDetailDesc{
+  margin: 10px 0 12px;
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.35;
+}
+
+/* mobil */
+@media (max-width: 900px){
+  .fabricBrowser{
+    grid-template-columns: 1fr;
+  }
+  .fabricBrowserRight{
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    padding-top: 12px;
+  }
+  .fabricBrowserLeft{
+    max-height: 200px;
+  }
+}
+
+/* ===== Step 4 – Fabrics: jeden společný scroll pro levý výběr + pravý detail ===== */
+
+.fabricList{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  /* tohle je klíč: scrolluje se celý řádek (left+right spolu) */
+  max-height: 200px;       /* když budeš chtít víc/míň, změň číslo */
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.fabricRow{
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.fabricRowLeft{
+  flex: 0 0 70%;
+  min-width: 0;
+}
+
+.fabricRowRight{
+  flex: 1;
+  min-width: 0;
+  opacity: 0.95;
+}
+
+.fabricFamilyTitle{
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.fabricShades{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap; /* když je odstínů víc, zalomí se to */
+}
+
+.shadeBtn{
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  width: 70px;
+}
+
+.shadeThumb{
+  width: 64px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  overflow: hidden;
+}
+
+.shadeThumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shadeCode{
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* volitelné zvýraznění vybraného odstínu */
+.shadeBtn.is-active .shadeThumb{
+  outline: 2px solid rgba(255,255,255,0.65);
+  outline-offset: 2px;
+}
+
+.fabricMeta{
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.92;
+}
+
+.fabricMeta .metaTitle{
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.fabricMeta .metaLine{
+  opacity: 0.9;
+}
+
+/* =========================================
+   STEP 4 – FABRICS: DARK LOOK (bez bílého pozadí)
+   Přepis jen uvnitř bottomBaru.
+   ========================================= */
+
+/* zruš bílé "sekce" a udělej to jako původní tmavý panel */
+#bottomBar .fabricSection{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 0 14px 0 !important;
+}
+
+/* nadpis látky (Clara) */
+#bottomBar .fabricSectionTitle{
+  color: rgba(255,255,255,0.92) !important;
+  margin: 0 0 10px 0 !important;
+}
+
+#bottomBar .fabricShadesRow{
+  display: flex !important;
+  flex-wrap: nowrap !important;     /* ✅ nikdy se to nezalomí */
+  gap: 10px !important;             /* ✅ víc u sebe */
+  overflow-x: auto !important;      /* ✅ když se nevejde, scroll do boku */
+  overflow-y: hidden !important;
+  padding: 0 0 6px 0 !important;    /* malý prostor dole */
+  -webkit-overflow-scrolling: touch;
+}
+
+#bottomBar .fabricShadeBtn{
+  flex: 0 0 auto !important;   /* ✅ každé tlačítko má vlastní šířku, netlačí se */
+}
+
+/* tlačítka – žádné bílé pozadí */
+#bottomBar .fabricShadeBtn{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* náhled textury (swatch) = tmavý rámeček jako dřív */
+#bottomBar .fabricShadeSwatch{
+  width: 86px !important;
+  height: 58px !important;
+  border-radius: 10px !important;
+
+  background-color: rgba(255,255,255,0.08) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+
+  transform: translateZ(0);   /* pomůže s “divným prvním vykreslením” */
+  will-change: transform;
+
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: none !important;      /* pryč velké stíny */
+  overflow: hidden !important;
+}
+
+/* číslo pod swatchem (01..20) */
+#bottomBar .fabricShadeLabel{
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.80) !important;
+}
+
+#bottomBar .fabricShadeBtn.is-active .fabricShadeSwatch{
+  outline: 2px solid rgba(255,255,255,0.65) !important;
+  outline-offset: 1px !important;
+}
+
+/* placeholder */
+#bottomBar .fabricShadeBtn.is-empty{
+  opacity: 0.25 !important;
+}
+
+/* responsivita */
+@media (max-width: 1100px){
+  #bottomBar .fabricShadesRow{ grid-template-columns: repeat(8, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 800px){
+  #bottomBar .fabricShadesRow{ grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+}
+
+/* =========================================
+   CAT1 – nový layout: tabs nahoře + scroll jen odstíny + detail 20%
+   ========================================= */
+
+#bottomBar .fabricBrowserCat1{
+  display: grid;
+  grid-template-columns: 1fr 20%;
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* levá část = tabs + scroll oblast */
+#bottomBar .fabricBrowserLeft{
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* důležité pro overflow */
+}
+
+#bottomBar .fabricFamilyTabs{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  padding: 10px 12px;
+  margin-bottom: 12px;
+
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+
+  /* ✅ zruší scrollbar */
+  overflow: visible;
+
+  /* ✅ když bude víc tabů, zalomí se na další řádek */
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+#bottomBar .fabricFamilyTab{
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+
+  padding: 8px 10px;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: rgba(255,255,255,0.92);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+#bottomBar .fabricFamilyTab.is-active{
+  opacity: 1;
+  border-color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.08);
+}
+
+#bottomBar .fabricFamilyThumb{
+  width: 44px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+#bottomBar .fabricFamilyName{
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* scrolluje jen oblast se vzorky (SVISLE) */
+#bottomBar .fabricShadesScroll{
+  flex: 1;                  /* vezme zbytek výšky v levé části */
+  min-height: 0;            /* nutné, aby overflow fungoval ve flexu */
+  overflow-y: auto;         /* ✅ scroll svisle */
+  overflow-x: hidden;       /* ✅ žádný vodorovný scroll */
+  padding: 10px 6px 14px 6px; /* ✅ prostor na outline, ať se nic neusekne */
+}
+
+/* grid vzorků: zalamování do řádků */
+#bottomBar .fabricShadesGrid{
+  /* default: 16 kusů na řádek */
+  --cell: 84px;   /* šířka jednoho "slotu" pro vzorek + číslo */
+  --cols: 15;
+
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  gap: 40px;                /* blíž k sobě */
+  justify-content: start;
+  align-content: start;
+}
+
+/* když je menší obrazovka, ubereme počet sloupců */
+@media (max-width: 1400px){
+  #bottomBar .fabricShadesGrid{ --cols: 12; }
+}
+@media (max-width: 1100px){
+  #bottomBar .fabricShadesGrid{ --cols: 10; }
+}
+@media (max-width: 900px){
+  #bottomBar .fabricShadesGrid{ --cols: 8; }
+}
+
+/* pravý panel */
+#bottomBar .fabricBrowserRight{
+  display: flex;
+  align-items: flex-start;
+}
+
+/* responsivita */
+@media (max-width: 1100px){
+  #bottomBar .fabricShadesGrid{ grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  #bottomBar .fabricBrowserCat1{ grid-template-columns: 1fr 32%; }
+}
+@media (max-width: 800px){
+  #bottomBar .fabricBrowserCat1{ grid-template-columns: 1fr; }
+}
+
+/* =========================
+   FABRICS – jen 1 scrollbar (scrollují jen látky)
+   ========================= */
+
+/* 1) Bottom panel se NESMÍ scrollovat jako celek */
+#bottomBar .bottomPanel{
+  overflow: hidden !important;
+}
+
+/* 2) Celý fabrics layout se NESMÍ scrollovat (jen vnitřní seznam látek) */
+#bottomBar .fabricBrowserCat1,
+#bottomBar .fabricBrowserLeft,
+#bottomBar .fabricBrowserRight{
+  overflow: hidden !important;
+}
+
+/* 3) Jenom tenhle element má scrollbar */
+#bottomBar .fabricShadesScroll{
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  /* důležité: ať si to vezme výšku dostupného prostoru */
+  flex: 1 1 auto;
+  min-height: 0;
+
+  /* ať outline není uříznutý nahoře/dole */
+  padding: 10px 10px 14px;
+}
+
+/* 4) MŘÍŽKA – přesně 15 kusů v řádku, 16. už jde dolů */
+#bottomBar .fabricShadesGrid{
+  display: grid !important;
+  grid-template-columns: repeat(15, 1fr) !important;  /* 15 na řádek */
+  gap: 10px !important;                               /* natlačit blíž k sobě */
+  align-items: start;
+  justify-items: center;
+}
+
+/* 5) Aby se aktivní rámeček (výběr) NEŘEZAL */
+#bottomBar .fabricShadeBtn,
+#bottomBar .fabricShadeBtn *{
+  box-sizing: border-box;
+}
+
+#bottomBar .fabricShadeBtn{
+  overflow: visible !important;
+  border-radius: 14px;
+}
+
+/* když máš výběr přes outline/box-shadow, tohle pomůže */
+#bottomBar .fabricShadeBtn.is-active{
+  outline-offset: 3px;
+}
+
+/* 6) Fix “divné zoomnutí textur po reloadu”:
+   - u obrázků (pokud jsou <img>) i u backgroundů (pokud to děláš přes background-image) */
+#bottomBar .fabricShadeBtn img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+#bottomBar .fabricSwatch{
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* fix: donutíme prohlížeč kreslit swatche stabilně */
+#bottomBar .fabricShadeSwatch{
+  transform: translateZ(0);
+  will-change: background-image;
+}
+
+/* až je textura načtená, nechceme pod tím šedý podklad */
+#bottomBar .fabricShadeSwatch.is-loaded{
+  background-color: transparent !important;
+}
+
+.fabricShadeSwatch {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ===== KROK 4 / Pravý panel – detaily látky (scroll uv:contentReference[oaicite:8]{index=8}abricMeta{
+  /* meta panel sám nesmí roztahovat layout do výšky */
+  width: 100%;
+}
+
+#bottomBar .metaScroll{
+  margin-top: 8px;
+
+  /* tohle je klíč: detaily se scrollují uvnitř vyhrazeného místa */
+  max-height: 170px;   /* uprav si podle chuti (např. 150–220) */
+  overflow-y: auto;
+
+  padding-right: 6px;  /* místo pro scrollbar */
+}
+
+#bottomBar .metaSectionTitle{
+  margin-top: 10px;
+  font-weight: 800;
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+#bottomBar .metaList{
+  margin: 6px 0 0;
+  padding-left: 16px;
+}
+
+#bottomBar .metaList li{
+  margin: 4px 0;
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+#bottomBar .metaBadges{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#bottomBar .metaBadge{
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.10);
+}
+
+#bottomBar .metaBadge--soft{
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+/* =========================================
+   FABRICS LAYOUT OVERRIDE
+   vlevo druhy látek, vpravo zalamovací grid odstínů
+   ========================================= */
+
+#bottomBar .fabricBrowserCat1{
+  display: block !important;
+  overflow: hidden !important;
+  height: 100%;
+  min-height: 0;
+}
+
+#bottomBar .bottomSection[data-tabpanel="cat1"],
+#bottomBar .bottomSection[data-tabpanel="cat2"],
+#bottomBar .bottomSection[data-tabpanel="cat3"],
+#bottomBar .bottomSection[data-tabpanel="leather"],
+#bottomBar #fabricListCat1,
+#bottomBar #fabricListCat2,
+#bottomBar #fabricListCat3,
+#bottomBar #fabricListLeather{
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#bottomBar #fabricListCat1,
+#bottomBar #fabricListCat2,
+#bottomBar #fabricListCat3,
+#bottomBar #fabricListLeather{
+  display: block !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+#bottomBar .fabricBrowserMain{
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+#bottomBar .fabricFamilyColumn,
+#bottomBar .fabricShadesColumn{
+  min-height: 0;
+}
+
+#bottomBar .fabricFamilyColumn{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-right: 14px;
+  border-right: 1px solid rgba(255,255,255,0.12);
+}
+
+#bottomBar .fabricColumnTitle{
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.96);
+  margin: 0 0 12px 0;
+}
+
+#bottomBar .fabricShadesHeader{
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  margin: 0 0 12px 0;
+}
+
+#bottomBar .fabricShadesHeader .fabricColumnTitle{
+  margin: 0;
+  min-width: 0;
+}
+
+#bottomBar .fabricTargetToggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+}
+
+#bottomBar .fabricTargetToggle.is-hidden{
+  display: none;
+}
+
+#bottomBar .fabricTargetBtn{
+  appearance: none;
+  border: 0;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255,255,255,0.78);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease;
+}
+
+#bottomBar .fabricTargetBtn:hover:not(:disabled){
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+
+#bottomBar .fabricTargetBtn.is-active{
+  background: #5FB3CE;
+  color: #0B1440;
+  box-shadow: none;
+}
+
+#bottomBar .fabricTargetBtn:disabled{
+  opacity: 0.42;
+  cursor: default;
+}
+
+#bottomBar .fabricInfoBtn{
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 13px 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(95,179,206,0.82);
+  background: rgba(12,18,24,0.56);
+  color: rgba(255,255,255,0.94);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  transition: background .16s ease, border-color .16s ease, transform .12s ease;
+}
+
+#bottomBar .fabricInfoBtn:hover{
+  background: rgba(95,179,206,0.14);
+  border-color: rgba(105,205,240,0.96);
+  transform: translateY(-1px);
+}
+
+#bottomBar .fabricInfoBtn.is-hidden{
+  display: none;
+}
+
+#bottomBar .fabricInfoBtnIcon{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(95,179,206,0.96);
+  color: #70cff2;
+  font-size: 12px;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.fabricInfoPopover{
+  position: fixed;
+  width: 340px;
+  max-width: calc(100% - 16px);
+  max-height: min(520px, calc(100vh - 24px));
+  overflow-y: auto;
+  padding: 16px 18px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(95,179,206,0.84);
+  background: rgba(20,24,28,0.98);
+  color: #fff;
+  box-shadow:
+    0 22px 55px rgba(0,0,0,0.52),
+    0 0 0 1px rgba(255,255,255,0.06);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+  z-index: 10020;
+}
+
+.fabricInfoPopover.is-open{
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.fabricInfoPopover::before{
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: var(--fabric-info-arrow-top, 58px);
+  width: 12px;
+  height: 12px;
+  background: rgba(20,24,28,0.98);
+  border-left: 1px solid rgba(95,179,206,0.84);
+  border-bottom: 1px solid rgba(95,179,206,0.84);
+  transform: rotate(45deg);
+}
+
+.fabricInfoPopover.is-left::before{
+  left: auto;
+  right: -7px;
+  border-left: 0;
+  border-bottom: 0;
+  border-right: 1px solid rgba(95,179,206,0.84);
+  border-top: 1px solid rgba(95,179,206,0.84);
+}
+
+.fabricInfoHeader{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.fabricInfoHeader h3{
+  margin: 0 0 7px;
+  font-size: 19px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.fabricInfoHeader p{
+  margin: 0;
+  color: rgba(255,255,255,0.72);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.fabricInfoClose{
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255,255,255,0.78);
+  font-size: 28px;
+  line-height: 28px;
+  cursor: pointer;
+}
+
+.fabricInfoClose:hover{
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+
+.fabricInfoStats{
+  display: grid;
+  gap: 7px;
+  padding: 2px 0 13px;
+}
+
+.fabricInfoStat,
+.fabricInfoDetailRow{
+  display: grid;
+  grid-template-columns: minmax(88px, .8fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 1.32;
+}
+
+.fabricInfoStat span,
+.fabricInfoDetailRow span{
+  color: rgba(255,255,255,0.66);
+  font-weight: 700;
+}
+
+.fabricInfoStat strong,
+.fabricInfoDetailRow strong{
+  color: rgba(255,255,255,0.90);
+  font-weight: 900;
+}
+
+.fabricInfoValueLine{
+  display: block;
+}
+
+.fabricInfoSections{
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+
+.fabricInfoSection{
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+
+.fabricInfoSection:last-child{
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.fabricInfoSection h4{
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+}
+
+.fabricInfoSection p{
+  margin: 0;
+  color: rgba(255,255,255,0.72);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fabricInfoSection ul{
+  margin: 0;
+  padding-left: 17px;
+  color: rgba(255,255,255,0.72);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.fabricInfoDetails{
+  display: grid;
+  gap: 6px;
+}
+
+#bottomBar .fabricFamilyTabs{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding: 0 10px 14px 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+#bottomBar .fabricFamilyTab{
+  width: 100%;
+  justify-content: flex-start;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+#bottomBar .fabricFamilyTab:hover{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+  transform: translateY(-1px);
+}
+
+#bottomBar .fabricFamilyTab.is-active{
+  border-color: rgba(100,175,255,0.55);
+  background: rgba(80,155,235,0.16);
+  box-shadow: inset 0 0 0 1px rgba(80,155,235,0.2);
+}
+
+#bottomBar .fabricFamilyThumb{
+  width: 38px;
+  height: 28px;
+  flex: 0 0 38px;
+  border-radius: 8px;
+}
+
+#bottomBar .fabricFamilyName{
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#bottomBar .fabricShadesColumn{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+#bottomBar .fabricShadesScroll{
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 4px 12px 18px 4px;
+  box-sizing: border-box;
+}
+
+#bottomBar .fabricShadesGrid{
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+  gap: 10px !important;
+  align-items: start;
+  justify-items: stretch;
+}
+
+#bottomBar .fabricShadeBtn{
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 14px;
+  overflow: visible !important;
+}
+
+#bottomBar .fabricShadeSwatch{
+  width: 100% !important;
+  aspect-ratio: 1 / 1;
+  height: auto !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  background-color: rgba(255,255,255,0.08) !important;
+}
+
+#bottomBar .fabricShadeLabel{
+  text-align: center;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.82) !important;
+  line-height: 1.25;
+}
+
+#bottomBar .fabricShadeBtn.is-active .fabricShadeSwatch{
+  outline: 0 !important;
+  box-shadow:
+    0 0 0 2px rgba(110,190,255,0.9),
+    0 0 0 4px rgba(110,190,255,0.18) !important;
+}
+
+@media (max-width: 1100px){
+  #bottomBar .fabricBrowserMain{
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px){
+  #bottomBar .fabricBrowserMain{
+    grid-template-columns: 1fr;
+  }
+
+  #bottomBar .fabricFamilyColumn{
+    padding-right: 0;
+    padding-bottom: 12px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+}
+
+
+.cameraControls{
+  position: fixed;
+  top: 90px;      /* když bude kolidovat s topBar, dej 110px */
+  left: 18px;
+  right: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  z-index: 3000;
+}
+
+.cameraControls .camBtn{
+  width: 44px;
+  height: 44px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(24,24,24,0.4);
+  backdrop-filter: blur(10px);
+
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+  user-select: none;
+
+  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.cameraControls .camBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(96,96,96,0.5);
+  border-color: rgba(255,255,255,0.30);
+}
+
+.cameraControls .camBtn:active{
+  transform: translateY(0px) scale(0.98);
+}
+
+.cameraControls .camBtn:focus-visible{
+  outline: 2px solid rgba(255,255,255,0.55);
+  outline-offset: 3px;
+}
+
+.isHidden{ display:none !important; }
+
+.camBtn svg{
+  width: 20px;
+  height: 20px;
+  stroke: #222;
+  stroke-width: 2;
+  fill: none;
+}
+
+.camBtnDanger svg{
+  stroke: #b80000;
+}
+
+/* ====== CONFIRM MODAL (clear all) ====== */
+.confirmModal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45); /* stejné jako modulePicker :contentReference[oaicite:5]{index=5} */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 6000; /* nad modulePicker (ten má 5000) */
+}
+
+.confirmWindow{
+  width: 520px;
+  max-width: calc(100vw - 40px);
+  padding: 18px 18px 16px;
+}
+
+#clearAllClose,
+#legsUntouchedClose{
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+
+  display: inline-grid;
+  place-items: center;
+
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 10px;
+
+  background: rgba(248, 250, 252, 0.92);
+  color: #1f2937;
+
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background .16s ease,
+    border-color .16s ease,
+    color .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+#clearAllClose:hover,
+#legsUntouchedClose:hover{
+  background: #ffffff;
+  border-color: rgba(95, 179, 206, 0.42);
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+}
+
+#clearAllClose:active,
+#legsUntouchedClose:active{
+  transform: translateY(0) scale(0.97);
+}
+
+#clearAllClose:focus-visible,
+#legsUntouchedClose:focus-visible{
+  outline: 3px solid rgba(95, 179, 206, 0.28);
+  outline-offset: 2px;
+}
+
+#legsUntouchedConfirmModal .confirmWindow{
+  width: 560px;
+  padding: 20px 22px 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.28);
+}
+
+#legsUntouchedConfirmModal .picker-header{
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+#legsUntouchedConfirmModal #legsUntouchedTitle{
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+#legsUntouchedConfirmModal .confirmText{
+  margin: 0 0 18px;
+  max-width: 460px;
+  color: #293241;
+  opacity: 0.88;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+#legsUntouchedConfirmModal .confirmActions{
+  padding-top: 2px;
+}
+
+.confirmText{
+  font-size: 15px;
+  line-height: 1.45;
+  opacity: 0.9;
+  margin: 4px 0 14px;
+}
+
+.confirmActions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirmBtn{
+  min-height: 38px;
+  border: 0;
+  border-radius: 11px;
+  padding: 10px 16px;
+
+  cursor: pointer;
+
+  background: #eef0f3;
+  color: #1f2937;
+
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 800;
+
+  transition:
+    transform .14s ease,
+    filter .14s ease,
+    box-shadow .14s ease,
+    background .14s ease;
+}
+
+.confirmBtn:hover{
+  filter: brightness(0.985);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+}
+
+.confirmBtn:active{
+  transform: translateY(0) scale(0.98);
+}
+
+.confirmBtn:hover{ filter: brightness(0.97); }
+
+.confirmBtn.danger{
+  background: #c0392b;
+  color: #fff;
+}
+.confirmBtn.danger:hover{ filter: brightness(0.95); }
+
+.confirmBtnPrimary{
+  background: #5FB3CE;
+  color: #0B1440;
+  box-shadow: 0 10px 24px rgba(95, 179, 206, 0.20);
+}
+
+.confirmBtnPrimary:hover{
+  background: #62bddb;
+}
+
+/* =========================
+   ARMRESTS UI (krok 3) – layout + šířky
+   ========================= */
+
+#armrestsEquipWrap .armrestsLayout{
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+
+  /* aby se oba sloupce natáhly na stejnou výšku => čára bude přes celou výšku */
+  align-items: stretch;
+}
+
+/* ať jsou kartičky víc "doleva" + hezký scroll jako nohy */
+#armrestsCardRow{
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 2px 10px;
+}
+
+#armrestWidthBlock{
+  border-left: 1px solid rgba(255,255,255,0.10);
+  padding-left: 18px;
+  align-self: stretch;             /* ✅ divider přes celou výšku */
+  display: flex;                   /* ✅ centrování obsahu */
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 18px;               /* ✅ prostor pro hover (neusekne se) */
+  padding-bottom: 18px;
+}
+
+/* label nech nahoře a vlastní panel vycentruj */
+#armrestWidthBlock .armrestWidthPanel{
+  flex: 1;
+  display: grid;
+  align-content: center;   /* vertikální centrování uvnitř panelu */
+  padding-top: 10px;       /* “bezpečný” prostor, aby se nic neořezávalo */
+  padding-bottom: 10px;
+}
+
+/* quick chips */
+.armrestWidthQuick{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chipBtn{
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+  border-radius: 14px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.chipBtn{
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+  will-change: transform;
+}
+
+.chipBtn:hover{
+  transform: translateY(-3px) scale(1.03);  /* ✅ konečně viditelný efekt */
+  background: rgba(0,0,0,0.26);
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.22);
+}
+
+.chipBtn.is-active{
+  background: rgba(46, 162, 255, 0.28);
+  border-color: rgba(46, 162, 255, 0.55);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+}
+.chipBtnGhost{
+  opacity: .9;
+}
+
+/* custom slider */
+.armrestWidthCustom{
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+.armrestWidthRow{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.armrestWidthValue{
+  min-width: 70px;
+  text-align: right;
+  font-weight: 900;
+}
+.armrestWidthHint{
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: .75;
+}
+
+/* na menších displejích pod sebe */
+@media (max-width: 980px){
+  #armrestsEquipWrap .armrestsLayout{
+    grid-template-columns: 1fr;
+  }
+  #armrestWidthBlock{
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    padding-top: 12px;
+  }
+}
+
+/* 2 sloupce: vlevo područky, vpravo rozměry */
+#armrestsEquipWrap .armrestsLayout{
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(360px, 520px);
+  gap: 44px;
+  align-items: start;
+}
+
+/* vlevo */
+.armrestsLeftCol{
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+
+/* zruš staré centrování */
+#armrestsTypeBlock,
+#armrestWidthBlock{
+  justify-self: stretch;
+  max-width: none;
+}
+
+/* pravý blok */
+#sofaDimsBlock{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  width: 360px;
+  margin-left: 0;      /* ✅ zrušit posun doprava */
+  justify-self: end;   /* ✅ zarovnat doprava v gridu */
+}
+
+#sofaDimsBlock:has(#sofaDimsRows[data-branches="3"]){
+  width: 520px;
+}
+
+/* ===== Rozměry sestavy (UI jako + / -) ===== */
+#sofaDimsBlock .dimsRows{
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+#sofaDimsBlock .dimsRow{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 6px 14px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.12);
+  width: 260px;
+  min-width: 260px;
+  flex: 0 0 auto; /* pojistka proti “smrsknutí” */
+  box-sizing: border-box;
+}
+
+#sofaDimsBlock .dimsTitle{
+  font-weight: 800;
+  opacity: .95;
+}
+
+/* ===== Rozměry sestavy – hezčí + kompaktnější ovládání ===== */
+
+#sofaDimsBlock .dimsControl{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  /* pill pozadí pro celý ovladač */
+  padding: 4px;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.18);
+}
+
+#sofaDimsBlock .dimsBtn{
+  height: 28px;
+  width: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#sofaDimsBlock .dimsBtn:hover{
+  background: rgba(255,255,255,0.14);
+  color: #000;
+}
+
+#sofaDimsBlock .dimsValue{
+  min-width: 44px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.2px;
+}
+
+#sofaDimsBlock .dimsRange{
+  grid-column: 1 / -1;
+  font-size: 12px;
+  opacity: .75;
+}
+
+#sofaDimsBlock .dimsNote{
+  grid-column: 1 / -1;
+  margin-top: 10px;
+
+  padding: 13px 14px;
+  border-top: 0;
+  border-left: 3px solid rgba(95,179,206,0.72);
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+
+  color: rgba(255,255,255,0.82);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+#sofaDimsBlock .dimsNote span{
+  display: block;
+  max-width: 220px;
+}
+
+.armrestWidthPanel{
+  display: grid;
+  grid-template-columns: auto 1fr; /* vlevo grid presetů, vpravo custom box */
+  gap: 16px;
+  align-items: start;
+}
+
+.chipBtn.chipBig{
+  border-radius: 16px;
+  padding: 14px 16px;
+  min-width: 120px;
+  font-size: 15px;
+}
+
+.armrestWidthCustomCol{
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 10px;
+  min-width: 240px;
+}
+
+.chipBtn.chipCustom{
+  width: 100%;
+}
+
+#armrestWidthCustom{
+  margin-top: 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+
+#armrestWidthRange{
+  width: 100%;
+}
+
+.armrestWidthNote{
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  font-size: 13px;
+  opacity: .85;
+  text-align: center;
+  line-height: 1.35;
+}
+
+/* === Armrest width panel: layout + spacing + hover fix === */
+
+/* 3D blok šířky: ať je divider přes celou výšku + bez ořezu */
+#armrestWidthBlock{
+  align-self: stretch;     /* divider přes celou výšku */
+  display: flex;
+  flex-direction: column;
+}
+
+/* panel uděláme grid:
+   řádek 1: presety + jiné
+   řádek 2: (nic navíc)
+   řádek 3: popisek přes obě strany
+*/
+#armrestWidthBlock .armrestWidthPanel{
+  flex: 1;
+  display: grid;
+  grid-template-columns: 260px 280px;
+  column-gap: 26px;
+  row-gap: 14px;
+  align-content: center;
+  padding-top: 14px;       /* prostor pro hover, ať se nic neořezává */
+  padding-bottom: 14px;
+}
+
+/* levá část: 4 tlačítka jako 2×2 grid + VĚTŠÍ mezery i na výšku */
+.armrestWidthQuickGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 16px 18px;          /* první hodnota = VERTIKÁLNÍ mezera */
+}
+
+/* pravá část: Jiné + slider pěkně pod sebou */
+.armrestWidthCustomCol{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* popisek pod oběma sekcemi */
+.armrestWidthNote{
+  grid-column: 1 / -1;     /* roztáhne se pod oba sloupce */
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.25;
+  opacity: .78;
+}
+
+/* tlačítka větší + hezčí */
+.chipBtn.chipBig{
+  min-height: 52px;
+  padding: 12px 18px;
+  border-radius: 18px;
+  font-size: 16px;
+}
+
+/* ✅ OPRAVA: vrať hover animaci (protože někde máš transform:none) */
+#armrestWidthBlock .chipBtn:hover{
+  transform: translateY(-3px) scale(1.03);
+  background: rgba(0,0,0,0.26);
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.22);
+}
+
+/* ===== Armrest width – finální doladění UX ===== */
+
+/* 1) panel zvednout o chlup nahoru + udělat prostor dole pro popisek */
+#armrestWidthBlock .armrestWidthPanel{
+  align-content: start;
+  padding-top: 2px;     /* méně místa nahoře */
+  padding-bottom: 2px;  /* méně místa dole */
+  row-gap: 10px;        /* mírně menší mezera mezi sekcemi */
+}
+
+/* 2) větší mezery mezi tlačítky i na výšku (u tebe gap už je, jen ho zvětšíme) */
+.armrestWidthQuickGrid{
+  gap: 18px 22px;               /* vertikální / horizontální mezera */
+}
+
+/* 3) TLAČÍTKA: větší + plynulé + bez rozmazání textu */
+.chipBtn{
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* 4) Hover bez SCALE -> žádné rozmazání písma */
+#armrestWidthBlock .chipBtn:hover{
+  transform: translateY(-3px);  /* jen posun, žádné scale */
+  box-shadow: 0 12px 26px rgba(0,0,0,0.22);
+}
+
+/* 5) Active musí vyhrát i při hoveru (aby nebyl pocit “nekliklo se”) */
+#armrestWidthBlock .chipBtn.is-active{
+  background: rgba(46, 162, 255, 0.28);
+  border-color: rgba(46, 162, 255, 0.55);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+}
+
+#armrestWidthBlock .chipBtn.is-active:hover{
+  background: rgba(46, 162, 255, 0.34);
+  border-color: rgba(46, 162, 255, 0.70);
+  transform: translateY(-3px);  /* pořád bez scale */
+}
+
+/* 6) Popisek: přes celou šířku + vlevo (ne centrovaně) */
+.armrestWidthNote{
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: none;        /* ✅ odstraní tu čáru */
+  text-align: left;
+  opacity: .78;
+  line-height: 1.25;
+}
+
+#bottomBar .bottomPanel{
+  display: flex;
+  flex-direction: column;
+}
+
+/* FIXED šířka (např. Mendoza polohovací 33 cm) */
+.armrestWidthFixed{
+  grid-column: 1 / -1;     /* přes oba sloupce */
+  display: flex;
+  justify-content: center;
+}
+
+#armrestWidthBlock.is-fixed-single .armrestWidthPanel{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 132px;
+  grid-template-columns: none;
+  column-gap: 0;
+  row-gap: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+#armrestWidthBlock.is-fixed-single .armrestWidthFixed{
+  grid-column: auto;
+  width: auto;
+}
+
+/* ===== Step 3 / Příplatky – thumbnails ===== */
+.extrasThumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  transform: scale(1);
+  transform-origin: center;
+}
+
+/* když je na thumbu tweak (Mendoza) */
+.extrasThumb.hasThumbTweak img{
+  object-position: 50% var(--thumbY, 50%);
+  transform: scale(var(--thumbScale, 1));
+}
+
+#modulePicker .pickerNote{
+  margin: 0px 0 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* vedle sebe: kartičky (vlevo) + šířka područky (vpravo) */
+#armrestsEquipWrap .armrestsLeftRow{
+  display: grid;
+  grid-template-columns: max-content 320px 1fr; /* ✅ typy = jen na šířku obsahu */
+  gap: 22px;
+  align-items: start;
+  justify-content: start;                  /* ✅ necentrovat / neroztahovat */
+  width: 100%;
+}
+
+/* ať se levý blok umí zmenšit ve gridu */
+#armrestsEquipWrap #armrestsTypeBlock{
+  justify-self: start !important;
+  max-width: none !important;
+}
+
+#armrestsEquipWrap #armrestWidthBlock{
+  justify-self: start !important;
+  max-width: none !important;
+}
+
+/* text pod tlačítky: zalamovat a nepřetékat doprava */
+#armrestsEquipWrap #armrestWidthBlock .armrestWidthHint,
+#armrestsEquipWrap #armrestWidthBlock #armrestWidthNote{
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 320px;
+}
+
+@media (max-width: 980px){
+  #armrestsEquipWrap .armrestsLeftRow{
+    grid-template-columns: 1fr; /* pod sebe jen na menších displejích */
+  }
+
+  #armrestsEquipWrap #armrestWidthBlock{
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* === OVERRIDE: Područky + šířky vlevo, rozměry vpravo === */
+
+/* 2 sloupce: vlevo područky (typy+šířky), vpravo rozměry */
+.armrestsLayout{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 520px;
+  gap: 22px;
+  align-items: start;
+}
+
+/* levá část */
+.armrestsLeftCol{
+  display: block; /* ať se to nechová jako další grid */
+}
+
+/* typy + šířky vedle sebe */
+.armrestsLeftRow{
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+/* typy područek */
+#armrestsTypeBlock{
+  flex: 0 0 340px;     /* uprav si dle šířky karet */
+  grid-column: auto !important; /* zruš grid forcing */
+}
+
+/* blok šířek područky = vedle typů */
+#armrestWidthBlock{
+  flex: 0 0 260px;     /* tlačítka + text */
+  grid-column: auto !important; /* zruš grid forcing */
+  border-left: none !important; /* čára už nebude mezi typy a tlačítky */
+  padding-left: 0 !important;
+}
+
+/* pravý sloupec (rozměry) – sem dáme dělící čáru */
+.sofaDimsCol{
+  border-left: 1px solid rgba(255,255,255,0.10);
+  padding-left: 22px;
+}
+
+/* text pod tlačítky ať se zalamuje a neleze doprava */
+#armrestWidthBlock .armrestWidthNote,
+#armrestWidthBlock .equipNote,
+#armrestWidthBlock p{
+  max-width: 260px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* === Sofa dims input (editable number) === */
+.dimsControl{
+  display:flex;
+  align-items:center;      /* vertikální vycentrování tlačítek i čísla */
+  justify-content:flex-end;
+  gap:10px;
+}
+
+.dimsBtn{
+  display:flex;            /* vycentruje znak − / + */
+  align-items:center;
+  justify-content:center;
+}
+
+.dimsValue{
+  display:flex;
+  align-items:center;      /* vycentruje input v “pilulce” */
+}
+
+.dimsValueInput{
+  width: 3.2ch;            /* aby to bylo kompaktní */
+  text-align:center;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  padding: 0;
+}
+
+.dimsValueInput:focus{
+  outline: none;
+}
+
+/* === Sofa dims layout podle počtu větví === */
+#sofaDimsRows{
+  display: grid;
+  gap: 12px;
+
+  /* karty budou mít pevnou velikost */
+  grid-template-columns: max-content;
+  justify-content: end;
+}
+
+/* 2 větve: vlevo poznámka, vpravo rozměry */
+#sofaDimsBlock:has(#sofaDimsRows[data-branches="2"]){
+  width: 560px;
+}
+
+#sofaDimsRows[data-branches="2"]{
+  grid-template-columns: 250px 260px;
+  justify-content: end;
+  align-items: start;
+  grid-auto-rows: max-content;
+  column-gap: 22px;
+}
+
+#sofaDimsRows[data-branches="2"] .dimsRow[data-dim="W"]{
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#sofaDimsRows[data-branches="2"] .dimsRow[data-dim="B"]{
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#sofaDimsRows[data-branches="2"] .dimsNote{
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+
+  margin-top: 0;
+  padding: 13px 14px;
+  border-top: 0;
+  border-left: 3px solid rgba(95,179,206,0.72);
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+#sofaDimsRows[data-branches="2"] .dimsNote span{
+  max-width: 220px;
+}
+
+/* 3 větve: šířka vlevo, boky vpravo nad sebou */
+#sofaDimsRows[data-branches="3"]{
+  grid-template-columns: 260px 260px;
+  justify-content: end;
+  align-items: start;
+  grid-auto-rows: max-content;
+}
+
+/* Rozmístění jednotlivých řádků podle data-dim */
+#sofaDimsRows[data-branches="3"] .dimsRow[data-dim="W"]{
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+}
+
+#sofaDimsRows[data-branches="3"] .dimsRow[data-dim="L"]{
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#sofaDimsRows[data-branches="3"] .dimsRow[data-dim="R"]{
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#sofaDimsRows[data-branches="3"] .dimsNote{
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+
+  margin-top: 0;
+  padding: 13px 14px;
+  border-top: 0;
+  border-left: 3px solid rgba(95,179,206,0.72);
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+#sofaDimsRows[data-branches="3"] .dimsNote span{
+  max-width: 220px;
+}
+
+/* 4+ větví: vlevo CTA, vpravo jen šířka + hloubka */
+#sofaDimsRows[data-mode="4plus"]{
+  grid-template-columns: 260px 260px;
+  justify-content: end;
+  align-items: start;
+  grid-auto-rows: max-content;
+}
+
+#sofaDimsRows[data-mode="4plus"] .dimsCustomAllWrap{
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  padding-right: 14px;
+}
+
+#sofaDimsRows[data-mode="4plus"] .dimsRow[data-dim="W"]{
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#sofaDimsRows[data-mode="4plus"] .dimsRow[data-dim="D"]{
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#sofaDimsRows[data-mode="4plus"] .dimsNote{
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+
+  margin-top: 0;
+  padding: 13px 14px;
+  border-top: 0;
+  border-left: 3px solid rgba(95,179,206,0.72);
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.055);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+#sofaDimsRows[data-mode="4plus"] .dimsNote span{
+  max-width: 220px;
+}
+
+#sofaDimsBlock{
+  overflow: visible;
+}
+
+#sofaDimsRows{
+  overflow: visible;
+}
+
+.dimsCustomAllBtn{
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.96);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.dimsCustomAllBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.24);
+}
+
+.dimsCustomAllNote{
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.68);
+  max-width: 240px;
+}
+
+/* 3 sloupce: vlevo vybavení, uprostřed půdorys, vpravo rozměry */
+.armrestsLayout{
+  display: grid;
+  grid-template-columns: max-content minmax(320px, 1fr) max-content;
+  gap: 26px;
+  align-items: start;
+}
+
+@media (max-width: 1450px){
+  #sofaPlanBlock{
+    display: none !important;
+  }
+
+  .armrestsLayout{
+    grid-template-columns: max-content max-content;
+  }
+}
+
+/* aby pravý sloupec nikdy “nelezl” mimo a nekrátil se */
+.sofaDimsCol{
+  justify-self: end;
+}
+
+#sofaPlanBlock{
+  width: 320px;
+  min-width: 320px;
+  display: flex;
+  justify-content: center;
+  justify-self: center;
+}
+
+.sofaPlanWrap{
+  width: 320px;
+  height: 190px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#sofaPlanSvg{
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== CENTER PLAN ===== */
+
+.sofaPlanCenter{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+
+  pointer-events: none; /* aby neblokoval UI */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 5;
+}
+
+#sofaPlanSvg{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#sofaPlanSvg line,
+#sofaPlanSvg rect{
+  stroke: rgba(255,255,255,0.9);
+}
+
+/* 3 sloupce: vlevo vybavení, uprostřed půdorys, vpravo rozměry */
+#armrestsEquipWrap .armrestsLayout{
+  display: grid;
+  grid-template-columns: 1fr 320px 1fr;
+  gap: 26px;
+  align-items: start;
+}
+
+.sofaPlanHint{ display: none !important; }
+
+@media (max-width: 1750px){
+  #sofaPlanBlock{
+    display: none !important;
+  }
+
+  .armrestsLayout{
+    grid-template-columns: minmax(0, 1fr) 520px;
+  }
+}
+
+#bottomBar{
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+}
+
+/* === STEP 4 FABRIC PRICE TABS – kompaktní verze === */
+
+#bottomBar .fabricPriceTab{
+  flex: 0 0 auto;
+  min-width: 118px;
+  min-height: 44px;
+
+  padding: 7px 12px;
+  border-radius: 999px;
+
+  background: #3b3b3b;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+
+  box-shadow: none;
+  backdrop-filter: none;
+
+  gap: 1px;
+  transform: none;
+}
+
+#bottomBar .fabricPriceTab:hover{
+  background: #474747;
+  transform: translateY(-1px);
+}
+
+#bottomBar .fabricPriceTab.active{
+  background: #5FB3CE;
+  color: #0B1440;
+  border-color: rgba(11,20,64,0.12);
+  box-shadow: none;
+}
+
+#bottomBar .fabricPriceTabTitle{
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.05;
+  opacity: 0.92;
+}
+
+#bottomBar .fabricPriceTabPrice{
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+  opacity: 1;
+}
+
+#bottomBar .fabricPriceTab.active .fabricPriceTabPrice{
+  font-size: 13px;
+}
+
+/* kdyby někde zůstal discount markup, v tabech ho zploštíme */
+#bottomBar .fabricPriceTab .priceOld,
+#bottomBar .fabricPriceTab .discountBadge{
+  display: none !important;
+}
+
+#bottomBar .fabricPriceTab .priceWithDiscount{
+  display: inline;
+}
+
+#bottomBar .fabricPriceTab .priceNew{
+  font-size: inherit;
+  font-weight: 900;
+}
+
+#bottomBar .fabricPriceTabTitle::after{
+  content: "|";
+  display: inline-block;
+  margin: 0 7px;
+  opacity: 0.35;
+  font-weight: 700;
+}
+
+#bottomBar .fabricEmptyState{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  height: 100%;
+  color: rgba(255,255,255,0.74);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* === indikátor: vybraná látka je jinde === */
+
+#bottomBar .fabricPriceTab,
+#bottomBar .fabricFamilyTab{
+  position: relative;
+}
+
+/* kategorie nahoře */
+#bottomBar .fabricPriceTab.hasFabricSelectionHint{
+  padding-right: 26px;
+  min-width: 132px;
+}
+
+/* puntík */
+#bottomBar .hasFabricSelectionHint::after{
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ff3b3b;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 3px rgba(255,59,59,0.16);
+}
+
+/* u druhu látky trochu menší a víc vpravo */
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint::after{
+  right: 9px;
+  width: 6px;
+  height: 6px;
+}
+
+/* tooltip pouze při najetí na puntík / jeho okolí */
+#bottomBar .hasFabricSelectionHint::before{
+  content: attr(data-selection-hint);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 9px);
+
+  min-width: 190px;
+  max-width: 240px;
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  background: #151515;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity .14s ease, transform .14s ease;
+  z-index: 50;
+}
+
+#bottomBar .hasFabricSelectionHint:hover::before{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* tooltip indikátoru musí být nad summaryBoxem */
+#bottomBar{
+  z-index: 1800;
+}
+
+#bottomBar .hasFabricSelectionHint::before{
+  z-index: 99999;
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint::before{
+  content: attr(data-selection-hint);
+  position: absolute;
+
+  left: calc(100% + 14px);
+  top: 50%;
+  bottom: auto;
+  transform: translate(8px, -50%) scale(0.96);
+
+  width: 260px;
+  max-width: 260px;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  background: rgba(12, 14, 18, 0.98);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+
+  box-shadow:
+    0 18px 45px rgba(0,0,0,0.50),
+    0 0 0 1px rgba(255,255,255,0.14);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+  z-index: 999999;
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint::after{
+  z-index: 2;
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint:hover::before{
+  opacity: 1;
+  transform: translate(0, -50%) scale(1);
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint{
+  overflow: visible !important;
+  z-index: 50;
+}
+
+/* Vrátí scrollbar do levého seznamu druhů látek */
+#bottomBar .fabricFamilyTabs{
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0;
+  scrollbar-gutter: stable;
+}
+
+/* Samotné položky můžou zůstat visible kvůli puntíku/tooltipu */
+#bottomBar .fabricFamilyTab{
+  overflow: visible !important;
+}
+
+/* Sloupec nesmí schovávat obsah horizontálně */
+#bottomBar .fabricBrowserCol{
+  overflow: visible !important;
+}
+
+/* =========================================================
+   FABRIC FAMILY TOOLTIP - overlay vedle seznamu druhů látek
+   ========================================================= */
+
+/* hlavní wrapper musí pustit overlay ven */
+#bottomBar .fabricBrowserMain{
+  position: relative;
+  overflow: visible !important;
+}
+
+#bottomBar .fabricFamilyColumn,
+#bottomBar .fabricShadesColumn,
+#bottomBar .fabricBrowserCol{
+  overflow: visible !important;
+}
+
+/* scrollbar na seznamu druhů látek nech normálně funkční */
+#bottomBar .fabricFamilyTabs{
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* vypnutí starých tooltipů jen pro položky druhu látky */
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint::before{
+  content: none !important;
+  display: none !important;
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint:hover::before{
+  content: none !important;
+  display: none !important;
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint{
+  min-height: 44px !important;
+  padding: 6px 8px !important;
+  overflow: visible !important;
+}
+
+#bottomBar .fabricFamilyTab.hasFabricSelectionHint:hover{
+  min-height: 44px !important;
+  padding: 6px 8px !important;
+}
+
+/* nový overlay tooltip */
+#bottomBar .fabricFamilyTooltipOverlay{
+  position: absolute;
+
+  /* vedle levého sloupce + nad odstíny */
+  left: 210px;
+  top: 0;
+
+  width: 235px;
+  max-width: 235px;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  background: rgba(10, 12, 16, 0.97);
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+
+  box-shadow:
+    0 18px 45px rgba(0,0,0,0.42),
+    0 0 0 1px rgba(255,255,255,0.14);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translateY(-50%) translateX(8px) scale(0.98);
+  transition:
+    opacity .16s ease,
+    transform .16s ease,
+    visibility .16s ease;
+
+  z-index: 9999;
+}
+
+#bottomBar .fabricFamilyTooltipOverlay.is-visible{
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0) scale(1);
+}
+
+#bottomBar .fabricFamilyTooltipOverlay::before{
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+
+  width: 12px;
+  height: 12px;
+
+  background: rgba(10, 12, 16, 0.97);
+  transform: translateY(-50%) rotate(45deg);
+
+  box-shadow: -1px 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Melbourne shelf color picker */
+#bottomBar .shelfWrap{
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#bottomBar .shelfColorBlock{
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+#bottomBar .shelfColorGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+  align-content: start;
+  align-items: start;
+  min-height: 0;
+  max-height: 168px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 2px 10px 10px 0;
+  scrollbar-gutter: stable;
+}
+
+#bottomBar .shelfColorGrid .tileCard{
+  min-width: 0;
+  grid-template-rows: 44px auto;
+  padding: 6px;
+}
+
+#bottomBar .shelfColorGrid .tileImg{
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+#bottomBar .shelfColorGrid .tileTitle{
+  font-size: 11px;
+}
+
+/* =========================
+   STEP 5 - RECAP DOCUMENT
+   ========================= */
+
+#viewConfigurator.is-recap{
+  bottom: 46px;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(95, 179, 206, 0.10), transparent 28%),
+    #f6f4f1;
+}
+
+#viewConfigurator.is-recap #threeRoot,
+#viewConfigurator.is-recap .cameraControls,
+#viewConfigurator.is-recap #summaryBox,
+#viewConfigurator.is-recap #bottomBar,
+#viewConfigurator.is-recap .step2ContinueBtn{
+  display: none !important;
+}
+
+.recapView{
+  min-height: 100%;
+  padding: 122px 24px 116px;
+  box-sizing: border-box;
+}
+
+.recapSheet{
+  width: min(860px, 100%);
+  margin: 0 auto;
+  padding: 34px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.96);
+  color: #15171d;
+  box-shadow:
+    0 24px 80px rgba(15, 23, 42, 0.14),
+    0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.recapHeader{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+
+.recapEyebrow{
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #5fb3ce;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.recapHeader h1{
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+
+.recapHeader p{
+  margin: 8px 0 0;
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.recapHeaderMeta{
+  min-width: 180px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f7f8fa;
+  border: 1px solid #e7e9ee;
+  text-align: right;
+}
+
+.recapHeaderMeta span{
+  display: block;
+  margin-bottom: 7px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.recapHeaderMeta strong{
+  display: block;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.recapHero{
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(230px, .8fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.recapHeroImageWrap{
+  position: relative;
+  min-height: 250px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e6e8ed;
+}
+
+.recapHeroImage{
+  width: 100%;
+  height: 100%;
+  min-height: 250px;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+}
+
+.recapHeroImage[src=""],
+.recapHeroImage:not([src]){
+  display: none;
+}
+
+.recapImageFallback{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recapHeroImage:not([src]) + .recapImageFallback,
+.recapHeroImage[src=""] + .recapImageFallback{
+  display: grid;
+}
+
+.recapHeroImage[src]:not([src=""]) + .recapImageFallback{
+  display: none;
+}
+
+.recapIntroCard,
+.recapCard,
+.recapActionsCard{
+  border-radius: 10px;
+  border: 1px solid #e3e6eb;
+  background: #fff;
+}
+
+.recapIntroCard{
+  padding: 18px;
+}
+
+.recapIntroCard h2,
+.recapCardTitle h2{
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.recapQuickFacts{
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.recapFact{
+  display: grid;
+  gap: 2px;
+}
+
+.recapFact span{
+  font-size: 11px;
+  font-weight: 800;
+  color: #7b8494;
+  text-transform: uppercase;
+}
+
+.recapFact strong{
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.recapGrid{
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.recapGridTwo{
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.recapCard,
+.recapActionsCard{
+  padding: 16px;
+}
+
+.recapCardTitle{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.recapCardTitle h2{
+  order: 2;
+}
+
+.recapEditBtn{
+  order: 3;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #d7dde6;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+}
+
+.recapEditBtn:hover,
+.recapEditBtn.is-active{
+  background: #eef8fc;
+  border-color: #56b9dd;
+  color: #0f7fa8;
+}
+
+.recapEditBtn:active{
+  transform: translateY(1px);
+}
+
+.recapEditBtn span{
+  width: 15px;
+  height: 15px;
+  display: block;
+  background-color: currentColor;
+  -webkit-mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'/%3E%3C/svg%3E");
+  mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z'/%3E%3C/svg%3E");
+}
+
+.recapIcon{
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 0;
+  color: #1f2937;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.recapIcon::before{
+  content: "";
+  width: 22px;
+  height: 22px;
+  display: block;
+  background-color: currentColor;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+.recapIcon[data-recap-icon="assembly"]::before{
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m12 3 8 4.5-8 4.5-8-4.5L12 3Z'/%3E%3Cpath d='M4 7.5v9L12 21l8-4.5v-9'/%3E%3Cpath d='M12 12v9'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m12 3 8 4.5-8 4.5-8-4.5L12 3Z'/%3E%3Cpath d='M4 7.5v9L12 21l8-4.5v-9'/%3E%3Cpath d='M12 12v9'/%3E%3C/svg%3E");
+}
+
+.recapIcon[data-recap-icon="equipment"]::before{
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 15.3A3.3 3.3 0 1 0 12 8.7a3.3 3.3 0 0 0 0 6.6Z'/%3E%3Cpath d='M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2.1 2.1 0 0 1-2.97 2.97l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2.1 2.1 0 0 1-4.2 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2.1 2.1 0 1 1-2.97-2.97l.06-.06A1.7 1.7 0 0 0 4.1 15a1.7 1.7 0 0 0-1.56-1.03H2.45a2.1 2.1 0 0 1 0-4.2h.09A1.7 1.7 0 0 0 4.1 8.74a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2.1 2.1 0 1 1 2.97-2.97l.06.06a1.7 1.7 0 0 0 1.88.34h.01a1.7 1.7 0 0 0 1.03-1.56V2.6a2.1 2.1 0 0 1 4.2 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2.1 2.1 0 1 1 2.97 2.97l-.06.06A1.7 1.7 0 0 0 19.4 8.8v.01a1.7 1.7 0 0 0 1.56 1.03h.09a2.1 2.1 0 0 1 0 4.2h-.09A1.7 1.7 0 0 0 19.4 15Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 15.3A3.3 3.3 0 1 0 12 8.7a3.3 3.3 0 0 0 0 6.6Z'/%3E%3Cpath d='M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2.1 2.1 0 0 1-2.97 2.97l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2.1 2.1 0 0 1-4.2 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2.1 2.1 0 1 1-2.97-2.97l.06-.06A1.7 1.7 0 0 0 4.1 15a1.7 1.7 0 0 0-1.56-1.03H2.45a2.1 2.1 0 0 1 0-4.2h.09A1.7 1.7 0 0 0 4.1 8.74a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2.1 2.1 0 1 1 2.97-2.97l.06.06a1.7 1.7 0 0 0 1.88.34h.01a1.7 1.7 0 0 0 1.03-1.56V2.6a2.1 2.1 0 0 1 4.2 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2.1 2.1 0 1 1 2.97 2.97l-.06.06A1.7 1.7 0 0 0 19.4 8.8v.01a1.7 1.7 0 0 0 1.56 1.03h.09a2.1 2.1 0 0 1 0 4.2h-.09A1.7 1.7 0 0 0 19.4 15Z'/%3E%3C/svg%3E");
+}
+
+.recapIcon[data-recap-icon="material"]::before{
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='13.5' cy='7.5' r='1.2'/%3E%3Ccircle cx='8.2' cy='10.4' r='1.2'/%3E%3Ccircle cx='10.8' cy='15.2' r='1.2'/%3E%3Cpath d='M12 3.2a8.8 8.8 0 0 0 0 17.6h1.3a2.1 2.1 0 0 0 1.5-3.6 1.25 1.25 0 0 1 .9-2.1H17a4 4 0 0 0 4-4c0-4.35-3.94-7.9-9-7.9Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='13.5' cy='7.5' r='1.2'/%3E%3Ccircle cx='8.2' cy='10.4' r='1.2'/%3E%3Ccircle cx='10.8' cy='15.2' r='1.2'/%3E%3Cpath d='M12 3.2a8.8 8.8 0 0 0 0 17.6h1.3a2.1 2.1 0 0 0 1.5-3.6 1.25 1.25 0 0 1 .9-2.1H17a4 4 0 0 0 4-4c0-4.35-3.94-7.9-9-7.9Z'/%3E%3C/svg%3E");
+}
+
+.recapIcon[data-recap-icon="price"]::before{
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20.6 13.2 13.2 20.6a2.2 2.2 0 0 1-3.1 0L3.4 13.9a2.2 2.2 0 0 1-.64-1.56V4.4A1.65 1.65 0 0 1 4.4 2.75h7.95c.58 0 1.14.23 1.55.65l6.7 6.7a2.2 2.2 0 0 1 0 3.1Z'/%3E%3Ccircle cx='7.7' cy='7.7' r='1.15'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20.6 13.2 13.2 20.6a2.2 2.2 0 0 1-3.1 0L3.4 13.9a2.2 2.2 0 0 1-.64-1.56V4.4A1.65 1.65 0 0 1 4.4 2.75h7.95c.58 0 1.14.23 1.55.65l6.7 6.7a2.2 2.2 0 0 1 0 3.1Z'/%3E%3Ccircle cx='7.7' cy='7.7' r='1.15'/%3E%3C/svg%3E");
+}
+
+.recapIcon[data-recap-icon="plan"]::before{
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4' y='5' width='6.5' height='6.5' rx='1'/%3E%3Crect x='10.5' y='5' width='9.5' height='6.5' rx='1'/%3E%3Crect x='4' y='11.5' width='9.5' height='7.5' rx='1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4' y='5' width='6.5' height='6.5' rx='1'/%3E%3Crect x='10.5' y='5' width='9.5' height='6.5' rx='1'/%3E%3Crect x='4' y='11.5' width='9.5' height='7.5' rx='1'/%3E%3C/svg%3E");
+}
+
+.recapRows{
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+}
+
+.recapRow{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eef1f5;
+  font-size: 13px;
+}
+
+.recapRow:last-child{
+  border-bottom: 0;
+}
+
+.recapRow span{
+  color: #657080;
+}
+
+.recapRow strong{
+  justify-self: end;
+  text-align: right;
+  font-weight: 800;
+}
+
+.recapRows.is-editing{
+  gap: 8px;
+}
+
+.recapDimEditRow{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, 104px);
+  gap: 12px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eef1f5;
+  overflow: hidden;
+}
+
+.recapDimEditRow span{
+  min-width: 0;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recapDimEditRow small{
+  display: block;
+  margin-top: 2px;
+  color: #7b8494;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.recapDimInput{
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #cfd7e3;
+  background: #f9fbfd;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: right;
+  padding: 0 10px;
+  outline: none;
+}
+
+.recapDimInput:focus{
+  border-color: #48b7df;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(72, 183, 223, .16);
+}
+
+.recapDimActions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  flex-wrap: wrap;
+}
+
+.recapDimCancelBtn,
+.recapDimSaveBtn{
+  height: 34px;
+  border-radius: 8px;
+  padding: 0 13px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recapDimCancelBtn{
+  border: 1px solid #d7dde6;
+  background: #fff;
+  color: #4b5563;
+}
+
+.recapDimSaveBtn{
+  border: 1px solid #1f9dcc;
+  background: #56bfdf;
+  color: #083548;
+}
+
+.recapRow.is-part{
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.recapRow.is-part span{
+  color: #252a33;
+  font-weight: 700;
+}
+
+.recapRow.is-assembly-note{
+  grid-template-columns: minmax(0, 1fr);
+  min-height: auto;
+  padding-top: 4px;
+  border-bottom: 0;
+  font-size: 11px;
+}
+
+.recapRow.is-assembly-note span{
+  color: #8a93a3;
+  font-weight: 700;
+}
+
+.recapRow.is-assembly-note strong{
+  display: none;
+}
+
+.recapRow.is-price-note{
+  min-height: auto;
+  padding-top: 2px;
+  border-bottom: 0;
+  font-size: 11px;
+}
+
+.recapRow.is-price-note span,
+.recapRow.is-price-note strong{
+  color: #8a93a3;
+  font-weight: 700;
+}
+
+.recapPlanFrame{
+  margin-top: 14px;
+  border-radius: 10px;
+  background: #2d2f33;
+  border: 1px solid #e1e5eb;
+  overflow: hidden;
+}
+
+#recapPlanSvg{
+  width: 100%;
+  height: 210px;
+  display: block;
+}
+
+.recapTiles{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.recapTile{
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 9px;
+  background: #f8f9fb;
+  border: 1px solid #eaedf2;
+}
+
+.recapTileMedia{
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e8ebf0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.recapTileMedia img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.recapTileMedia.is-swatch{
+  background-size: cover;
+  background-position: center;
+}
+
+.recapTileText{
+  min-width: 0;
+}
+
+.recapTileText span{
+  display: block;
+  margin-bottom: 2px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.recapTileText strong{
+  display: block;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.recapPriceCard .recapRow strong{
+  font-size: 15px;
+}
+
+.recapPriceCard .recapRow.is-total{
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid #dce2ea;
+}
+
+.recapPriceCard .recapRow.is-total strong{
+  font-size: 20px;
+}
+
+.recapActionsCard{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: start;
+}
+
+.recapActionBtn{
+  width: 100%;
+  min-height: 44px;
+  border-radius: 7px;
+  border: 1px solid #171a20;
+  background: #fff;
+  color: #171a20;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.recapActionPrimary{
+  background: #171a20;
+  color: #fff;
+}
+
+.recapActionsCard p{
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.recapInquiryModal.hidden{
+  display: none;
+}
+
+.recapInquiryModal{
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.recapInquiryBackdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, .48);
+}
+
+.recapInquiryDialog{
+  position: relative;
+  width: min(420px, 100%);
+  padding: 24px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .28);
+}
+
+.recapInquiryDialog h2{
+  margin: 0 32px 8px 0;
+  color: #111827;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.recapInquiryDialog p{
+  margin: 0 0 18px;
+  color: #5f6b7b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.recapInquiryClose{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.recapInquiryField{
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.recapInquiryField span{
+  color: #526173;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.recapInquiryField input{
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid #cfd6df;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.recapInquiryField input:focus{
+  outline: 2px solid rgba(78, 174, 208, .35);
+  border-color: #4eaed0;
+}
+
+.recapInquiryField input.is-invalid{
+  border-color: #b42318;
+  outline: 2px solid rgba(180, 35, 24, .16);
+}
+
+.recapInquiryMessage{
+  min-height: 20px;
+  margin-top: 10px;
+  color: #5f6b7b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recapInquiryMessage[data-tone="error"]{
+  color: #b42318;
+}
+
+.recapInquiryActions{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.recapInquiryPrimary,
+.recapInquirySecondary{
+  height: 42px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.recapInquiryPrimary{
+  border: 1px solid #171a20;
+  background: #171a20;
+  color: #fff;
+}
+
+.recapInquirySecondary{
+  border: 1px solid #d4d9e1;
+  background: #fff;
+  color: #171a20;
+}
+
+.recapInquiryPrimary:disabled,
+.recapInquirySecondary:disabled,
+.recapInquiryField input:disabled{
+  opacity: .65;
+  cursor: wait;
+}
+
+@media (max-width: 900px){
+  .recapView{
+    padding: 112px 12px 98px;
+  }
+
+  .recapSheet{
+    padding: 20px;
+  }
+
+  .recapHeader,
+  .recapHero,
+  .recapGridTwo{
+    grid-template-columns: 1fr;
+  }
+
+  .recapHeaderMeta{
+    text-align: left;
+  }
+}
+
+@media print{
+  @page{
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html[data-view="configurator"],
+  html[data-view="configurator"] body,
+  #viewConfigurator.is-recap{
+    position: static;
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .topBar,
+  #stepBar,
+  .recapActionsCard{
+    display: none !important;
+  }
+
+  .recapView{
+    padding: 0;
+  }
+
+  .recapSheet{
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .recapCard,
+  .recapHeroImageWrap,
+  .recapIntroCard{
+    break-inside: avoid;
+  }
+}
+
+/* =========================
+   RECAP – VYBAVENÍ DETAIL ROWS
+   ========================= */
+
+#recapEquipment{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#recapEquipment .recapTile.recapEquipmentTile{
+  min-height: 92px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+/* větší box pro obrázek */
+#recapEquipment .recapEquipmentTile .recapTileMedia{
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eef1f5;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  flex: 0 0 auto;
+}
+
+/* základ pro všechny obrázky */
+#recapEquipment .recapEquipmentTile .recapTileMedia img{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* NOHY:
+   musí být vidět celé, protože jsou na průhledném pozadí */
+#recapEquipment .recapEquipmentTile .recapTileMedia.is-leg-image{
+  background: #f1f4f8;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+#recapEquipment .recapEquipmentTile .recapTileMedia.is-leg-image img{
+  object-fit: contain;
+  object-position: center center;
+}
+
+/* PODRUČKY:
+   necháme podobně jako teď, fotka je OK */
+#recapEquipment .recapEquipmentTile .recapTileMedia.is-armrest-image img{
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* PANTY:
+   je to jen vzorek barvy/kovu, takže chceme vyplnit celý box */
+#recapEquipment .recapEquipmentTile .recapTileMedia.is-hinge-image img{
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* POLIČKA:
+   používáme fotku/vzorek dřeva stejně jako v tabu Polička,
+   takže chceme vyplnit celý box bez prázdných okrajů */
+#recapEquipment .recapEquipmentTile .recapTileMedia.is-shelf-image img{
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* swatche obecně */
+#recapEquipment .recapEquipmentTile .recapTileMedia.is-swatch{
+  background-size: cover;
+  background-position: center;
+}
+
+/* Text posunutý blíž k detailům, aby bylo víc místa pro obrázek */
+#recapEquipment .recapEquipmentTile .recapTileText{
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 3px;
+  align-items: center;
+}
+
+#recapEquipment .recapEquipmentTile .recapTileText > span{
+  grid-column: 1 / 2;
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding-top: 2px;
+}
+
+#recapEquipment .recapTileDetails{
+  grid-column: 2 / 3;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+#recapEquipment .recapTileDetail{
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+#recapEquipment .recapTileDetail span{
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+#recapEquipment .recapTileDetail strong{
+  color: #020617;
+  font-weight: 800;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* když bude karta extrémně úzká */
+@media (max-width: 520px){
+  #recapEquipment .recapTile.recapEquipmentTile{
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  #recapEquipment .recapEquipmentTile .recapTileMedia{
+    width: 64px;
+    height: 64px;
+  }
+
+  #recapEquipment .recapEquipmentTile .recapTileText{
+    grid-template-columns: 1fr;
+  }
+
+  #recapEquipment .recapEquipmentTile .recapTileText > span,
+  #recapEquipment .recapTileDetails{
+    grid-column: 1 / -1;
+  }
+}
+
+/* =========================
+   RECAP – MATERIÁL DETAIL
+   ========================= */
+
+#recapMaterial{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#recapMaterial .recapMaterialMain,
+#recapMaterial .recapMaterialPaspule{
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  border-radius: 14px;
+}
+
+#recapMaterial .recapMaterialMain{
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 12px;
+  align-items: center;
+}
+
+#recapMaterial .recapMaterialPaspule{
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+#recapMaterial .recapMaterialSwatch{
+  width: 62px;
+  height: 62px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+#recapMaterial .recapMaterialSwatch.is-small{
+  width: 54px;
+  height: 54px;
+}
+
+#recapMaterial .recapMaterialHead{
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+#recapMaterial .recapMaterialHead span{
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+#recapMaterial .recapMaterialHead strong{
+  color: #020617;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+#recapMaterial .recapMaterialDescription{
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.48;
+  font-weight: 600;
+}
+
+#recapMaterial .recapMaterialInfo{
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 6px;
+}
+
+#recapMaterial .recapMaterialInfoRow{
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+#recapMaterial .recapMaterialInfoRow:last-child{
+  border-bottom: 0;
+}
+
+#recapMaterial .recapMaterialInfoRow span{
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+#recapMaterial .recapMaterialInfoRow strong{
+  color: #020617;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px){
+  #recapMaterial .recapMaterialInfoRow{
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* Landing model hero responsive overrides */
+#viewLanding .modelCard{
+  width: 100%;
+  max-width: 1560px;
+  margin: 18px auto;
+}
+
+#viewLanding .modelHero.heroWithChips{
+  height: 300px;
+  min-height: 0;
+}
+
+#viewLanding .modelHero.heroWithChips .modelHeroImg{
+  object-position: 50% 52%;
+}
+
+#viewLanding .modelCard[data-model="MANILA"] .modelHeroImg{
+  object-position: 50% 50%;
+}
+
+#viewLanding .heroChips{
+  top: 20px;
+  right: 20px;
+  bottom: auto;
+  width: clamp(150px, 13vw, 220px);
+  gap: 12px;
+}
+
+#viewLanding .heroChip{
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+@media (min-width: 1600px){
+  #viewLanding .modelHero.heroWithChips{
+    height: 300px;
+  }
+}
+
+@media (max-width: 1200px){
+  #viewLanding .modelHero.heroWithChips{
+    height: 280px;
+  }
+
+  #viewLanding .heroChips{
+    width: clamp(130px, 16vw, 180px);
+    top: 14px;
+    right: 14px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 820px){
+  #viewLanding .modelHero.heroWithChips{
+    height: 260px;
+  }
+
+  #viewLanding .heroChips{
+    display: none;
+  }
+}
