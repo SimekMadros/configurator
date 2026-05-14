@@ -19,4 +19,4 @@ public/**/*.mtl
 public/**/*.usdc
 public/**/*.tres
 public/**/*.bak
-public/textures/
+texture-source-files/
