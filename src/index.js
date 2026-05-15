@@ -25864,7 +25864,7 @@ if (IS_DEV && "serviceWorker" in navigator) {
 
 if ("serviceWorker" in navigator && !IS_DEV) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((e) => {
+    navigator.serviceWorker.register("./sw.js").catch((e) => {
       console.warn("SW register failed:", e);
     });
   });
