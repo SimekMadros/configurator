@@ -19322,6 +19322,19 @@ window.addEventListener("popstate", (e) => {
 //  FABRIC APPLY (KROK 4) â€“ aplikace textury na sedaÄŤku
 // =====================================================
 
+// MANILA_FABRIC_REPEAT_MULTIPLIER:
+// Manila ma mensi UV mapy nez ostatni modely, proto se repeat latek na calouneni
+// nasobi timto cislem. 1.5 znamena 150 %: repeat 2 -> 3, repeat 3 -> 4.5.
+// Plati pouze pro hlavni fabric na pohovce, ne pro paspule, kov, drevo ani doplnky.
+const MANILA_FABRIC_REPEAT_MULTIPLIER = 1.5;
+
+function getSofaFabricRepeatForActiveModel(repeat) {
+  const baseRepeat = Number.isFinite(Number(repeat)) ? Number(repeat) : 1;
+  return getModelKey() === "MANILA"
+    ? baseRepeat * MANILA_FABRIC_REPEAT_MULTIPLIER
+    : baseRepeat;
+}
+
 async function applyFabricToSofaByMaterialMap({
   fabricKey = "",
   baseColorUrl,
@@ -19332,12 +19345,14 @@ async function applyFabricToSofaByMaterialMap({
 }) {
   if (!scene) return;
 
+  const fabricRepeat = getSofaFabricRepeatForActiveModel(repeat);
+
   const loadTex = (url, isColor) =>
     new Promise((resolve, reject) => {
       if (!url) return resolve(null);
       texLoader.load(
         url,
-        (t) => resolve(setupTex(t, isColor, repeat)),
+        (t) => resolve(setupTex(t, isColor, fabricRepeat)),
         undefined,
         (err) => reject({ url, err })
       );
@@ -21577,6 +21592,23 @@ function loadButton() {
 
 const texLoader = new THREE.TextureLoader();
 
+function textureHasImageData(tex) {
+  const image = tex?.image;
+  if (!image) return false;
+  if (Array.isArray(image)) return image.length > 0;
+  if (image.data) return true;
+
+  const width = Number(image.width ?? image.naturalWidth ?? image.videoWidth ?? 0);
+  const height = Number(image.height ?? image.naturalHeight ?? image.videoHeight ?? 0);
+  return width > 0 && height > 0;
+}
+
+function markTextureForUpdateIfReady(tex) {
+  if (textureHasImageData(tex)) {
+    tex.needsUpdate = true;
+  }
+}
+
 function setupTex(tex, isColor = false, repeat = 1) {
   // glTF UVs â†’ musĂ­ bĂ˝t flipY = false
   tex.flipY = false;
@@ -21596,9 +21628,7 @@ function setupTex(tex, isColor = false, repeat = 1) {
   // zatĂ­m nastavĂ­me rozumnou hodnotu, po vytvoĹ™enĂ­ rendereru to dotlaÄŤĂ­me na maximum GPU
   tex.anisotropy = 8;
 
-  if (tex.image) {
-    tex.needsUpdate = true;
-  }
+  markTextureForUpdateIfReady(tex);
   
   return tex;
 }
@@ -22276,7 +22306,7 @@ const MAX_ANISO = renderer.capabilities.getMaxAnisotropy();
 ].forEach((t) => {
   if (!t) return;
   t.anisotropy = MAX_ANISO;
-  t.needsUpdate = true;
+  markTextureForUpdateIfReady(t);
 });
 
 // âś… ToneMapping OK, ale expozice byla moc vysokĂˇ (3 je hodnÄ›)
