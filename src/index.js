@@ -10723,7 +10723,7 @@ const FABRICS_CAT3 = [
   buildFabricFamilyFromFiles({
     key: "mystic",
     name: "Mystic",
-    folder: "Mystic",
+    folder: "mystic",
     categoryFolder: "3",
     repeat: 1,
     normalScale: 1,
@@ -10825,7 +10825,7 @@ const FABRICS_CAT3 = [
   buildFabricFamilyFromFiles({
     key: "daytona",
     name: "Daytona",
-    folder: "Daytona",
+    folder: "daytona",
     categoryFolder: "3",
     repeat: 2,
     normalScale: 1,
