@@ -21,6 +21,16 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { getVariantIdsForSofa, normalizeSofaKey } from "./catalogue.js";
 
 const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/sw.js"];
+
+const API_BASE_URL = "https://madros-configurator-api.onrender.com";
+
+function apiUrl(path) {
+  const raw = String(path || "");
+  if (!raw) return API_BASE_URL;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `${API_BASE_URL}${raw.startsWith("/") ? raw : `/${raw}`}`;
+}
+
 const DEBUG_LOGS =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search || "").has("debug");
@@ -3525,7 +3535,7 @@ function getRecapPdfAssetUrl(src, { format = "jpeg", width = 320, quality = 0.68
       return src;
     }
 
-    const endpoint = new URL("/api/pdf-asset", window.location.href);
+    const endpoint = new URL(apiUrl("/api/pdf-asset"));
     endpoint.searchParams.set("src", `${assetPath}${sourceUrl.search}`);
     endpoint.searchParams.set("w", String(width));
     endpoint.searchParams.set("q", String(quality));
@@ -4026,13 +4036,8 @@ async function openRecapPdfDocument() {
 function getRecapPdfEndpoints() {
   if (window.RECAP_PDF_ENDPOINT) return [window.RECAP_PDF_ENDPOINT];
 
-  const protocol = /^https?:$/.test(window.location.protocol)
-    ? window.location.protocol
-    : "http:";
-  const host = window.location.hostname || "localhost";
   return [
-    "/api/export-recap-pdf",
-    `${protocol}//${host}:3001/api/export-recap-pdf`,
+    apiUrl("/api/export-recap-pdf"),
   ];
 }
 
@@ -4074,13 +4079,8 @@ async function downloadRecapPdfDocument() {
 function getRecapInquiryEndpoints() {
   if (window.RECAP_INQUIRY_ENDPOINT) return [window.RECAP_INQUIRY_ENDPOINT];
 
-  const protocol = /^https?:$/.test(window.location.protocol)
-    ? window.location.protocol
-    : "http:";
-  const host = window.location.hostname || "localhost";
   return [
-    "/api/send-recap-inquiry",
-    `${protocol}//${host}:3001/api/send-recap-inquiry`,
+    apiUrl("/api/send-recap-inquiry"),
   ];
 }
 
@@ -19757,14 +19757,8 @@ function getShareConfigEndpoints(token = "") {
     return [`${String(window.RECAP_SHARE_ENDPOINT).replace(/\/+$/g, "")}${suffix}`];
   }
 
-  const protocol = /^https?:$/.test(window.location.protocol)
-    ? window.location.protocol
-    : "http:";
-  const host = window.location.hostname || "localhost";
-
   return [
-    `/api/share-config${suffix}`,
-    `${protocol}//${host}:3001/api/share-config${suffix}`,
+    apiUrl(`/api/share-config${suffix}`),
   ];
 }
 
