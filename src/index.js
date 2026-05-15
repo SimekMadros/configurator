@@ -20,7 +20,18 @@ import {
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { getVariantIdsForSofa, normalizeSofaKey } from "./catalogue.js";
 
-const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/"];
+const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/sw.js"];
+const DEBUG_LOGS =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search || "").has("debug");
+const ORIGINAL_CONSOLE_LOG =
+  typeof console !== "undefined" && console?.log?.bind
+    ? console.log.bind(console)
+    : null;
+
+function debugLog(...args) {
+  if (DEBUG_LOGS && ORIGINAL_CONSOLE_LOG) ORIGINAL_CONSOLE_LOG(...args);
+}
 
 function getAppBasePath() {
   if (typeof window === "undefined") return "/";
@@ -41,13 +52,32 @@ function assetUrl(url) {
   return `${getAppBasePath()}${raw.replace(/^\/+/, "")}`;
 }
 
+function rewriteLocalAssetUrlsInCss(value) {
+  const raw = String(value || "");
+  if (!raw || !raw.includes("url(")) return raw;
+
+  return raw.replace(/url\(\s*(['"]?)([^"')]+)\1\s*\)/g, (full, _quote, url) => {
+    const next = assetUrl(url.trim());
+    return next === url ? full : `url("${next.replace(/"/g, "%22")}")`;
+  });
+}
+
 function normalizeLocalAssetUrls(root = document) {
   if (!root?.querySelectorAll) return;
 
-  root.querySelectorAll("img[src], source[src], video[src], audio[src]").forEach((el) => {
+  const elements = [
+    ...(root.nodeType === 1 ? [root] : []),
+    ...root.querySelectorAll("*"),
+  ];
+
+  elements.forEach((el) => {
     const current = el.getAttribute("src");
-    const next = assetUrl(current);
+    const next = current ? assetUrl(current) : current;
     if (next && next !== current) el.setAttribute("src", next);
+
+    const style = el.getAttribute("style");
+    const nextStyle = style ? rewriteLocalAssetUrlsInCss(style) : style;
+    if (nextStyle && nextStyle !== style) el.setAttribute("style", nextStyle);
   });
 }
 
@@ -77,7 +107,7 @@ if (typeof window !== "undefined") {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["src"],
+      attributeFilter: ["src", "style"],
     });
   });
 }
@@ -638,15 +668,18 @@ function normalizeTextureUrlForValidation(url) {
   }
 }
 
+const DEFAULT_PASPULE_COLOR_URL = "/textures/fabric/basecolor/Paspule-default.png";
+const DEFAULT_FABRIC_COLOR_URL = "/textures/fabric/basecolor/basecolor_COL_VAR2_2K.jpg";
+
 function isDefaultStep4BaseColorUrl(url, target = "sofa") {
   const normalized = normalizeTextureUrlForValidation(url);
   if (!normalized) return true;
 
   if (target === "paspule") {
-    return normalized.includes("/textures/fabric/basecolor/paspule-default.png");
+    return normalized.includes(DEFAULT_PASPULE_COLOR_URL.toLowerCase());
   }
 
-  return normalized.includes("/textures/fabric/basecolor/basecolor_col_var2_2k.jpg");
+  return normalized.includes(DEFAULT_FABRIC_COLOR_URL.toLowerCase());
 }
 
 function isValidStep4FabricSelection(selected, target = "sofa") {
@@ -1040,7 +1073,7 @@ function renderRecapMaterial(host, fabricRecap) {
 
   host.innerHTML = `
     <div class="recapMaterialMain">
-      <div class="recapMaterialSwatch" style="background-image:url('${escapeHtmlText(selected.baseColorUrl)}')"></div>
+      <div class="recapMaterialSwatch" style="background-image:url('${escapeHtmlText(assetUrl(selected.baseColorUrl))}')"></div>
 
       <div class="recapMaterialHead">
         <span>Hlavní potah</span>
@@ -1065,7 +1098,7 @@ function renderRecapMaterial(host, fabricRecap) {
 
     ${shouldShowPaspule ? `
       <div class="recapMaterialPaspule">
-        <div class="recapMaterialSwatch is-small" style="background-image:url('${escapeHtmlText(selectedPaspuleFabric.baseColorUrl)}')"></div>
+        <div class="recapMaterialSwatch is-small" style="background-image:url('${escapeHtmlText(assetUrl(selectedPaspuleFabric.baseColorUrl))}')"></div>
         <div class="recapMaterialHead">
           <span>Paspule</span>
           <strong>${escapeHtmlText(paspuleName || "Nezvoleno")}</strong>
@@ -1225,9 +1258,9 @@ function renderRecapTiles(host, tiles) {
   host.innerHTML = safeTiles.length
     ? safeTiles.map((tile) => {
       const media = tile.img
-        ? `<img src="${escapeHtmlText(tile.img)}" alt="">`
+        ? `<img src="${escapeHtmlText(assetUrl(tile.img))}" alt="">`
         : "";
-      const style = tile.swatch ? ` style="background-image:url('${escapeHtmlText(tile.swatch)}')"` : "";
+      const style = tile.swatch ? ` style="background-image:url('${escapeHtmlText(assetUrl(tile.swatch))}')"` : "";
       
       const mediaClass = [
         "recapTileMedia",
@@ -2821,7 +2854,7 @@ function absolutizeRecapPrintAssets(root) {
     const src = img.getAttribute("src");
     if (!src) return;
     try {
-      img.setAttribute("src", new URL(src, window.location.href).href);
+      img.setAttribute("src", new URL(assetUrl(src), window.location.href).href);
     } catch (e) {}
   });
 
@@ -3400,7 +3433,7 @@ function buildPdfFromJpegPages(pages) {
 
 async function urlToDataUrl(url) {
   if (!url || /^data:/i.test(url)) return url;
-  const absoluteUrl = new URL(url, window.location.href).href;
+  const absoluteUrl = new URL(assetUrl(url), window.location.href).href;
   const response = await fetch(absoluteUrl);
   if (!response.ok) throw new Error(`Asset load failed: ${absoluteUrl}`);
   const blob = await response.blob();
@@ -4877,10 +4910,10 @@ async function runCanonicalRebuildBeforeLeavingStep2(nextStep) {
     pendingCanonicalAnalysis = analysis;
     needsCanonicalRebuild = !!analysis?.needsRebuild;
 
-    console.log("CANONICAL ANALYSIS", analysis);
+    debugLog("CANONICAL ANALYSIS", analysis);
 
     if (analysis?.needsRebuild) {
-      console.log("CANONICAL REBUILD TRIGGERED", {
+      debugLog("CANONICAL REBUILD TRIGGERED", {
         reason: analysis?.reason,
         branchCount: analysis?.branchCount,
         needsRebuild: analysis?.needsRebuild,
@@ -4890,9 +4923,9 @@ async function runCanonicalRebuildBeforeLeavingStep2(nextStep) {
       const snapshot = snapshotSceneModulesForCanonicalRebuild();
       const descriptor = buildCanonicalDescriptorFromAnalysis(analysis, snapshot);
 
-      console.log("CANONICAL DESCRIPTOR", descriptor);
+      debugLog("CANONICAL DESCRIPTOR", descriptor);
 
-      console.log(
+      debugLog(
         "CANONICAL DESCRIPTOR VARIANTS",
         descriptor.map((x, i) => `${i}: ${x.variantId} | attachTo=${x.attachTo} | side=${x.side}`)
       );
@@ -5570,7 +5603,7 @@ function analyzeCanonicalLayoutForStep3() {
     const leftDepthNodes = Array.isArray(sideAxes?.left) ? sideAxes.left : [];
     const rightDepthNodes = Array.isArray(sideAxes?.right) ? sideAxes.right : [];
 
-    console.log("ANALYZE SIDE AXES RAW", {
+    debugLog("ANALYZE SIDE AXES RAW", {
       left: sideAxes?.left?.map(n =>
         String(n?.rec?.name ?? n?.rec?.variantId ?? n?.rec?.mesh?.userData?.variantId ?? "").trim()
       ),
@@ -5579,7 +5612,7 @@ function analyzeCanonicalLayoutForStep3() {
       ),
     });
 
-    console.log("ANALYZE SIDE AXES FINAL", {
+    debugLog("ANALYZE SIDE AXES FINAL", {
       leftDepthNodes: leftDepthNodes.map(n =>
         String(n?.rec?.name ?? n?.rec?.variantId ?? n?.rec?.mesh?.userData?.variantId ?? "").trim()
       ),
@@ -5748,7 +5781,7 @@ function analyzeCanonicalLayoutForStep3() {
       hasDualAxisAnywhere &&
       dualAxisOutsideWidthAxis;
 
-    console.log("U CORNER+1D AXIS CHECK", {
+    debugLog("U CORNER+1D AXIS CHECK", {
       widthAxis: widthAxisNodes.map(variantOfNode),
       leftDepth: leftDepthNodes.map(variantOfNode),
       rightDepth: rightDepthNodes.map(variantOfNode),
@@ -5796,7 +5829,7 @@ function analyzeCanonicalLayoutForStep3() {
         isRightDualAxisVariantId(widthLeftVariant)
       );
 
-    console.log("U WIDTH ENDPOINT ORDER CHECK", {
+    debugLog("U WIDTH ENDPOINT ORDER CHECK", {
       widthAxis: widthAxisNodes.map((n) =>
         String(n?.rec?.name ?? n?.rec?.variantId ?? n?.rec?.mesh?.userData?.variantId ?? "").trim()
       ),
@@ -5937,7 +5970,7 @@ function analyzeCanonicalLayoutForStep3() {
       // malá tolerance, aby rebuild neskákal kvůli zaokrouhlení / pár mm
       const physicalDepthLongerThanWidth = longestPhysicalDepth > widthPhysicalLen + 1;
 
-      console.log("L PHYSICAL LENGTH CHECK", {
+      debugLog("L PHYSICAL LENGTH CHECK", {
         widthAxis: widthAxisNodes.map(variantOfNode),
         leftDepth: leftDepthNodes.map(variantOfNode),
         rightDepth: rightDepthNodes.map(variantOfNode),
@@ -5995,7 +6028,7 @@ function analyzeCanonicalLayoutForStep3() {
     // rebuild chceme tehdy, kdyĹľ U nenĂ­ v kanonickĂ© "front" orientaci
     if (effectiveBranchCount === 3) {
 
-      console.log("U ANALYSIS RAW", {
+      debugLog("U ANALYSIS RAW", {
         orientation,
         branchCount: effectiveBranchCount,
         dualAxisWorldCheck,
@@ -6029,7 +6062,7 @@ function analyzeCanonicalLayoutForStep3() {
         shouldRequireBothDepthSides &&
         (!hasLeftDepth || !hasRightDepth);
 
-      console.log("U REBUILD DECISION DEBUG", {
+      debugLog("U REBUILD DECISION DEBUG", {
         orientation,
         widthAxisOrientation,
         hasLeftDepth,
@@ -6095,7 +6128,7 @@ function analyzeCanonicalLayoutForStep3() {
       else if (hasDualAxisWorldOrientationIssue) reason = "u_shape_1d_not_world_front";
       else if (forceRebuildForCornerPlus1D) reason = "u_shape_corner_plus_1d_force_rebuild";
 
-      console.log("U CORNER+1D REBUILD FLAGS", {
+      debugLog("U CORNER+1D REBUILD FLAGS", {
         orientation,
         widthAxisOrientation,
         branchCount: effectiveBranchCount,
@@ -6258,7 +6291,7 @@ function installCanonicalRebuildDebugTools() {
     }));
 
     console.group("CANONICAL DEBUG SNAPSHOT");
-    console.log("appState", {
+    debugLog("appState", {
       step: appState?.step,
       model: appState?.model,
       needsCanonicalRebuild,
@@ -6266,7 +6299,7 @@ function installCanonicalRebuildDebugTools() {
     });
     console.table(moduleRows);
     console.table(nodeRows);
-    console.log("analysis", analysisSummary);
+    debugLog("analysis", analysisSummary);
     console.table(descriptorRows);
     console.groupEnd();
 
@@ -6420,7 +6453,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
 
     straightNodes.sort((a, b) => getMappedX(a) - getMappedX(b));
 
-    console.log("CANONICAL SINGLE BRANCH", {
+    debugLog("CANONICAL SINGLE BRANCH", {
       orientation,
       nodes: straightNodes.map(variantOfNode)
     });
@@ -6881,7 +6914,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       }
     }
 
-    console.log("U ENDPOINT ORDER", {
+    debugLog("U ENDPOINT ORDER", {
       endpointsRaw: uEndpointNodes.map(variantOfNode),
       leftEndpoint: variantOfNode(leftCornerNode),
       rightEndpoint: variantOfNode(rightCornerNode),
@@ -6938,7 +6971,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       isDualAxisEndpoint(leftCornerNode) &&
       isDualAxisEndpoint(rightCornerNode);
 
-    console.log("U CORNER TYPE MODE", {
+    debugLog("U CORNER TYPE MODE", {
       leftCornerRawVariant,
       rightCornerRawVariant,
       hasSameCornerTypes,
@@ -7132,7 +7165,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
               : middleFromWidthAxis
           );
 
-      console.log("CORNER_PLUS_1D MIDDLE PICK", {
+      debugLog("CORNER_PLUS_1D MIDDLE PICK", {
         isCornerPlusDualAxisOnly,
         leftEndpoint: variantOfNode(leftCornerNode),
         rightEndpoint: variantOfNode(rightCornerNode),
@@ -7180,7 +7213,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
         rightCornerNode,
       ]).filter(Boolean);
 
-      console.log("DUAL_ENDPOINT_U WIDTH PATH", {
+      debugLog("DUAL_ENDPOINT_U WIDTH PATH", {
         endpoints: uEndpointNodes.map(variantOfNode),
         widthAxisNodesRaw: widthAxisNodesRaw.map(variantOfNode),
         leftDepthNodesRaw: leftDepthNodesRaw.map(variantOfNode),
@@ -7347,7 +7380,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
         rightCornerNode
       ]).filter(Boolean);
 
-      console.log("SAME CORNER WIDTH PATH", {
+      debugLog("SAME CORNER WIDTH PATH", {
         betweenCornerCandidates: betweenCornerCandidates.map(variantOfNode),
         components: components.map((c) => c.map(variantOfNode)),
         bridgingComponents: bridgingComponents.map((c) => c.map(variantOfNode)),
@@ -7620,7 +7653,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       leftBranchNodes = mergeUniqueNodes(leftAssigned);
       rightBranchNodes = mergeUniqueNodes(rightAssigned);
 
-      console.log("STRICT U GEOM SPLIT", {
+      debugLog("STRICT U GEOM SPLIT", {
         strictMode: {
           hasSameCornerTypes,
           hasCornerAndDualAxisEndpoints,
@@ -7715,7 +7748,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     rightChain = orderBranchPreferLinearFromCorner(rightCornerNode, rightBranchNodes);
 
     if (hasSameCornerTypes) {
-      console.log("SAME CORNER CHAIN CHECK", {
+      debugLog("SAME CORNER CHAIN CHECK", {
         leftBranchNodes: leftBranchNodes.map(variantOfNode),
         rightBranchNodes: rightBranchNodes.map(variantOfNode),
         leftChain: leftChain.map(variantOfNode),
@@ -7724,7 +7757,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
         rightChainLen: rightChain.length,
       });
 
-      console.log("SAME CORNER CHAIN DETAIL", {
+      debugLog("SAME CORNER CHAIN DETAIL", {
         leftDetailed: leftChain.map((n, i) => ({
           i,
           variantId: variantOfNode(n),
@@ -7741,7 +7774,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     }
 
     if (hasSameCornerTypes) {
-      console.log("SAME CORNER GEOM DETAIL", {
+      debugLog("SAME CORNER GEOM DETAIL", {
         leftCorner: {
           variantId: variantOfNode(leftCornerNode),
           x: getMappedX(leftCornerNode),
@@ -7846,7 +7879,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       }
     }
 
-    console.log("CANONICAL U BRANCH SOURCE", {
+    debugLog("CANONICAL U BRANCH SOURCE", {
       sameCornerTypes: hasSameCornerTypes,
       differentCornerTypes: hasDifferentCornerTypes,
       leftRaw: leftBranchNodesRaw.map(variantOfNode),
@@ -7867,7 +7900,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       rightBranchCount: rightBranchNodes.length,
     });
 
-    console.log("CANONICAL U TOPOLOGY", {
+    debugLog("CANONICAL U TOPOLOGY", {
       corners: cornerNodes.map(variantOfNode),
       endpoints: uEndpointNodes.map(variantOfNode),
       cornerPath: fullCornerPath.map(variantOfNode),
@@ -7879,7 +7912,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       fullCornerPathSource: hasSameCornerTypes ? "widthAxisNodes" : "bfsPath",
     });
 
-    console.log("CANONICAL U DESCRIPTOR PREVIEW", {
+    debugLog("CANONICAL U DESCRIPTOR PREVIEW", {
       middlePathNodes: middlePathNodes.map(variantOfNode),
       leftChain: leftChain.map(variantOfNode),
       rightChain: rightChain.map(variantOfNode),
@@ -8129,7 +8162,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
         preferredSides
       );
 
-      console.log("RIGHT CHAIN STEP DEBUG", {
+      debugLog("RIGHT CHAIN STEP DEBUG", {
         i,
         variantId,
         baseVariantId,
@@ -8407,7 +8440,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
   const pivotNode = cornerNode || dualAxisPivotNode || null;
   const pivotKind = cornerNode ? "corner" : (dualAxisPivotNode ? "dualAxis" : null);
 
-  console.log("CANONICAL PIVOT", {
+  debugLog("CANONICAL PIVOT", {
     pivotKind,
     pivotVariantId: pivotNode ? variantOfNode(pivotNode) : null
   });
@@ -8504,7 +8537,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
   // ale zároveň NESMÍ spadnout do sideChain za roh.
   let deferredMainEndCaps = [];
 
-  console.log("CANONICAL AXIS CHOICE", {
+  debugLog("CANONICAL AXIS CHOICE", {
     orientation: analysis.orientation,
     widthLen,
     depthLen,
@@ -8539,7 +8572,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     mainChain = useDepthAsMain ? depthStraight.slice() : widthStraight.slice();
     sideChain = useDepthAsMain ? widthStraight.slice() : depthStraight.slice();
 
-    console.log("DUAL AXIS MAIN/SIDE DECISION", {
+    debugLog("DUAL AXIS MAIN/SIDE DECISION", {
       mainBefore: mainChain.map(variantOfNode),
       sideBefore: sideChain.map(variantOfNode),
       widthStraight: widthStraight.map(variantOfNode),
@@ -8572,7 +8605,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     const shouldSwapChainsForCorner =
       mainStartsWithEndCap && !sideStartsWithEndCap;
 
-    console.log("CORNER MAIN/SIDE DECISION", {
+    debugLog("CORNER MAIN/SIDE DECISION", {
       mainBefore: mainChain.map(variantOfNode),
       sideBefore: sideChain.map(variantOfNode),
       mainEndCapHints,
@@ -8611,7 +8644,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     mainChain = useDepthAsMain ? depthStraight.slice() : widthStraight.slice();
     sideChain = useDepthAsMain ? widthStraight.slice() : depthStraight.slice();
 
-    console.log("GENERIC L MAIN/SIDE DECISION", {
+    debugLog("GENERIC L MAIN/SIDE DECISION", {
       mainBefore: mainChain.map(variantOfNode),
       sideBefore: sideChain.map(variantOfNode),
       widthStraight: widthStraight.map(variantOfNode),
@@ -8681,7 +8714,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       sideChain.unshift(oneD);
     }
 
-    console.log("CANONICAL SIDE CHAIN ORDER", sideChain.map(variantOfNode));
+    debugLog("CANONICAL SIDE CHAIN ORDER", sideChain.map(variantOfNode));
   }
 
   // CORNER ROOT FIX:
@@ -8701,7 +8734,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     const secondMainIsEndCap = /_1[LP]$/i.test(secondMainVariantId);
 
     if (firstMainIsEndCap && !secondMainIsEndCap) {
-      console.log("Canonical corner builder: deferring leading endcap from mainChain", {
+      debugLog("Canonical corner builder: deferring leading endcap from mainChain", {
         mainBefore: mainChain.map(variantOfNode),
         sideBefore: sideChain.map(variantOfNode),
         firstMainVariantId,
@@ -8716,7 +8749,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
     }
   }
 
-  console.log("CANONICAL CHAINS", {
+  debugLog("CANONICAL CHAINS", {
     mainChain: mainChain.map(variantOfNode),
     sideChain: sideChain.map(variantOfNode),
     pivot: pivotNode ? variantOfNode(pivotNode) : null
@@ -8938,7 +8971,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
       lastBranchAttachIndex = descriptor.length - 1;
     }
 
-    console.log("SIMPLE CORNER DESCRIPTOR", descriptor.map((x, i) => ({
+    debugLog("SIMPLE CORNER DESCRIPTOR", descriptor.map((x, i) => ({
       i,
       variantId: x.variantId,
       attachTo: x.attachTo,
@@ -9018,7 +9051,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
         pivotAttachIndex = descriptor.length - 1;
       }
 
-      console.log("CORNER ATTACH ANCHOR", {
+      debugLog("CORNER ATTACH ANCHOR", {
         cornerAnchorVariantId: cornerAnchorNode ? variantOfNode(cornerAnchorNode) : null,
         cornerAnchorIndex,
         cornerAnchorCandidates: cornerAnchorCandidates.map(({ node, idx }) => ({
@@ -9043,7 +9076,7 @@ function buildCanonicalDescriptorFromAnalysis(analysis, snapshot) {
         pivotAttachIndex = descriptor.length - 1;
       }
 
-      console.log("DUAL AXIS ATTACH ANCHOR", {
+      debugLog("DUAL AXIS ATTACH ANCHOR", {
         dualAxisAnchorVariantId,
         anchorMainIndex,
         mainChain: mainChain.map(variantOfNode),
@@ -9234,7 +9267,7 @@ async function rebuildSceneFromCanonicalDescriptor(descriptor, snapshot) {
     for (let stepIndex = 0; stepIndex < descriptor.length; stepIndex++) {
       const step = descriptor[stepIndex];
 
-      console.log("REBUILD STEP", {
+      debugLog("REBUILD STEP", {
         stepIndex,
         variantId: step.variantId,
         attachTo: step.attachTo,
@@ -9899,9 +9932,9 @@ const MODEL_EQUIP_CONFIG = {
 // =========================
 
 const CLARA_NORMAL_URL =
-  "./textures/fabric/1/Clara/originál/2K/Poliigon_FabricUpholsterySolid_9282_Normal.png";
+  "/textures/fabric/1/Clara/Poliigon_FabricUpholsterySolid_9282_Normal.png";
 const CLARA_ROUGHNESS_URL =
-  "./textures/fabric/1/Clara/originál/2K/Poliigon_FabricUpholsterySolid_9282_Roughness.jpg";
+  "/textures/fabric/1/Clara/Poliigon_FabricUpholsterySolid_9282_Roughness.jpg";
 
 // 01..20
 const CLARA_CODES_01_20 = Array.from({ length: 20 }, (_, i) =>
@@ -9913,7 +9946,7 @@ const CLARA_AVAILABLE = new Set(CLARA_CODES_01_20);
 
 // âś… tvoje hotovĂ© basecolors (01..20)
 const CLARA_BASECOLOR_URL = (code2) =>
-  `/textures/fabric/1/Clara/Clara-215.${code2}.jpg`;
+  `/textures/fabric/1/Clara/CLARA_215_${code2}.png`;
 
 const FABRICS_CAT1 = [
 
@@ -11380,12 +11413,12 @@ function renderFabricsForTab(tabKey) {
     btn.dataset.fabricId = f.id;
 
     btn.innerHTML = `
-      <img class="fabricThumb" src="${f.thumb || ""}" alt="${f.name || ""}">
+      <img class="fabricThumb" src="${escapeHtmlText(assetUrl(f.thumb || ""))}" alt="${escapeHtmlText(f.name || "")}">
       <div class="fabricName">${f.name || f.id}</div>
     `;
 
     btn.addEventListener("click", () => {
-      console.log("VybranĂˇ lĂˇtka:", f);
+      debugLog("VybranĂˇ lĂˇtka:", f);
     });
 
     grid.appendChild(btn);
@@ -11781,7 +11814,7 @@ function renderFabricBrowser({
       sw.style.backgroundColor = "rgba(255,255,255,0.08)";
 
       const apply = () => {
-        sw.style.backgroundImage = `url("${baseColorUrl}")`;
+        sw.style.backgroundImage = `url("${assetUrl(baseColorUrl)}")`;
         sw.style.backgroundSize = "cover";
         sw.style.backgroundPosition = "center";
         sw.style.backgroundRepeat = "no-repeat";
@@ -11898,7 +11931,7 @@ function renderFabricBrowser({
     const thumb = fabric.shades?.[0]?.baseColorUrl || "";
 
     tab.innerHTML = `
-      <div class="fabricFamilyThumb" style="background-image:url('${thumb}')"></div>
+      <div class="fabricFamilyThumb" style="background-image:url('${escapeHtmlText(assetUrl(thumb))}')"></div>
       <div class="fabricFamilyName">${fabric.name}</div>
     `;
 
@@ -12548,15 +12581,15 @@ function bindBottomTabs() {
 // ===============================
 const LEGS_UI_BY_MODEL = {
   MANILA: [
-    { code: "N7",  label: "N7",  img: "/thumbs/legs/N7.png",  material: "wood"  },
-    { code: "N9",  label: "N9",  img: "/thumbs/legs/N9.png",  material: "wood"  },
-    { code: "N1",  label: "N1",  img: "/thumbs/legs/N1.png",  material: "metal" },
-    { code: "N11", label: "N11", img: "/thumbs/legs/N11.png", material: "metal" },
+    { code: "N7",  label: "N7",  img: "/images/nohy/N7.png",  material: "wood"  },
+    { code: "N9",  label: "N9",  img: "/images/nohy/N9.png",  material: "wood"  },
+    { code: "N1",  label: "N1",  img: "/images/nohy/N1.png",  material: "metal" },
+    { code: "N11", label: "N11", img: "/images/nohy/N11.png", material: "metal" },
   ],
   MENDOZA: [
-    { code: "N8",  label: "N8",  img: "/thumbs/legs/N8.png",  material: "metal" },
-    { code: "N11", label: "N11", img: "/thumbs/legs/N11.png", material: "metal" },
-    { code: "N1",  label: "N1",  img: "/thumbs/legs/N1.png",  material: "metal" },
+    { code: "N8",  label: "N8",  img: "/images/nohy/N8.png",  material: "metal" },
+    { code: "N11", label: "N11", img: "/images/nohy/N11.png", material: "metal" },
+    { code: "N1",  label: "N1",  img: "/images/nohy/N1.png",  material: "metal" },
   ],
 };
 
@@ -12639,7 +12672,7 @@ function bindLegsEquipmentUI() {
     btn.dataset.leg = it.code;
 
     btn.innerHTML = `
-      <img class="tileImg" src="${it.img}" alt="${it.code}" />
+      <img class="tileImg" src="${escapeHtmlText(assetUrl(it.img))}" alt="${escapeHtmlText(it.code)}" />
       <div class="tileTitle">${it.label}</div>
     `;
 
@@ -12859,7 +12892,7 @@ function bindLegsEquipmentUI() {
       btn.dataset.color = c.id;
 
       btn.innerHTML = `
-        <img class="tileImg" src="${c.img}" alt="${c.label}">
+        <img class="tileImg" src="${escapeHtmlText(assetUrl(c.img))}" alt="${escapeHtmlText(c.label)}">
         <div class="tileTitle">${c.label}</div>
       `;
 
@@ -12987,7 +13020,7 @@ function renderShelfColorGrid() {
     btn.className = "tileCard" + (c.id === activeColor ? " is-active" : "");
     btn.dataset.shelfColor = c.id;
     btn.innerHTML = `
-      <img class="tileImg" src="${c.img}" alt="${c.label}">
+      <img class="tileImg" src="${escapeHtmlText(assetUrl(c.img))}" alt="${escapeHtmlText(c.label)}">
       <div class="tileTitle">${c.label}</div>
     `;
 
@@ -13134,7 +13167,7 @@ function renderEquipBlock(list, container, dataAttr) {
     btn.dataset[dataAttr] = item.code;
 
     btn.innerHTML = `
-      ${item.img ? `<img class="tileImg" src="${item.img}">` : ""}
+      ${item.img ? `<img class="tileImg" src="${escapeHtmlText(assetUrl(item.img))}">` : ""}
       <div class="tileTitle">${getEquipTileTitleHtml(item, dataAttr)}</div>
     `;
 
@@ -13959,8 +13992,8 @@ function bindSofaDimsUI() {
 
     const groups = getAxisXGroupsMapped(nodes, orientation);
 
-    console.log("WIDTH AXIS ORIENTATION", orientation);
-    console.log(
+    debugLog("WIDTH AXIS ORIENTATION", orientation);
+    debugLog(
       "WIDTH GROUPS MAPPED",
       groups.map(g => g.nodes.map(n => getNodeVariantId(n)))
     );
@@ -14013,7 +14046,7 @@ function bindSofaDimsUI() {
           }
         }
 
-        console.log(
+        debugLog(
           "WIDTH AXIS CORNER+1D FIX",
           bestDualAxisGroup.nodes.map(n => getNodeVariantId(n))
         );
@@ -14097,7 +14130,7 @@ function bindSofaDimsUI() {
             .filter(Boolean);
 
           if (dualAxisWidthPath.length >= 3) {
-            console.log(
+            debugLog(
               "WIDTH AXIS DOUBLE 1D FIX",
               dualAxisWidthPath.map(n => getNodeVariantId(n))
             );
@@ -14219,12 +14252,12 @@ function bindSofaDimsUI() {
             return ax - bx;
           });
 
-      console.log(
+      debugLog(
         "WIDTH AXIS DOUBLE CORNER FIX",
         finalOrderedWidth.map(n => getNodeVariantId(n))
       );
 
-      console.log("WIDTH AXIS DOUBLE CORNER FIX CENTERS", finalOrderedWidth.map((n) => {
+      debugLog("WIDTH AXIS DOUBLE CORNER FIX CENTERS", finalOrderedWidth.map((n) => {
         const c = getMappedPlanCenter(n, orientation);
         return { v: getNodeVariantId(n), x: c.x, z: c.z };
       }));
@@ -14497,14 +14530,14 @@ function bindSofaDimsUI() {
       }
     }
 
-    console.log("SIDE AXIS AFTER ANCHOR SEED", {
+    debugLog("SIDE AXIS AFTER ANCHOR SEED", {
       leftStartersAfterSeed: leftStarters.map(getNodeVariantId),
       rightStartersAfterSeed: rightStarters.map(getNodeVariantId),
       leftAnchorsAfterSeed: leftAnchors.map(getNodeVariantId),
       rightAnchorsAfterSeed: rightAnchors.map(getNodeVariantId),
     });
 
-    console.log("SIDE AXIS ANCHORS", {
+    debugLog("SIDE AXIS ANCHORS", {
       widthAxis: widthAxisNodes.map(getNodeVariantId),
       leftWidthAnchor: leftWidthAnchor ? getNodeVariantId(leftWidthAnchor) : null,
       rightWidthAnchor: rightWidthAnchor ? getNodeVariantId(rightWidthAnchor) : null,
@@ -14512,15 +14545,15 @@ function bindSofaDimsUI() {
       rightStarters: rightStarters.map(getNodeVariantId),
     });
 
-    console.log("SIDE AXIS FINAL AFTER CORNER FALLBACK", {
+    debugLog("SIDE AXIS FINAL AFTER CORNER FALLBACK", {
       left: left.map(n => getNodeVariantId(n)),
       right: right.map(n => getNodeVariantId(n)),
       leftHasAnchor: !!(leftWidthAnchor && left.includes(leftWidthAnchor)),
       rightHasAnchor: !!(rightWidthAnchor && right.includes(rightWidthAnchor)),
     });
 
-    console.log("getSideDepthAxisNodes -> left", left.map(n => getNodeVariantId(n)));
-    console.log("getSideDepthAxisNodes -> right", right.map(n => getNodeVariantId(n)));
+    debugLog("getSideDepthAxisNodes -> left", left.map(n => getNodeVariantId(n)));
+    debugLog("getSideDepthAxisNodes -> right", right.map(n => getNodeVariantId(n)));
 
     return { left, right };
   }
@@ -15633,7 +15666,7 @@ function bindSofaDimsUI() {
           rightDepth = Math.max(0, Math.round(info.depthRaw));
         }
 
-        console.log("[DIMS FIX 1D SIMPLE L]", {
+        debugLog("[DIMS FIX 1D SIMPLE L]", {
           mode,
           widthAxis: widthAxisNodes.map(n => getNodeVariantId(n)),
           depthNodesForWidth: depthNodesForWidth.map(n => getNodeVariantId(n)),
@@ -17234,7 +17267,7 @@ function bindSofaDimsUI() {
           };
         });
 
-        console.log("MANILA PLAN DEBUG", {
+        debugLog("MANILA PLAN DEBUG", {
           branches,
           orientation,
           bounds: {
@@ -17246,7 +17279,7 @@ function bindSofaDimsUI() {
           mappedItems
         });
 
-        console.log("MANILA PLAN RESULT", {
+        debugLog("MANILA PLAN RESULT", {
           branches,
           result: placement
         });
@@ -18665,7 +18698,7 @@ function startConfigurator(modelName, presetKey = null) {
     scheduleCanonicalRebuildAnalysis();
   }
 
-  console.log("Start configurator for:", modelName, "preset:", presetKey);
+  debugLog("Start configurator for:", modelName, "preset:", presetKey);
 
   // âś… kdyĹľ je preset, tak ho rovnou postav do scĂ©ny
   if (presetKey) {
@@ -18892,7 +18925,7 @@ async function addVariantAttached(variantId, baseMesh, side) {
     const defs = getModuleAddButtonOffsets()[key] || [];
     const def = defs.find(d => d.direction === side);
 
-    console.log("ADD ATTACHED DEBUG", {
+    debugLog("ADD ATTACHED DEBUG", {
       variantId,
       side,
       baseName: baseRec.name,
@@ -19514,7 +19547,7 @@ const AUTO_EPS_TGT = 0.002;
 // - kdyĹľ je GLB v centimetrech: 1
 const SCENE_UNITS_TO_CM = 100;
 
-console.log(pendingAddDirection);
+debugLog(pendingAddDirection);
 
 const activeModules = [];   // vĹˇechny moduly ve scĂ©nÄ›
 const activeButtons = [];   // vĹˇechna tlaÄŤĂ­tka ve scĂ©nÄ›
@@ -24719,12 +24752,12 @@ function removeModuleCompletely(moduleMesh) {
 function scheduleSummaryRecalc() {
 
   // kontrola, Ĺľe funkce existuje
-  console.log("typeof updateSummaryUI =", typeof updateSummaryUI);
+  debugLog("typeof updateSummaryUI =", typeof updateSummaryUI);
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       try {
-        console.log("CALL updateSummaryUI()");
+        debugLog("CALL updateSummaryUI()");
         updateSummaryUI();
 
         if (typeof window.__refreshSofaDimsBranchesUI === "function") {
@@ -24738,7 +24771,7 @@ function scheduleSummaryRecalc() {
         if (appState.step === 5) {
           renderRecapView();
         }
-        console.log("DONE updateSummaryUI()");
+        debugLog("DONE updateSummaryUI()");
       } catch (e) {
         console.error("updateSummaryUI crashed:", e);
       }
@@ -25866,12 +25899,12 @@ if (IS_DEV && "serviceWorker" in navigator) {
 
 if ("serviceWorker" in navigator && !IS_DEV) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((e) => {
+    navigator.serviceWorker.register(assetUrl("/sw.js")).catch((e) => {
       console.warn("SW register failed:", e);
     });
   });
 } else {
-  console.log("SW disabled in DEV to prevent caching issues.");
+  debugLog("SW disabled in DEV to prevent caching issues.");
 }
 
 // ===== THUMB QUEUE (aby se picker nezasekĂˇval) =====
@@ -25956,9 +25989,10 @@ function getThumbUrlForVariant(variantId) {
     lower.startsWith("manchester") ? "Manchester" :
     "";
 
-  return folder
+  const url = folder
     ? `/thumbs/${folder}/${encodeURIComponent(safe)}.png`
     : `/thumbs/${encodeURIComponent(safe)}.png`;
+  return assetUrl(url);
 }
 
 function attachThumbToImg(variantId, imgEl) {
@@ -27036,7 +27070,7 @@ function resetSceneState() {
   });
 
   recomputeCameraFit();
-  console.log("RESET hotovĂ˝");
+  debugLog("RESET hotovĂ˝");
 
   updateSummaryUI();
   scheduleSummaryRecalc();
@@ -30525,24 +30559,24 @@ function dumpUIState(label = "") {
 
   const cs = (el) => el ? getComputedStyle(el) : null;
 
-  console.log("=== UI STATE", label, "===");
-  console.log("menu visible class:", menu?.classList.contains("visible"));
-  console.log("menu display:", cs(menu)?.display, "pointerEvents:", cs(menu)?.pointerEvents, "z:", cs(menu)?.zIndex);
+  debugLog("=== UI STATE", label, "===");
+  debugLog("menu visible class:", menu?.classList.contains("visible"));
+  debugLog("menu display:", cs(menu)?.display, "pointerEvents:", cs(menu)?.pointerEvents, "z:", cs(menu)?.zIndex);
 
-  console.log("picker hidden class:", picker?.classList.contains("hidden"));
-  console.log("picker display:", cs(picker)?.display, "pointerEvents:", cs(picker)?.pointerEvents, "z:", cs(picker)?.zIndex);
+  debugLog("picker hidden class:", picker?.classList.contains("hidden"));
+  debugLog("picker display:", cs(picker)?.display, "pointerEvents:", cs(picker)?.pointerEvents, "z:", cs(picker)?.zIndex);
 
-  console.log("blocker active class:", blocker?.classList.contains("active"));
-  console.log("blocker pointerEvents:", cs(blocker)?.pointerEvents, "z:", cs(blocker)?.zIndex);
+  debugLog("blocker active class:", blocker?.classList.contains("active"));
+  debugLog("blocker pointerEvents:", cs(blocker)?.pointerEvents, "z:", cs(blocker)?.zIndex);
 
   // Kdo je nahoĹ™e pod kurzorem (tohle je killer diagnostika)
   const x = lastMouseX || window.innerWidth/2;
   const y = lastMouseY || window.innerHeight/2;
-  console.log("elementFromPoint:", document.elementFromPoint(x, y));
+  debugLog("elementFromPoint:", document.elementFromPoint(x, y));
 
-  console.log("downCandidate:", downCandidate);
-  console.log("mouseDown:", mouseDown, "dragDistance:", dragDistance);
-  console.log("===========================");
+  debugLog("downCandidate:", downCandidate);
+  debugLog("mouseDown:", mouseDown, "dragDistance:", dragDistance);
+  debugLog("===========================");
 }
 
 // zavolej pĹ™i kaĹľdĂ©m â€śklik nejdeâ€ť
