@@ -50,22 +50,27 @@ function fillPrices(partial) {
  * base:    {g1,g2,g3,leather}
  * storage: {g1,g2,g3,leather}   // cena modulu s ĂşloĹľĂˇkem
  * bed:     {g1,g2,g3,leather}   // cena modulu s rozkladem
+ * armrest: {g1,g2,g3,leather}   // cena modulu s alternativnĂ­ područkou
  */
 function makePriceEntry({
   base,
   storage,
   bed,
   bed2,
+  armrest,
   extendedBase,
-  extendedStorage
+  extendedStorage,
+  extendedArmrest
 } = {}) {
   return {
     base: fillPrices(base),
     storage: fillPrices(storage),
     bed: fillPrices(bed),
     bed2: fillPrices(bed2),
+    armrest: fillPrices(armrest),
     extendedBase: fillPrices(extendedBase),
     extendedStorage: fillPrices(extendedStorage),
+    extendedArmrest: fillPrices(extendedArmrest),
   };
 }
 
@@ -99,8 +104,10 @@ function makeVariant({
       storage: p.storage,
       bed: p.bed,
       bed2: p.bed2,
+      armrest: p.armrest,
       extendedBase: p.extendedBase,
       extendedStorage: p.extendedStorage,
+      extendedArmrest: p.extendedArmrest,
     },
 
     allowedUpgrades,
@@ -356,7 +363,7 @@ const PRICES = {
   }),
 
   Manila_3L: makePriceEntry({
-    base:    { g1: 52786, g2: 55450, g3: 60581, leather: 83179 },
+    base:    { g1: 52786, g2: 55450, g3: 60581, leather: 83176 },
     storage: { g1: 56733, g2: 59397, g3: 64528, leather: 87122 },
     bed:     { g1: 57720, g2: 60778, g3: 66501, leather: 91168 },
   }),
@@ -380,7 +387,7 @@ const PRICES = {
   }),
 
   Manila_3P: makePriceEntry({
-    base:    { g1: 52786, g2: 55450, g3: 60581, leather: 8179 },
+    base:    { g1: 52786, g2: 55450, g3: 60581, leather: 83176 },
     storage: { g1: 56733, g2: 59397, g3: 64528, leather: 87122 },
     bed:     { g1: 57720, g2: 60778, g3: 66501, leather: 91168 },
   }),
@@ -426,9 +433,9 @@ const PRICES = {
   // ===== 1D =====
   Mendoza_1D_L: makePriceEntry({
     base:            { g1: 35088, g2: 36567, g3: 38919, leather: 54850 },
-    storage:         { g1: 39769, g2: 41248, g3: 43600, leather: 54850 },
+    storage:         { g1: 39769, g2: 41248, g3: 43600, leather: 59531 },
     extendedBase:    { g1: 38597, g2: 40224, g3: 42811, leather: 60335 },
-    extendedStorage: { g1: 43746, g2: 45373, g3: 47960, leather: 60335 },
+    extendedStorage: { g1: 43746, g2: 45373, g3: 47960, leather: 65016 },
     bed:             { g1: 0, g2: 0, g3: 0, leather: 0 },
   }),
 
@@ -528,7 +535,7 @@ const PRICES = {
 
   Mendoza_2X: makePriceEntry({
     base:    { g1: 49240, g2: 51830, g3: 56468, leather: 77745 },
-    storage: { g1: 53921, g2: 56511, g3: 56468, leather: 82426 },
+    storage: { g1: 53921, g2: 56511, g3: 61149, leather: 82426 },
     bed:     { g1: 57042, g2: 59632, g3: 64270, leather: 85547 },
     bed2:     { g1: 60943, g2: 63533, g3: 68171, leather: 89448 },
   }),
@@ -549,7 +556,7 @@ const PRICES = {
 
   Mendoza_2M: makePriceEntry({
     base:    { g1: 37340, g2: 38919, g3: 42045, leather: 58379 },
-    storage: { g1: 41921, g2: 43600, g3: 46726, leather: 63060 },
+    storage: { g1: 42021, g2: 43600, g3: 46726, leather: 63060 },
     bed:     { g1: 45142, g2: 46721, g3: 49847, leather: 66181 },
     bed2:    { g1: 49043, g2: 50622, g3: 53748, leather: 70082 },
   }),
@@ -586,7 +593,8 @@ const PRICES = {
   Mendoza_3X: makePriceEntry({
     base:    { g1: 70711, g2: 74209, g3: 80644, leather: 111313 },
     storage: { g1: 75392, g2: 78890, g3: 85325, leather: 115994 },
-    bed:     { g1: 78513, g2: 82011, g3: 88446, leather: 119115 },
+    bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
+    bed2:    { g1: 82414, g2: 85912, g3: 92347, leather: 123016 },
   }),
 
   Mendoza_3L: makePriceEntry({
@@ -599,7 +607,8 @@ const PRICES = {
   Mendoza_3XL: makePriceEntry({
     base:    { g1: 67657, g2: 70769, g3: 76702, leather: 106153 },
     storage: { g1: 72338, g2: 75450, g3: 81383, leather: 110834 },
-    bed:     { g1: 75459, g2: 78571, g3: 84504, leather: 113955 },
+    bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
+    bed2:    { g1: 79360, g2: 82472, g3: 88405, leather: 117856 },
   }),
 
   Mendoza_3M: makePriceEntry({
@@ -612,7 +621,8 @@ const PRICES = {
   Mendoza_3XM: makePriceEntry({
     base:    { g1: 64411, g2: 67136, g3: 72527, leather: 100703 },
     storage: { g1: 69092, g2: 71817, g3: 77208, leather: 105384 },
-    bed:     { g1: 72213, g2: 74938, g3: 80329, leather: 108505 },
+    bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
+    bed2:    { g1: 76114, g2: 78839, g3: 84230, leather: 112406 },
   }),
 
   Mendoza_3P: makePriceEntry({
@@ -625,7 +635,8 @@ const PRICES = {
   Mendoza_3XP: makePriceEntry({
     base:    { g1: 67657, g2: 70769, g3: 76702, leather: 106153 },
     storage: { g1: 72338, g2: 75450, g3: 81383, leather: 110834 },
-    bed:     { g1: 75459, g2: 78571, g3: 84504, leather: 113955 },
+    bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
+    bed2:    { g1: 79360, g2: 82472, g3: 88405, leather: 117856 },
   }),
 
   // ===== KĹESLO =====
@@ -917,8 +928,10 @@ const PRICES = {
   // ===== 1D =====
   Manchester_1D_L: makePriceEntry({
     base:            { g1: 30433, g2: 31526, g3: 33727, leather: 47288 },
+    armrest:         { g1: 28231, g2: 29492, g3: 31845, leather: 44229 },
     storage:         { g1: 0, g2: 0, g3: 0, leather: 0 },
     extendedBase:    { g1: 33476, g2: 34679, g3: 37100, leather: 52017 },
+    extendedArmrest: { g1: 31054, g2: 32441, g3: 35030, leather: 48652 },
     extendedStorage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:             { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:            { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -926,8 +939,10 @@ const PRICES = {
 
   Manchester_1XD_L: makePriceEntry({
     base:            { g1: 34257, g2: 35488, g3: 37974, leather: 53232 },
+    armrest:         { g1: 32055, g2: 33454, g3: 36092, leather: 50173 },
     storage:         { g1: 0, g2: 0, g3: 0, leather: 0 },
     extendedBase:    { g1: 37683, g2: 39037, g3: 41771, leather: 58555 },
+    extendedArmrest: { g1: 35261, g2: 36799, g3: 39701, leather: 55190 },
     extendedStorage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:             { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:            { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -935,8 +950,10 @@ const PRICES = {
 
   Manchester_1D_P: makePriceEntry({
     base:            { g1: 30433, g2: 31526, g3: 33727, leather: 47288 },
+    armrest:         { g1: 28231, g2: 29492, g3: 31845, leather: 44229 },
     storage:         { g1: 0, g2: 0, g3: 0, leather: 0 },
     extendedBase:    { g1: 33476, g2: 34679, g3: 37100, leather: 52017 },
+    extendedArmrest: { g1: 31054, g2: 32441, g3: 35030, leather: 48652 },
     extendedStorage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:             { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:            { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -944,8 +961,10 @@ const PRICES = {
 
   Manchester_1XD_P: makePriceEntry({
     base:            { g1: 34257, g2: 35488, g3: 37974, leather: 53232 },
+    armrest:         { g1: 32055, g2: 33454, g3: 36092, leather: 50173 },
     storage:         { g1: 0, g2: 0, g3: 0, leather: 0 },
     extendedBase:    { g1: 37683, g2: 39037, g3: 41771, leather: 58555 },
+    extendedArmrest: { g1: 35261, g2: 36799, g3: 39701, leather: 55190 },
     extendedStorage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:             { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:            { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -954,6 +973,7 @@ const PRICES = {
   // ===== 1 =====
   Manchester_1L: makePriceEntry({
     base:    { g1: 27425, g2: 28686, g3: 30147, leather: 43020 },
+    armrest: { g1: 25223, g2: 26652, g3: 28265, leather: 39961 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -961,6 +981,7 @@ const PRICES = {
 
   Manchester_1XL: makePriceEntry({
     base:    { g1: 30798, g2: 32222, g3: 33858, leather: 48323 },
+    armrest: { g1: 28596, g2: 30188, g3: 31976, leather: 45264 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -982,6 +1003,7 @@ const PRICES = {
 
   Manchester_1P: makePriceEntry({
     base:    { g1: 27425, g2: 28686, g3: 30147, leather: 43020 },
+    armrest: { g1: 25223, g2: 26652, g3: 28265, leather: 39961 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -989,6 +1011,7 @@ const PRICES = {
 
   Manchester_1XP: makePriceEntry({
     base:    { g1: 30798, g2: 32222, g3: 33858, leather: 48323 },
+    armrest: { g1: 28596, g2: 30188, g3: 31976, leather: 45264 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1026,6 +1049,7 @@ const PRICES = {
   // ===== 2 =====
   Manchester_2: makePriceEntry({
     base:    { g1: 54850, g2: 57370, g3: 60294, leather: 86056 },
+    armrest: { g1: 50447, g2: 53303, g3: 56530, leather: 79938 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1033,6 +1057,7 @@ const PRICES = {
 
   Manchester_2X: makePriceEntry({
     base:    { g1: 63077, g2: 65976, g3: 69339, leather: 98964 },
+    armrest: { g1: 57192, g2: 60376, g3: 63951, leather: 90548 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1040,6 +1065,7 @@ const PRICES = {
 
   Manchester_2L: makePriceEntry({
     base:    { g1: 49910, g2: 52262, g3: 54883, leather: 78393 },
+    armrest: { g1: 47708, g2: 50228, g3: 53001, leather: 75334 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1047,6 +1073,7 @@ const PRICES = {
 
   Manchester_2XL: makePriceEntry({
     base:    { g1: 56655, g2: 59335, g3: 62304, leather: 89003 },
+    armrest: { g1: 54453, g2: 57301, g3: 60422, leather: 85944 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1068,6 +1095,7 @@ const PRICES = {
 
   Manchester_2P: makePriceEntry({
     base:    { g1: 49910, g2: 52262, g3: 54883, leather: 78393 },
+    armrest: { g1: 47708, g2: 50228, g3: 53001, leather: 75334 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1075,6 +1103,7 @@ const PRICES = {
 
   Manchester_2XP: makePriceEntry({
     base:    { g1: 56655, g2: 59335, g3: 62304, leather: 89003 },
+    armrest: { g1: 54453, g2: 57301, g3: 60422, leather: 85944 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1083,6 +1112,7 @@ const PRICES = {
   // ===== 3 =====
   Manchester_3: makePriceEntry({
     base:    { g1: 77334, g2: 80947, g3: 85031, leather: 121412 },
+    armrest: { g1: 72931, g2: 76880, g3: 81267, leather: 115295 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1090,6 +1120,7 @@ const PRICES = {
 
   Manchester_3X: makePriceEntry({
     base:    { g1: 88934, g2: 93089, g3: 97785, leather: 139624 },
+    armrest: { g1: 83049, g2: 87490, g3: 92398, leather: 131208 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1097,6 +1128,7 @@ const PRICES = {
 
   Manchester_3L: makePriceEntry({
     base:    { g1: 72394, g2: 75839, g3: 79620, leather: 113750 },
+    armrest: { g1: 70192, g2: 73805, g3: 77738, leather: 110691 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1104,6 +1136,7 @@ const PRICES = {
 
   Manchester_3XL: makePriceEntry({
     base:    { g1: 82512, g2: 86449, g3: 90751, leather: 129663 },
+    armrest: { g1: 80310, g2: 84415, g3: 88869, leather: 126604 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1125,6 +1158,7 @@ const PRICES = {
 
   Manchester_3P: makePriceEntry({
     base:    { g1: 72394, g2: 75839, g3: 79620, leather: 113750 },
+    armrest: { g1: 70192, g2: 73805, g3: 77738, leather: 110691 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1132,6 +1166,7 @@ const PRICES = {
 
   Manchester_3XP: makePriceEntry({
     base:    { g1: 82512, g2: 86449, g3: 90751, leather: 129663 },
+    armrest: { g1: 80310, g2: 84415, g3: 88869, leather: 126604 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1139,14 +1174,16 @@ const PRICES = {
 
   // ===== KŘESLO =====
   Manchester_kreslo: makePriceEntry({
-    base:    { g1: 27963, g2: 28047, g3: 31794, leather: 42062 },
+    base:    { g1: 32366, g2: 33795, g3: 35558, leather: 50683 },
+    armrest: { g1: 27962, g2: 29727, g3: 31794, leather: 44565 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
   }),
 
   Manchester_kresloX: makePriceEntry({
-    base:    { g1: 32157, g2: 32254, g3: 36563, leather: 48371 },
+    base:    { g1: 35739, g2: 37331, g3: 39269, leather: 55986 },
+    armrest: { g1: 31335, g2: 33263, g3: 35505, leather: 49868 },
     storage: { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed:     { g1: 0, g2: 0, g3: 0, leather: 0 },
     bed2:    { g1: 0, g2: 0, g3: 0, leather: 0 },
@@ -1184,6 +1221,7 @@ const DEFAULT_UPGRADES = ["storage", "bed"];
 const STORAGE_ONLY = ["storage"];
 const NONE = [];
 const MENDOZA_BED_UPGRADES = ["storage", "bed", "bed2"];
+const MENDOZA_3X_UPGRADES = ["storage", "bed2"];
 
 // ---- Manila_1D_L / 1D_P ----
 // POZOR: ve tvĂ©m pĹŻvodnĂ­m kĂłdu bylo allowedUpgrades: [storage] -> to je chyba (storage nenĂ­ promÄ›nnĂˇ).
@@ -1569,7 +1607,7 @@ addBaseAndX(modulesCatalog, {
 });
 
 // ---- 3 / 3L / 3M / 3P ----
-// stejnÄ› jako Manila: X varianty nech bez upgradĹŻ (allowedUpgradesX: NONE)
+// X varianty Mendoza 3 povolují jen úložný prostor a belgický rozklad.
 addBaseAndX(modulesCatalog, {
   baseId: "Mendoza_3",
   baseLabel: "3",
@@ -1580,7 +1618,7 @@ addBaseAndX(modulesCatalog, {
   baseRangeCm:{ min: 200, max: 275 },
   xRangeCm:   { min: 276, max: 350 },
   allowedUpgradesBase: MENDOZA_BED_UPGRADES,
-  allowedUpgradesX: NONE,
+  allowedUpgradesX: MENDOZA_3X_UPGRADES,
 });
 
 addBaseAndX(modulesCatalog, {
@@ -1593,7 +1631,7 @@ addBaseAndX(modulesCatalog, {
   baseRangeCm:{ min: 175, max: 250 },
   xRangeCm:   { min: 251, max: 325 },
   allowedUpgradesBase: MENDOZA_BED_UPGRADES,
-  allowedUpgradesX: NONE,
+  allowedUpgradesX: MENDOZA_3X_UPGRADES,
 });
 
 addBaseAndX(modulesCatalog, {
@@ -1606,7 +1644,7 @@ addBaseAndX(modulesCatalog, {
   baseRangeCm:{ min: 150, max: 225 },
   xRangeCm:   { min: 226, max: 300 },
   allowedUpgradesBase: MENDOZA_BED_UPGRADES,
-  allowedUpgradesX: NONE,
+  allowedUpgradesX: MENDOZA_3X_UPGRADES,
 });
 
 addBaseAndX(modulesCatalog, {
@@ -1619,7 +1657,7 @@ addBaseAndX(modulesCatalog, {
   baseRangeCm:{ min: 175, max: 250 },
   xRangeCm:   { min: 251, max: 325 },
   allowedUpgradesBase: MENDOZA_BED_UPGRADES,
-  allowedUpgradesX: NONE,
+  allowedUpgradesX: MENDOZA_3X_UPGRADES,
 });
 
 // ---- KĹ™eslo ----
@@ -2132,8 +2170,14 @@ for (const variantId of Object.keys(modulesCatalog)) {
   modulesCatalog[variantId].upgradePrices.storage = entry.storage;
   modulesCatalog[variantId].upgradePrices.bed = entry.bed;
   modulesCatalog[variantId].upgradePrices.bed2 = entry.bed2;
+
+  // Manchester hranatá područka
+  modulesCatalog[variantId].upgradePrices.armrest = entry.armrest;
+
+  // 1D / prodloužené hloubky
   modulesCatalog[variantId].upgradePrices.extendedBase = entry.extendedBase;
   modulesCatalog[variantId].upgradePrices.extendedStorage = entry.extendedStorage;
+  modulesCatalog[variantId].upgradePrices.extendedArmrest = entry.extendedArmrest;
 }
 // ====================
 //  PUBLIC API
@@ -2155,6 +2199,12 @@ export function getModulePrice(variantId, fabricId = "g1", selectedUpgrade = nul
   if (!c) return 0;
 
   if (selectedUpgrade) {
+    if (selectedUpgrade === "armrest" || selectedUpgrade === "extendedArmrest") {
+      const direct = c.upgradePrices?.[selectedUpgrade]?.[fabricId];
+      if (direct != null && Number(direct) > 0) return direct || 0;
+      return c.prices?.[fabricId] || 0;
+    }
+
     if (!c.allowedUpgrades?.includes(selectedUpgrade)) return c.prices?.[fabricId] || 0;
 
     const up = c.upgradePrices?.[selectedUpgrade]?.[fabricId];

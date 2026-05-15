@@ -8,7 +8,6 @@ import {
   getCatalog,
   getModulePrice,
   formatCzk,
-  calcTotalPrice,
   bboxSizeCmFromThreeSize,
   FABRICS,
 } from "./catalogue.js";
@@ -722,6 +721,37 @@ function escapeHtmlText(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function getVariantModelKey(variantId) {
+  const value = String(variantId || "").trim();
+  if (!value) return "";
+  return value.split("_")[0].toUpperCase();
+}
+
+function isManchesterSharpArmrestSelection(armrestType = selectedArmrests, modelKey = getModelKey()) {
+  return (
+    String(modelKey || "").trim().toUpperCase() === "MANCHESTER" &&
+    String(armrestType || "").trim().toLowerCase() === "sharp"
+  );
+}
+
+function getManchesterArmrestPriceKey(
+  variantId,
+  fabricId,
+  baseUpgradeKey = null,
+  {
+    armrestType = selectedArmrests,
+    modelKey = getVariantModelKey(variantId) || getModelKey(),
+    disabled = false,
+  } = {}
+) {
+  if (disabled || baseUpgradeKey) return baseUpgradeKey || null;
+  if (!isManchesterSharpArmrestSelection(armrestType, modelKey)) return baseUpgradeKey || null;
+
+  const cat = getCatalog?.(variantId);
+  const armrestPrice = cat?.upgradePrices?.armrest?.[fabricId];
+  return Number(armrestPrice) > 0 ? "armrest" : (baseUpgradeKey || null);
 }
 
 function getConfiguredTotalPrice() {
@@ -2153,10 +2183,25 @@ function isRecapCornerSortItem(item) {
   return getRecapPartCode(item?.rec?.name) === "ROH";
 }
 
+function getRecapCornerSortSide(item) {
+  const raw = String(item?.rec?.name || item?.rec?.model || "").trim();
+  if (/_roh_p$/i.test(raw) || /roh_p$/i.test(raw)) return "P";
+  if (/_roh_l$/i.test(raw) || /roh_l$/i.test(raw)) return "L";
+  return "";
+}
+
 function areRecapSortItemsConnected(a, b) {
   const nodeA = a?.point?.node;
   const nodeB = b?.point?.node;
-  if (!nodeA || !nodeB) return false;
+  if (!nodeA || !nodeB) {
+    const meshA = a?.rec?.mesh;
+    const meshB = b?.rec?.mesh;
+    if (!meshA || !meshB) return false;
+
+    return ["left", "right", "front", "back"].some((dir) => (
+      a?.rec?.connections?.[dir] === meshB || b?.rec?.connections?.[dir] === meshA
+    ));
+  }
 
   return ["left", "right", "front", "back"].some((dir) => (
     nodeA.neighbors?.[dir] === nodeB || nodeB.neighbors?.[dir] === nodeA
@@ -2185,7 +2230,12 @@ function compareRecapSortItemsByPlan(a, b) {
   const bCorner = isRecapCornerSortItem(b);
 
   if (sameColumn && aCorner !== bCorner && areRecapSortItemsConnected(a, b)) {
-    return aCorner ? 1 : -1;
+    const cornerItem = aCorner ? a : b;
+    const cornerSide = getRecapCornerSortSide(cornerItem);
+    const cornerFirst = cornerSide === "P";
+    return aCorner
+      ? (cornerFirst ? -1 : 1)
+      : (cornerFirst ? 1 : -1);
   }
 
   const dx = ax - bx;
@@ -4257,14 +4307,49 @@ function getRecapInquiryModal() {
   return modal;
 }
 
+let recapInquirySending = false;
+
+window.addEventListener("beforeunload", (event) => {
+  if (!recapInquirySending) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+function getSendingDotsHtml(label) {
+  return `
+    <span class="sendingText">${escapeHtmlText(label)}</span>
+    <span class="sendingDots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+  `;
+}
+
+function setButtonSendingState(button, busy, {
+  busyLabel = "Odesílám poptávku",
+  idleLabel = "Odeslat poptávku",
+} = {}) {
+  if (!button) return;
+
+  button.disabled = Boolean(busy);
+  button.classList.toggle("is-sending", Boolean(busy));
+
+  if (busy) {
+    button.innerHTML = getSendingDotsHtml(busyLabel);
+    button.setAttribute("aria-label", `${busyLabel}...`);
+  } else {
+    button.textContent = idleLabel;
+    button.removeAttribute("aria-label");
+  }
+}
+
 function setRecapInquiryModalState(modal, { busy = false, message = "", tone = "" } = {}) {
   const submit = modal.querySelector("#recapInquirySubmit");
   const input = modal.querySelector("#recapInquiryEmail");
   const msg = modal.querySelector("#recapInquiryMessage");
 
   if (submit) {
-    submit.disabled = busy;
-    submit.textContent = busy ? "Odesílám..." : "Odeslat";
+    setButtonSendingState(submit, busy, {
+      busyLabel: "Odesílám",
+      idleLabel: "Odeslat",
+    });
   }
 
   if (input) input.disabled = busy;
@@ -4349,27 +4434,59 @@ function askForRecapCustomerEmail() {
   });
 }
 
-function getRecapInquirySummary() {
+async function getRecapInquirySummary(
+  shareState = getCurrentSharedConfigurationState(),
+  configurationUrl = ""
+) {
   renderRecapView();
 
   const sofaKey = getActiveSofaKeyFromScene();
   const meta = SOFA_SUMMARY_META[sofaKey] || SOFA_SUMMARY_META.Manila;
   const total = getDiscountedAmount(getConfiguredTotalPrice()).final;
+  const modelConfig = MODEL_EQUIP_CONFIG[getModelKey()] || {};
+  const leg = getRecapLegMeta();
+  const legColor = getRecapLegColorMeta();
+  const armrest = getRecapArmrestMeta();
+
+  const equipmentText = [
+    leg?.label ? `Nohy: ${leg.label}` : "",
+    legColor?.label ? `Barva nohou: ${legColor.label}` : "",
+    armrest?.label ? `Područky: ${armrest.label}` : "",
+    (modelConfig.hinges || []).length ? `Panty: ${getRecapHingeMeta()?.label || getRecapHingeLabel()}` : "",
+    (modelConfig.shelfColors || []).length ? `Polička: ${getRecapShelfColorMeta()?.label || ""}` : "",
+  ].filter(Boolean).join(" · ");
+
+  const finalUrl = String(configurationUrl || "").trim();
 
   return {
     assemblyType: getAssemblyTypeLabel(),
     assemblyText: getRecapAssemblyText(),
+    equipmentText,
     sofaName: document.getElementById("recapSofaName")?.textContent?.trim() || meta.title || "Konfigurace",
     totalPrice: formatCzk(total),
-    url: window.location.href,
+
+    // Tohle se pak propíše do e-mailu.
+    url: finalUrl,
   };
 }
 
 async function sendRecapInquiry(customerEmail) {
+  const shareState = getCurrentSharedConfigurationState();
+
+  if (!shareState) {
+    throw new Error("Nepodařilo se připravit stav konfigurace pro sdílený odkaz.");
+  }
+
+  const configurationUrl = await createShortConfigurationShareUrl(shareState);
+
+  if (!configurationUrl) {
+    throw new Error("Nepodařilo se vytvořit krátký odkaz na konfiguraci.");
+  }
+
   const pdfDoc = await buildRecapPdfHtml();
   if (!pdfDoc) throw new Error("Rekapitulace není dostupná.");
 
-  const summary = getRecapInquirySummary();
+  const summary = await getRecapInquirySummary(shareState, configurationUrl);
   let lastError = null;
 
   for (const endpoint of getRecapInquiryEndpoints()) {
@@ -4384,6 +4501,10 @@ async function sendRecapInquiry(customerEmail) {
           filename: pdfDoc.fileName,
           html: pdfDoc.html,
           summary,
+
+          // Pořád posíláme i state, aby si ho server případně uměl uložit / ověřit.
+          shareState,
+          shareUrlBase: getShareUrlBase(),
         }),
       });
 
@@ -12921,6 +13042,88 @@ function bindShelfEquipmentUI() {
   setActiveShelfColor(selectedShelfColor || "wood_buk_br_281", { fromUI: false });
 }
 
+function getManchesterSharpArmrestDiscountAmount(fabricGroup = getAppliedFabricPriceGroup()) {
+  if (getModelKey() !== "MANCHESTER") return 0;
+
+  let diff = 0;
+
+  for (const rec of activeModules || []) {
+    if (!rec?.name) continue;
+    const upgradeKey = getUpgradeKeyForRec(rec);
+    const basePrice = getSummaryPriceForRecSafe(rec, fabricGroup, upgradeKey, {
+      disableManchesterArmrest: true,
+      modelKey: "MANCHESTER",
+    });
+    const armrestPrice = getSummaryPriceForRecSafe(rec, fabricGroup, upgradeKey, {
+      armrestType: "sharp",
+      modelKey: "MANCHESTER",
+    });
+    const itemDiff = Number(basePrice) - Number(armrestPrice);
+    if (Number.isFinite(itemDiff) && itemDiff > 0) diff += itemDiff;
+  }
+
+  return diff;
+}
+
+function getEquipTilePriceDeltaText(item, dataAttr) {
+  if (dataAttr !== "armrest") return "";
+  if (getModelKey() !== "MANCHESTER") return "";
+
+  const code = String(item?.code || "").trim().toLowerCase();
+  const selected = String(selectedArmrests || "smooth").trim().toLowerCase();
+
+  // zobrazovat cenu jen u NEaktivní varianty
+  if (!code || code === selected) return "";
+
+  const rawDiff = getManchesterSharpArmrestDiscountAmount();
+  const diff = getDiscountedAmount(rawDiff).final;
+
+  if (!Number.isFinite(diff) || diff <= 0) return "";
+
+  // Manchester:
+  // smooth = Polohovací
+  // sharp  = Hranatá
+
+  // když je aktivní Polohovací, ukaž u Hranaté slevu
+  if (selected === "smooth" && code === "sharp") {
+    return `(- ${formatCzk(diff)})`;
+  }
+
+  // když je aktivní Hranatá, ukaž u Polohovací příplatek
+  if (selected === "sharp" && code === "smooth") {
+    return `(+ ${formatCzk(diff)})`;
+  }
+
+  return "";
+}
+
+function getEquipTileTitleHtml(item, dataAttr) {
+  const delta = getEquipTilePriceDeltaText(item, dataAttr);
+
+  return `
+    <span class="tileTitleText">${escapeHtmlText(item?.label || "")}</span>
+    ${delta ? `<span class="tilePriceDelta">${escapeHtmlText(delta)}</span>` : ""}
+  `;
+}
+
+function refreshManchesterArmrestPriceLabels() {
+  const row = document.getElementById("armrestsCardRow");
+  if (!row) return;
+
+  const modelConfig = MODEL_EQUIP_CONFIG[getModelKey()] || {};
+  const armrestsUiList = Array.isArray(modelConfig.armrests) ? modelConfig.armrests : [];
+
+  armrestsUiList.forEach((item) => {
+    const code = String(item.code);
+    const escapedCode = (typeof CSS !== "undefined" && CSS.escape)
+      ? CSS.escape(code)
+      : code.replace(/["\\]/g, "\\$&");
+    const btn = row.querySelector(`button[data-armrest="${escapedCode}"]`);
+    const title = btn?.querySelector(".tileTitle");
+    if (title) title.innerHTML = getEquipTileTitleHtml(item, "armrest");
+  });
+}
+
 function renderEquipBlock(list, container, dataAttr) {
   container.innerHTML = "";
 
@@ -12932,7 +13135,7 @@ function renderEquipBlock(list, container, dataAttr) {
 
     btn.innerHTML = `
       ${item.img ? `<img class="tileImg" src="${item.img}">` : ""}
-      <div class="tileTitle">${item.label}</div>
+      <div class="tileTitle">${getEquipTileTitleHtml(item, dataAttr)}</div>
     `;
 
     container.appendChild(btn);
@@ -15890,7 +16093,7 @@ function bindSofaDimsUI() {
           </div>
         `;
       }).join("") +
-      `<div class="dimsNote"><span>Větší změnu můžete zadat přímo kliknutím do čísla.</span></div>`;
+      `<div class="dimsNote"><span>Rozměr upravíte tlačítky&nbsp;+&nbsp;/&nbsp;− nebo kliknutím na číslo.</span></div>`;
 
     if (branchCount >= 4) {
       wrap.querySelector("#btnAllBranchesCustom")?.addEventListener("click", () => {
@@ -17498,6 +17701,7 @@ function bindArmrestsEquipmentUI(modelKey) {
   // 2) Render kartiÄŤek (buttony)
   // POZOR: item.code by ideĂˇlnÄ› mÄ›l bĂ˝t "smooth" nebo "sharp"
   renderEquipBlock(armrestsUiList, row, "armrest");
+  refreshManchesterArmrestPriceLabels();
 
   // 3) naplnit hidden select
   armrestsUiList.forEach((item) => {
@@ -17560,8 +17764,11 @@ function bindArmrestsEquipmentUI(modelKey) {
       btn.classList.toggle("active", on);
     });
 
+    refreshManchesterArmrestPriceLabels();
+
     // âś… 3D zmÄ›na + viditelnost ÄŤĂˇstĂ­ (hinge2, body1/body2â€¦)
     applyArmrestsToAllModules();
+    refreshManchesterArmrestPriceLabels();
 
     // panel ĹˇĂ­Ĺ™ky jen pro "sharp"
     function isWidthArmrest(rawVal) {
@@ -18760,9 +18967,12 @@ async function loadPresetIntoScene(presetKey) {
 }
 
 // Event listeners (spuĹˇtÄ›nĂ­)
-window.addEventListener("DOMContentLoaded", () => {
-  const shouldRestoreActiveSession = shouldRestoreActiveSessionOnBoot();
-  if (shouldRestoreActiveSession) {
+window.addEventListener("DOMContentLoaded", async () => {
+  const sharedConfigurationState = await getSharedConfigurationStateFromUrl();
+  const shouldRestoreActiveSession = !sharedConfigurationState && shouldRestoreActiveSessionOnBoot();
+  if (sharedConfigurationState) {
+    currentDraftId = null;
+  } else if (shouldRestoreActiveSession) {
     currentDraftId = getPersistedCurrentDraftId();
   }
 
@@ -18916,22 +19126,23 @@ window.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("recapEmailBtn")?.addEventListener("click", async () => {
     const btn = document.getElementById("recapEmailBtn");
-    const originalText = btn?.textContent || "";
+    const originalText = btn?.textContent?.trim() || "";
     const customerEmail = await askForRecapCustomerEmail();
 
     if (!customerEmail) return;
 
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "Odesílám poptávku...";
-    }
+    recapInquirySending = true;
+    setButtonSendingState(btn, true, {
+      busyLabel: "Odesílám poptávku",
+      idleLabel: originalText || "ODESLAT POPTÁVKU",
+    });
 
     try {
       await sendRecapInquiry(customerEmail);
       if (typeof showPlacementMessage === "function") {
-        showPlacementMessage("Poptávka byla odeslána. Děkujeme.", 4500);
+        showPlacementMessage("Poptávku jsme přijali a odesíláme email. Děkujeme.", 4500);
       } else {
-        alert("Poptávka byla odeslána. Děkujeme.");
+        alert("Poptávku jsme přijali a odesíláme email. Děkujeme.");
       }
     } catch (e) {
       console.error("Recap inquiry failed:", e);
@@ -18939,10 +19150,10 @@ window.addEventListener("DOMContentLoaded", () => {
       if (typeof showPlacementMessage === "function") showPlacementMessage(message, 6500);
       else alert(message);
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = originalText || "ODESLAT POPTÁVKU";
-      }
+      recapInquirySending = false;
+      setButtonSendingState(btn, false, {
+        idleLabel: originalText || "ODESLAT POPTÁVKU",
+      });
     }
   });
 
@@ -19010,7 +19221,22 @@ window.addEventListener("DOMContentLoaded", () => {
   updateBuildModeUI();
   bindDraftsProfileUI();
 
-  if (shouldRestoreActiveSession) {
+  if (sharedConfigurationState) {
+    loadStateFromStorage(sharedConfigurationState).then((ok) => {
+      if (ok) {
+        clearSharedConfigurationParamFromUrl();
+        updateStep2ContinueUI();
+        updateStep3ContinueUI();
+        updateStepLocks();
+
+        if (isHeadrestStepActive() && currentEquipTabKey === "extras") {
+          renderExtrasModuleList();
+        }
+      } else {
+        isRestoringState = false;
+      }
+    });
+  } else if (shouldRestoreActiveSession) {
     loadStateFromStorage().then((ok) => {
       if (ok) {
         updateStep2ContinueUI();
@@ -19321,6 +19547,8 @@ const DRAFTS_MIGRATION_KEY = "madros_config_drafts_migrated_v1";
 const ACTIVE_SESSION_KEY = "madros_config_active_session_v1";
 const LAST_ACTIVE_AT_KEY = "madros_config_last_active_at_v1";
 const CURRENT_DRAFT_ID_KEY = "madros_config_current_draft_id_v1";
+const SHARE_STATE_PARAM = "config";
+const SHARE_TOKEN_PARAM = "share";
 const ACTIVE_SESSION_TTL_MS = 10 * 60 * 1000;
 const MAX_SAVED_DRAFTS = 10;
 
@@ -19430,6 +19658,236 @@ function cloneSavedState(state) {
   }
 }
 
+function encodeShareStateText(text) {
+  const bytes = new TextEncoder().encode(String(text || ""));
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeShareStateText(value) {
+  let base64 = String(value || "")
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  while (base64.length % 4) base64 += "=";
+
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new TextDecoder().decode(bytes);
+}
+
+function encodeSharedConfigurationState(state) {
+  return encodeShareStateText(JSON.stringify({
+    v: 1,
+    state,
+  }));
+}
+
+function decodeSharedConfigurationState(value) {
+  const parsed = JSON.parse(decodeShareStateText(value));
+  return parsed?.state || parsed;
+}
+
+function getShareConfigEndpoints(token = "") {
+  const suffix = token ? `/${encodeURIComponent(token)}` : "";
+
+  if (window.RECAP_SHARE_ENDPOINT) {
+    return [`${String(window.RECAP_SHARE_ENDPOINT).replace(/\/+$/g, "")}${suffix}`];
+  }
+
+  const protocol = /^https?:$/.test(window.location.protocol)
+    ? window.location.protocol
+    : "http:";
+  const host = window.location.hostname || "localhost";
+
+  return [
+    `/api/share-config${suffix}`,
+    `${protocol}//${host}:3001/api/share-config${suffix}`,
+  ];
+}
+
+async function fetchShareJson(endpoint, options = {}) {
+  const controller = new AbortController();
+  const { timeoutMs = 4500, ...fetchOptions } = options;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(endpoint, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => "");
+      throw new Error(message || `Server vrátil chybu ${response.status}.`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function prepareSharedConfigurationStateForRestore(state) {
+  const prepared = cloneSavedState(state);
+  if (!prepared || prepared.version !== 1) return null;
+
+  const model =
+    getDraftModelFromPayload(prepared) ||
+    String(prepared.route?.model || "").toUpperCase() ||
+    "MANILA";
+
+  prepared.route = {
+    ...(prepared.route || {}),
+    view: "configurator",
+    model,
+    step: 5,
+    unlockedStep: Math.max(5, Number(prepared.route?.unlockedStep || 1)),
+  };
+
+  return prepared;
+}
+
+async function getSharedConfigurationStateFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get(SHARE_TOKEN_PARAM);
+
+    if (token) {
+      for (const endpoint of getShareConfigEndpoints(token)) {
+        try {
+          const result = await fetchShareJson(endpoint, { timeoutMs: 6000 });
+          const state = prepareSharedConfigurationStateForRestore(result?.state);
+          if (state) return state;
+        } catch (error) {
+          console.warn("Shared configuration token fetch failed:", error);
+        }
+      }
+    }
+
+    const encoded = url.searchParams.get(SHARE_STATE_PARAM);
+    if (!encoded) return null;
+    return prepareSharedConfigurationStateForRestore(decodeSharedConfigurationState(encoded));
+  } catch (e) {
+    console.warn("Shared configuration restore failed:", e);
+    return null;
+  }
+}
+
+function getShareUrlBase() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  return url.href;
+}
+
+function getCurrentSharedConfigurationState() {
+  try {
+    saveStateNow();
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const state = raw ? cloneSavedState(JSON.parse(raw)) : null;
+    if (!state || state.version !== 1) return null;
+    if (!Array.isArray(state.modules) || state.modules.length === 0) return null;
+
+    const model =
+      getDraftModelFromPayload(state) ||
+      String(state.route?.model || appState.model || "").toUpperCase() ||
+      "MANILA";
+
+    state.ts = Date.now();
+    state.route = {
+      ...(state.route || {}),
+      view: "configurator",
+      model,
+      step: 5,
+      unlockedStep: Math.max(5, Number(state.route?.unlockedStep || appState.unlockedStep || 1)),
+    };
+
+    return state;
+  } catch (e) {
+    console.warn("Shared configuration snapshot failed:", e);
+    return null;
+  }
+}
+
+async function createShortConfigurationShareUrl(state) {
+  if (!state) return "";
+
+  for (const endpoint of getShareConfigEndpoints()) {
+    try {
+      const result = await fetchShareJson(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          state,
+          urlBase: getShareUrlBase(),
+        }),
+      });
+
+      if (result?.url) return result.url;
+    } catch (error) {
+      console.warn("Short share URL create failed:", error);
+    }
+  }
+
+  return "";
+}
+
+async function getCurrentConfigurationShareUrl(state = getCurrentSharedConfigurationState()) {
+  if (!state) return window.location.href;
+
+  const shortUrl = await createShortConfigurationShareUrl(state);
+  if (shortUrl) return shortUrl;
+
+  const url = new URL(getShareUrlBase());
+  url.searchParams.set("view", "configurator");
+  url.searchParams.set("step", "5");
+  url.searchParams.set("unlocked", String(Math.max(5, Number(state.route?.unlockedStep || 5))));
+  if (state.route?.model) url.searchParams.set("model", state.route.model);
+
+  return url.href;
+}
+
+function clearSharedConfigurationParamFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(SHARE_STATE_PARAM) && !url.searchParams.has(SHARE_TOKEN_PARAM)) return;
+
+    url.searchParams.delete(SHARE_STATE_PARAM);
+    url.searchParams.delete(SHARE_TOKEN_PARAM);
+    url.searchParams.set("view", "configurator");
+    url.searchParams.set("step", "5");
+    url.searchParams.set("unlocked", String(Math.max(5, Number(appState.unlockedStep || 5))));
+    if (appState.model) url.searchParams.set("model", appState.model);
+
+    history.replaceState({
+      view: "configurator",
+      step: 5,
+      model: appState.model,
+      unlockedStep: Math.max(5, Number(appState.unlockedStep || 5)),
+    }, "", url);
+  } catch (e) {
+    console.warn("Shared configuration URL cleanup failed:", e);
+  }
+}
+
 function isDraftSaveMeaningfulPayload(payload) {
   if (!payload || typeof payload !== "object") return false;
   if (Array.isArray(payload.modules) && payload.modules.length > 0) return true;
@@ -19465,6 +19923,8 @@ function getDraftSofaTitle(payload) {
 
 function getStoredPayloadTotalPrice(payload) {
   const group = payload?.selections?.appliedFabricPriceGroup || "g1";
+  const modelKey = getDraftModelFromPayload(payload);
+  const armrestType = payload?.selections?.armrests || "";
   let total = 0;
 
   for (const module of payload?.modules || []) {
@@ -19472,9 +19932,13 @@ function getStoredPayloadTotalPrice(payload) {
     const upgrade = (upgradeChoice === "bed" || upgradeChoice === "bed2" || upgradeChoice === "storage")
       ? upgradeChoice
       : (module?.upgrade || null);
+    const effectiveUpgrade = getManchesterArmrestPriceKey(module.variantId, group, upgrade, {
+      armrestType,
+      modelKey,
+    });
 
     try {
-      total += getModulePrice(module.variantId, group, upgrade);
+      total += getModulePrice(module.variantId, group, effectiveUpgrade);
     } catch (e) {}
   }
 
@@ -26653,7 +27117,7 @@ function computeTotalsFromActiveModules() {
 
   for (const rec of activeModules) {
     const upgradeKey = getUpgradeKeyForRec(rec);
-    totalPrice += getModulePrice(rec.name, getAppliedFabricPriceGroup(), upgradeKey);
+    totalPrice += getSummaryPriceForRecSafe(rec, getAppliedFabricPriceGroup(), upgradeKey);
   }
 
   // RozmÄ›ry sestavy z reĂˇlnĂ˝ch meshĹŻ (nejpĹ™esnÄ›jĹˇĂ­)
@@ -26793,12 +27257,17 @@ function getSummaryDepthDimKeyForRecSafe(rec) {
   return null;
 }
 
-function getSummaryPriceForRecSafe(rec, fabricId, baseUpgradeKey) {
+function getSummaryPriceForRecSafe(rec, fabricId, baseUpgradeKey, options = {}) {
   const variantId = rec?.name;
   if (!variantId) return 0;
 
   const upgradeKey = baseUpgradeKey || null;
-  const fallbackPrice = getModulePrice(variantId, fabricId, upgradeKey) || 0;
+  const effectiveUpgradeKey = getManchesterArmrestPriceKey(variantId, fabricId, upgradeKey, {
+    armrestType: options.armrestType ?? selectedArmrests,
+    modelKey: options.modelKey || getVariantModelKey(variantId) || getModelKey(),
+    disabled: Boolean(options.disableManchesterArmrest),
+  });
+  const fallbackPrice = getModulePrice(variantId, fabricId, effectiveUpgradeKey) || 0;
 
   try {
     if (!isSummaryDepth1DVariant(variantId)) return fallbackPrice;
@@ -26809,8 +27278,16 @@ function getSummaryPriceForRecSafe(rec, fabricId, baseUpgradeKey) {
     const cat = getCatalog?.(variantId);
     const extendedBase = cat?.upgradePrices?.extendedBase?.[fabricId];
     const extendedStorage = cat?.upgradePrices?.extendedStorage?.[fabricId];
+    const extendedArmrest = cat?.upgradePrices?.extendedArmrest?.[fabricId];
 
     if (!isExtended) return fallbackPrice;
+
+    if (effectiveUpgradeKey === "armrest") {
+      if (extendedArmrest != null && Number.isFinite(Number(extendedArmrest)) && Number(extendedArmrest) > 0) {
+        return Number(extendedArmrest);
+      }
+      return fallbackPrice;
+    }
 
     if (upgradeKey === "storage") {
       if (extendedStorage != null && Number.isFinite(Number(extendedStorage)) && Number(extendedStorage) > 0) {
@@ -26940,6 +27417,7 @@ function updateSummaryUI() {
 
   renderPriceWithDiscount(priceEl, sumPrice);
   updateFabricCategoryTabPrices();
+  refreshManchesterArmrestPriceLabels();
 
   // ===== 2) ROZMÄšRY: NOMINĂLNĂŤ (z connections), ne z reĂˇlnĂ˝ch world pozic =====
 
@@ -28570,7 +29048,7 @@ function updateSummaryBox() {
   if (!priceEl || !dimsEl) return;
 
   // 1) Cena
-  const total = calcTotalPrice(activeModules, selectedUpholstery);
+  const total = getConfiguredTotalPrice();
   priceEl.textContent = `${total.toLocaleString("cs-CZ")} Kč`;
 
   // 2) RozmÄ›ry: vezmeme "snapBox" (sedĂˇky) pro kaĹľdĂ˝ modul

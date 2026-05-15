@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs/promises");
 const path = require("path");
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const puppeteer = require("puppeteer");
 
@@ -8,6 +9,8 @@ const PORT = Number(process.env.PDF_PORT || 3001);
 const MAX_BODY_SIZE = 50 * 1024 * 1024;
 const PUBLIC_DIR = path.resolve(__dirname, "public");
 const ENV_PATH = path.resolve(__dirname, ".env");
+const SHARE_CONFIG_DIR = path.resolve(__dirname, ".share-configs");
+const SHARE_TOKEN_RE = /^[A-Za-z0-9_-]{6,32}$/;
 
 let browserPromise = null;
 const optimizedAssetCache = new Map();
@@ -66,6 +69,14 @@ function sendBuffer(res, statusCode, buffer, contentType, extraHeaders = {}) {
     ...extraHeaders,
   });
   res.end(buffer);
+}
+
+function sendJson(res, statusCode, data, extraHeaders = {}) {
+  const body = Buffer.from(JSON.stringify(data), "utf8");
+  sendBuffer(res, statusCode, body, "application/json; charset=utf-8", {
+    "Cache-Control": "no-store",
+    ...extraHeaders,
+  });
 }
 
 function sanitizeFilename(filename) {
@@ -159,6 +170,117 @@ async function readJsonBody(req) {
   }
 
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+}
+
+function createShareToken() {
+  return crypto.randomBytes(7)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function getShareFilePath(token) {
+  const clean = String(token || "").trim();
+  if (!SHARE_TOKEN_RE.test(clean)) return null;
+  return path.join(SHARE_CONFIG_DIR, `${clean}.json`);
+}
+
+function getModelFromSharedState(state) {
+  const fromRoute = String(state?.route?.model || "").trim().toUpperCase();
+  if (fromRoute && fromRoute !== "CUSTOM") return fromRoute;
+
+  const firstVariant = String(state?.modules?.[0]?.variantId || "").trim();
+  if (firstVariant.includes("_")) return firstVariant.split("_")[0].toUpperCase();
+
+  return fromRoute || "";
+}
+
+function validateSharedConfigurationState(state) {
+  if (!state || typeof state !== "object" || state.version !== 1) {
+    const error = new Error("Sdílená konfigurace nemá platný formát.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!Array.isArray(state.modules) || state.modules.length < 1) {
+    const error = new Error("Sdílená konfigurace neobsahuje žádné moduly.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return state;
+}
+
+function buildShareUrl(urlBase, token, state) {
+  const model = getModelFromSharedState(state);
+  let url;
+
+  try {
+    url = new URL(urlBase || "http://localhost:8080/");
+  } catch (error) {
+    url = new URL("http://localhost:8080/");
+  }
+
+  url.hash = "";
+  url.search = "";
+  url.searchParams.set("share", token);
+  if (model) url.searchParams.set("model", model);
+
+  return url.href;
+}
+
+function hasShareTokenUrl(urlValue) {
+  try {
+    return Boolean(new URL(urlValue).searchParams.get("share"));
+  } catch (error) {
+    return false;
+  }
+}
+
+async function saveSharedConfigurationState(state) {
+  validateSharedConfigurationState(state);
+  await fs.mkdir(SHARE_CONFIG_DIR, { recursive: true });
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const token = createShareToken();
+    const filePath = getShareFilePath(token);
+    const payload = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      state,
+    };
+
+    try {
+      await fs.writeFile(filePath, JSON.stringify(payload), { flag: "wx" });
+      return token;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+    }
+  }
+
+  throw new Error("Nepodařilo se vytvořit krátký odkaz.");
+}
+
+async function readSharedConfigurationState(token) {
+  const filePath = getShareFilePath(token);
+  if (!filePath) {
+    const error = new Error("Neplatný odkaz na sestavu.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return validateSharedConfigurationState(parsed?.state);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      error.statusCode = 404;
+      error.message = "Sestava pro tento odkaz nebyla nalezena.";
+    }
+    throw error;
+  }
 }
 
 async function getBrowser() {
@@ -437,12 +559,42 @@ function buildInquiryEmailText({ customerEmail, summary }) {
     `Typ sestavy: ${summary?.assemblyType || "Neuvedeno"}`,
     `Sestava: ${summary?.assemblyText || "Neuvedeno"}`,
     `Cena po slevě: ${summary?.totalPrice || "Neuvedeno"}`,
-    `Odkaz na konfiguraci: ${summary?.url || "Neuvedeno"}`,
+    `Odkaz na sestavu: ${summary?.url || "Neuvedeno"}`,
     "",
     "Rekapitulace konfigurace je v příloze.",
   ];
 
   return lines.join("\n");
+}
+
+async function handleShareCreateRequest(req, res) {
+  try {
+    const { state, urlBase } = await readJsonBody(req);
+    const token = await saveSharedConfigurationState(state);
+    sendJson(res, 200, {
+      ok: true,
+      token,
+      url: buildShareUrl(urlBase, token, state),
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    console.error("Share config create error:", error);
+    sendText(res, statusCode, error.message || "Krátký odkaz se nepodařilo vytvořit.");
+  }
+}
+
+async function handleShareReadRequest(req, res, token) {
+  try {
+    const state = await readSharedConfigurationState(token);
+    sendJson(res, 200, {
+      ok: true,
+      state,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    console.error("Share config read error:", error);
+    sendText(res, statusCode, error.message || "Sestavu se nepodařilo načíst.");
+  }
 }
 
 function buildCustomerEmailText({ summary }) {
@@ -455,6 +607,7 @@ function buildCustomerEmailText({ summary }) {
     summary?.sofaName ? `Konfigurace: ${summary.sofaName}` : "",
     summary?.assemblyText ? `Sestava: ${summary.assemblyText}` : "",
     summary?.totalPrice ? `Cena po slevě: ${summary.totalPrice}` : "",
+    summary?.url ? `Odkaz na sestavu: ${summary.url}` : "",
     "",
     "S pozdravem",
     "MADROS",
@@ -470,6 +623,7 @@ function buildCustomerEmailHtml({ summary }) {
       ${summary?.sofaName ? `<p><strong>Konfigurace:</strong> ${escapeHtml(summary.sofaName)}</p>` : ""}
       ${summary?.assemblyText ? `<p><strong>Sestava:</strong> ${escapeHtml(summary.assemblyText)}</p>` : ""}
       ${summary?.totalPrice ? `<p><strong>Cena po slevě:</strong> ${escapeHtml(summary.totalPrice)}</p>` : ""}
+      ${summary?.url ? `<p><strong>Odkaz na sestavu:</strong> <a href="${escapeHtml(summary.url)}">Otevřít sestavu v konfigurátoru</a></p>` : ""}
       <p>S pozdravem<br>MADROS</p>
     </div>
   `;
@@ -484,16 +638,16 @@ function buildInquiryEmailHtml({ customerEmail, summary }) {
       <p><strong>Typ sestavy:</strong> ${escapeHtml(summary?.assemblyType || "Neuvedeno")}</p>
       <p><strong>Sestava:</strong> ${escapeHtml(summary?.assemblyText || "Neuvedeno")}</p>
       <p><strong>Cena po slevě:</strong> ${escapeHtml(summary?.totalPrice || "Neuvedeno")}</p>
-      <p><strong>Odkaz na konfiguraci:</strong> ${summary?.url ? `<a href="${escapeHtml(summary.url)}">${escapeHtml(summary.url)}</a>` : "Neuvedeno"}</p>
+      <p><strong>Odkaz na sestavu:</strong> ${summary?.url ? `<a href="${escapeHtml(summary.url)}">Otevřít sestavu v konfigurátoru</a>` : "Neuvedeno"}</p>
       <p>Rekapitulace konfigurace je v příloze.</p>
     </div>
   `;
 }
 
-async function handleInquiryRequest(req, res) {
+async function handleInquiryRequestLegacy(req, res) {
   try {
     await loadLocalEnv();
-    const { customerEmail, filename, html, summary } = await readJsonBody(req);
+    const { customerEmail, filename, html, summary, shareState, shareUrlBase } = await readJsonBody(req);
     const email = String(customerEmail || "").trim();
 
     if (!isValidEmail(email)) {
@@ -508,6 +662,13 @@ async function handleInquiryRequest(req, res) {
 
     const config = assertMailConfigured();
     const transporter = createMailTransport(config);
+    const emailSummary = { ...(summary || {}) };
+
+    if (shareState && !hasShareTokenUrl(emailSummary.url)) {
+      const token = await saveSharedConfigurationState(shareState);
+      emailSummary.url = buildShareUrl(shareUrlBase || summary?.url, token, shareState);
+    }
+
     const safeFilename = sanitizeFilename(filename || "rekapitulace.pdf");
     const pdfBuffer = await renderPdfFromHtml(html);
     const attachment = {
@@ -515,14 +676,14 @@ async function handleInquiryRequest(req, res) {
       content: pdfBuffer,
       contentType: "application/pdf",
     };
-    const sofaName = summary?.sofaName || "konfigurace";
+    const sofaName = emailSummary?.sofaName || "konfigurace";
 
     await transporter.sendMail({
       from: config.from,
       to: email,
       subject: "Děkujeme za poptávku | MADROS",
-      text: buildCustomerEmailText({ summary }),
-      html: buildCustomerEmailHtml({ summary }),
+      text: buildCustomerEmailText({ summary: emailSummary }),
+      html: buildCustomerEmailHtml({ summary: emailSummary }),
       attachments: [attachment],
     });
 
@@ -531,8 +692,8 @@ async function handleInquiryRequest(req, res) {
       to: config.to,
       replyTo: email,
       subject: `Nová poptávka na pohovku - ${sofaName}`,
-      text: buildInquiryEmailText({ customerEmail: email, summary }),
-      html: buildInquiryEmailHtml({ customerEmail: email, summary }),
+      text: buildInquiryEmailText({ customerEmail: email, summary: emailSummary }),
+      html: buildInquiryEmailHtml({ customerEmail: email, summary: emailSummary }),
       attachments: [attachment],
     });
 
@@ -540,11 +701,88 @@ async function handleInquiryRequest(req, res) {
       ...getCorsHeaders(),
       "Content-Type": "application/json; charset=utf-8",
     });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, url: emailSummary.url || "" }));
   } catch (error) {
     const statusCode = error.statusCode || 500;
     console.error("Inquiry email error:", error);
     sendText(res, statusCode, error.message || "Poptávku se nepodařilo odeslat.");
+  }
+}
+
+async function handleInquiryRequest(req, res) {
+  let responseSent = false;
+
+  try {
+    await loadLocalEnv();
+    const { customerEmail, filename, html, summary, shareState, shareUrlBase } = await readJsonBody(req);
+    const email = String(customerEmail || "").trim();
+
+    if (!isValidEmail(email)) {
+      sendText(res, 400, "Zadejte prosím platný email.");
+      return;
+    }
+
+    if (!html || typeof html !== "string") {
+      sendText(res, 400, "Missing HTML");
+      return;
+    }
+
+    const config = assertMailConfigured();
+    const emailSummary = { ...(summary || {}) };
+
+    if (shareState && !hasShareTokenUrl(emailSummary.url)) {
+      const token = await saveSharedConfigurationState(shareState);
+      emailSummary.url = buildShareUrl(shareUrlBase || summary?.url, token, shareState);
+    }
+
+    const safeFilename = sanitizeFilename(filename || "rekapitulace.pdf");
+    const sofaName = emailSummary?.sofaName || "konfigurace";
+
+    sendJson(res, 200, {
+      ok: true,
+      queued: true,
+      url: emailSummary.url || "",
+    });
+    responseSent = true;
+
+    setImmediate(async () => {
+      try {
+        const transporter = createMailTransport(config);
+        const pdfBuffer = await renderPdfFromHtml(html);
+        const attachment = {
+          filename: safeFilename,
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        };
+
+        await transporter.sendMail({
+          from: config.from,
+          to: email,
+          subject: "Děkujeme za poptávku | MADROS",
+          text: buildCustomerEmailText({ summary: emailSummary }),
+          html: buildCustomerEmailHtml({ summary: emailSummary }),
+          attachments: [attachment],
+        });
+
+        await transporter.sendMail({
+          from: config.from,
+          to: config.to,
+          replyTo: email,
+          subject: `Nová poptávka na pohovku - ${sofaName}`,
+          text: buildInquiryEmailText({ customerEmail: email, summary: emailSummary }),
+          html: buildInquiryEmailHtml({ customerEmail: email, summary: emailSummary }),
+          attachments: [attachment],
+        });
+      } catch (error) {
+        console.error("Inquiry email background send error:", error);
+      }
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    console.error("Inquiry email error:", error);
+    if (!responseSent) {
+      sendText(res, statusCode, error.message || "Poptávku se nepodařilo odeslat.");
+    }
   }
 }
 
@@ -560,6 +798,17 @@ function startPdfServer() {
 
     if (req.method === "GET" && requestUrl.pathname === "/api/pdf-asset") {
       await handlePdfAssetRequest(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && requestUrl.pathname === "/api/share-config") {
+      await handleShareCreateRequest(req, res);
+      return;
+    }
+
+    if (req.method === "GET" && requestUrl.pathname.startsWith("/api/share-config/")) {
+      const token = decodeURIComponent(requestUrl.pathname.slice("/api/share-config/".length));
+      await handleShareReadRequest(req, res, token);
       return;
     }
 
@@ -607,6 +856,8 @@ module.exports = {
   closeBrowser,
   handlePdfAssetRequest,
   handlePdfExportRequest,
+  handleShareCreateRequest,
+  handleShareReadRequest,
   handleInquiryRequest,
   startPdfServer,
 };

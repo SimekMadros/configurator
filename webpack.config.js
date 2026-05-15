@@ -1,5 +1,11 @@
 const path = require('path');
-const { handleInquiryRequest, handlePdfAssetRequest, handlePdfExportRequest } = require('./pdf-server');
+const {
+  handleInquiryRequest,
+  handlePdfAssetRequest,
+  handlePdfExportRequest,
+  handleShareCreateRequest,
+  handleShareReadRequest,
+} = require('./pdf-server');
 
 module.exports = (env = {}, argv = {}) => ({
   entry: './src/index.js', // vstupní JS soubor
@@ -25,6 +31,10 @@ module.exports = (env = {}, argv = {}) => ({
           res.status(204).end();
         });
         devServer.app.get('/api/pdf-asset', handlePdfAssetRequest);
+        devServer.app.post('/api/share-config', handleShareCreateRequest);
+        devServer.app.get('/api/share-config/:token', (req, res) => {
+          handleShareReadRequest(req, res, req.params.token);
+        });
         devServer.app.post('/api/export-recap-pdf', handlePdfExportRequest);
         devServer.app.post('/api/send-recap-inquiry', handleInquiryRequest);
       }
