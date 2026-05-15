@@ -10351,7 +10351,7 @@ function buildFabricFamilyFromFiles({
   specs = {},
   info = null
 }) {
-  const basePath = basePathOverride || `/textures/fabric/${categoryFolder}/${folder}`;
+  const basePath = assetUrl(basePathOverride || `/textures/fabric/${categoryFolder}/${folder}`);
   const shades = (shadeFiles || []).map((fileName) => {
     const clean = String(fileName || "").trim();
     const extMatch = clean.match(/\.([a-z0-9]+)$/i);
@@ -21310,12 +21310,14 @@ const MAX_PREFETCH = 8;             // kolik modelĹŻ dopĹ™edu
 const fabricThumbCache = new Map(); // url -> Promise<HTMLImageElement>
 
 function loadThumbCached(url) {
-  if (!url) return Promise.resolve(null);
-  if (fabricThumbCache.has(url)) return fabricThumbCache.get(url);
+  const finalUrl = assetUrl(url);
+
+  if (!finalUrl) return Promise.resolve(null);
+  if (fabricThumbCache.has(finalUrl)) return fabricThumbCache.get(finalUrl);
 
   const img = new Image();
   img.decoding = "async";
-  img.src = url;
+  img.src = finalUrl;
 
   const p = new Promise((resolve) => {
     const done = async () => {
@@ -21330,7 +21332,7 @@ function loadThumbCached(url) {
     }
   });
 
-  fabricThumbCache.set(url, p);
+  fabricThumbCache.set(finalUrl, p);
   return p;
 }
 
