@@ -763,6 +763,74 @@ async function handleInquiryRequestLegacy(req, res) {
   }
 }
 
+async function handleTestEmailRequest(req, res) {
+  try {
+    await loadLocalEnv();
+
+    const config = assertMailConfigured();
+
+    console.log("[TestEmail] SMTP config", {
+      smtpHost: config.host,
+      smtpServername: config.servername,
+      smtpPort: config.port,
+      smtpSecure: config.secure,
+      from: config.from,
+      to: config.to,
+      user: config.user,
+    });
+
+    const transporter = createMailTransport(config);
+
+    console.log("[TestEmail] Verifying SMTP...");
+    await transporter.verify();
+    console.log("[TestEmail] SMTP verified");
+
+    const info = await transporter.sendMail({
+      from: config.from,
+      to: config.to,
+      subject: "Test email z MADROS konfigurátoru",
+      text: "Pokud tento e-mail dorazil, SMTP z Renderu funguje.",
+    });
+
+    sendJson(res, 200, {
+      ok: true,
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
+      config: {
+        smtpHost: config.host,
+        smtpServername: config.servername,
+        smtpPort: config.port,
+        smtpSecure: config.secure,
+        from: config.from,
+        to: config.to,
+        user: config.user,
+      },
+    });
+  } catch (error) {
+    console.error("[TestEmail] Error:", {
+      name: error.name,
+      code: error.code,
+      command: error.command,
+      responseCode: error.responseCode,
+      response: error.response,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    sendJson(res, 500, {
+      ok: false,
+      name: error.name,
+      code: error.code,
+      command: error.command,
+      responseCode: error.responseCode,
+      response: error.response,
+      message: error.message,
+    });
+  }
+}
+
 async function handleInquiryRequest(req, res) {
   let responseSent = false;
 
@@ -913,6 +981,11 @@ function startPdfServer() {
       return;
     }
 
+    if (req.method === "GET" && requestUrl.pathname === "/api/test-email") {
+      await handleTestEmailRequest(req, res);
+      return;
+    }
+
     sendText(res, 404, "Not found");
   });
 
@@ -950,5 +1023,6 @@ module.exports = {
   handleShareCreateRequest,
   handleShareReadRequest,
   handleInquiryRequest,
+  handleTestEmailRequest,
   startPdfServer,
 };
