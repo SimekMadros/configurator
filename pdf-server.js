@@ -571,7 +571,12 @@ function getBaseHrefFromHtml(html) {
 
 async function waitForPdfAssets(page) {
   await page.evaluate(async () => {
-    const timeout = new Promise((resolve) => setTimeout(resolve, 30000));
+    /*
+      Zrychlení PDF:
+      Původně se čekalo až 30 sekund na všechny obrázky/backgroundy/fonty.
+      Na Render free to zbytečně prodlužovalo generování PDF.
+    */
+    const timeout = new Promise((resolve) => setTimeout(resolve, 7000));
 
     const imagePromises = Array.from(document.images || []).map((img) => {
       if (img.complete && img.naturalWidth > 0) return Promise.resolve();
@@ -583,34 +588,17 @@ async function waitForPdfAssets(page) {
       });
     });
 
-    const backgroundUrls = new Set();
-    for (const el of Array.from(document.querySelectorAll("*"))) {
-      const bg = window.getComputedStyle(el).backgroundImage;
-      if (!bg || bg === "none") continue;
-
-      for (const match of bg.matchAll(/url\(["']?([^"')]+)["']?\)/g)) {
-        const url = match[1];
-        if (!url || /^data:/i.test(url)) continue;
-        backgroundUrls.add(url);
-      }
-    }
-
-    const backgroundPromises = Array.from(backgroundUrls).map((url) => new Promise((resolve) => {
-      const img = new Image();
-      img.onload = resolve;
-      img.onerror = resolve;
-      img.src = url;
-    }));
-
     const fontsReady = document.fonts?.ready?.catch(() => {}) || Promise.resolve();
+
     await Promise.race([
-      Promise.all([...imagePromises, ...backgroundPromises, fontsReady]),
+      Promise.all([...imagePromises, fontsReady]),
       timeout,
     ]);
   });
 }
 
 async function renderPdfFromHtml(html) {
+  const startedAt = Date.now();
   const browser = await getBrowser();
   const page = await browser.newPage();
 
@@ -618,26 +606,24 @@ async function renderPdfFromHtml(html) {
     await page.setViewport({
       width: 794,
       height: 1123,
-      deviceScaleFactor: 2,
-    });
 
-    /*
-      DŮLEŽITÉ:
-      Původně se tady dělalo page.goto(baseHref).
-      Na Renderu to může čekat 60 sekund nebo padat na localhost / doméně.
-      Pro PDF stačí page.setContent(html), protože HTML už posíláme přímo v requestu.
-    */
+      /*
+        1 je rychlejší než 2.
+        PDF bude pořád použitelné, ale Render nebude tolik trpět.
+      */
+      deviceScaleFactor: 1,
+    });
 
     await page.emulateMediaType("print");
 
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
-      timeout: 60000,
+      timeout: 20000,
     });
 
     await waitForPdfAssets(page);
 
-    return await page.pdf({
+    const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
       preferCSSPageSize: true,
@@ -648,6 +634,13 @@ async function renderPdfFromHtml(html) {
         left: "0",
       },
     });
+
+    console.log("[PDF] Rendered in ms", {
+      durationMs: Date.now() - startedAt,
+      sizeBytes: pdfBuffer.length,
+    });
+
+    return pdfBuffer;
   } finally {
     await page.close().catch(() => {});
   }
@@ -959,7 +952,23 @@ async function handleInquiryRequest(req, res) {
           smtpSecure: config.secure,
         });
 
-        console.log("[Inquiry] Sending customer email via Brevo without PDF...");
+        console.log("[Inquiry] Rendering PDF attachment...");
+
+        const pdfStartedAt = Date.now();
+        const pdfBuffer = await renderPdfFromHtml(html);
+
+        const attachment = {
+          filename: safeFilename,
+          content: pdfBuffer,
+        };
+
+        console.log("[Inquiry] PDF attachment ready", {
+          filename: safeFilename,
+          sizeBytes: pdfBuffer.length,
+          durationMs: Date.now() - pdfStartedAt,
+        });
+
+        console.log("[Inquiry] Sending customer email via Brevo with PDF...");
 
         const customerInfo = await sendBrevoEmail({
           from: config.from,
@@ -967,11 +976,12 @@ async function handleInquiryRequest(req, res) {
           subject: "Děkujeme za poptávku | MADROS",
           text: buildCustomerEmailText({ summary: emailSummary }),
           html: buildCustomerEmailHtml({ summary: emailSummary }),
+          attachments: [attachment],
         });
 
         console.log("[Inquiry] Customer email sent via Brevo", customerInfo);
 
-        console.log("[Inquiry] Sending internal email via Brevo without PDF...");
+        console.log("[Inquiry] Sending internal email via Brevo with PDF...");
 
         const internalInfo = await sendBrevoEmail({
           from: config.from,
@@ -980,6 +990,7 @@ async function handleInquiryRequest(req, res) {
           subject: `Nová poptávka na pohovku - ${sofaName}`,
           text: buildInquiryEmailText({ customerEmail: email, summary: emailSummary }),
           html: buildInquiryEmailHtml({ customerEmail: email, summary: emailSummary }),
+          attachments: [attachment],
         });
 
         console.log("[Inquiry] Internal email sent via Brevo", {
