@@ -489,23 +489,20 @@ async function renderPdfFromHtml(html) {
       deviceScaleFactor: 2,
     });
 
-    const baseHref = getBaseHrefFromHtml(html);
-    if (/^https?:\/\//i.test(baseHref)) {
-      try {
-        await page.goto(baseHref, {
-          waitUntil: "domcontentloaded",
-          timeout: 60000,
-        });
-      } catch (error) {
-        console.warn("PDF base page preload failed:", error.message);
-      }
-    }
+    /*
+      DŮLEŽITÉ:
+      Původně se tady dělalo page.goto(baseHref).
+      Na Renderu to může čekat 60 sekund nebo padat na localhost / doméně.
+      Pro PDF stačí page.setContent(html), protože HTML už posíláme přímo v requestu.
+    */
 
     await page.emulateMediaType("print");
+
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
+
     await waitForPdfAssets(page);
 
     return await page.pdf({
@@ -747,34 +744,70 @@ async function handleInquiryRequest(req, res) {
 
     setImmediate(async () => {
       try {
-        const transporter = createMailTransport(config);
-        const pdfBuffer = await renderPdfFromHtml(html);
-        const attachment = {
-          filename: safeFilename,
-          content: pdfBuffer,
-          contentType: "application/pdf",
-        };
+        console.log("[Inquiry] Background send started", {
+          toCustomer: email,
+          toInternal: config.to,
+          from: config.from,
+          smtpHost: config.host,
+          smtpPort: config.port,
+          smtpSecure: config.secure,
+        });
 
-        await transporter.sendMail({
+        const transporter = createMailTransport(config);
+
+        console.log("[Inquiry] Verifying SMTP...");
+        await transporter.verify();
+        console.log("[Inquiry] SMTP verified");
+
+        /*
+          DIAGNOSTIKA:
+          Nejdřív pošleme e-maily BEZ PDF.
+          Pokud tohle dorazí, SMTP funguje a problém je jen v PDF renderu.
+        */
+
+        console.log("[Inquiry] Sending customer email without PDF...");
+        const customerInfo = await transporter.sendMail({
           from: config.from,
           to: email,
           subject: "Děkujeme za poptávku | MADROS",
           text: buildCustomerEmailText({ summary: emailSummary }),
           html: buildCustomerEmailHtml({ summary: emailSummary }),
-          attachments: [attachment],
         });
 
-        await transporter.sendMail({
+        console.log("[Inquiry] Customer email sent", {
+          messageId: customerInfo.messageId,
+          accepted: customerInfo.accepted,
+          rejected: customerInfo.rejected,
+          response: customerInfo.response,
+        });
+
+        console.log("[Inquiry] Sending internal email without PDF...");
+        const internalInfo = await transporter.sendMail({
           from: config.from,
           to: config.to,
           replyTo: email,
           subject: `Nová poptávka na pohovku - ${sofaName}`,
           text: buildInquiryEmailText({ customerEmail: email, summary: emailSummary }),
           html: buildInquiryEmailHtml({ customerEmail: email, summary: emailSummary }),
-          attachments: [attachment],
         });
+
+        console.log("[Inquiry] Internal email sent", {
+          messageId: internalInfo.messageId,
+          accepted: internalInfo.accepted,
+          rejected: internalInfo.rejected,
+          response: internalInfo.response,
+        });
+
       } catch (error) {
-        console.error("Inquiry email background send error:", error);
+        console.error("Inquiry email background send error:", {
+          name: error.name,
+          code: error.code,
+          command: error.command,
+          responseCode: error.responseCode,
+          response: error.response,
+          message: error.message,
+          stack: error.stack,
+        });
       }
     });
   } catch (error) {
