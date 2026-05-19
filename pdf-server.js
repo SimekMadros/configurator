@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
+const dns = require("dns");
 const nodemailer = require("nodemailer");
 const puppeteer = require("puppeteer");
 
@@ -119,12 +120,22 @@ function getMailConfig() {
   const pass = process.env.SMTP_PASS || "";
   const from = process.env.MAIL_FROM || process.env.SMTP_FROM || user;
   const to = process.env.INQUIRY_TO || "info@madros.cz";
+
+  /*
+    Když SMTP_HOST nastavíme na IPv4 adresu, TLS certifikát pořád patří
+    doméně mail.webglobe.cz. Proto potřebujeme servername zvlášť.
+  */
+  const servername =
+    process.env.SMTP_TLS_SERVERNAME ||
+    process.env.SMTP_SERVERNAME ||
+    host;
+
   const secureValue = String(process.env.SMTP_SECURE || "").toLowerCase();
   const secure = secureValue
     ? ["1", "true", "yes"].includes(secureValue)
     : port === 465;
 
-  return { from, host, pass, port, secure, to, user };
+  return { from, host, pass, port, secure, servername, to, user };
 }
 
 function assertMailConfigured() {
@@ -146,18 +157,33 @@ function assertMailConfigured() {
 }
 
 function createMailTransport(config) {
+  const smtpHost = String(config.host || "").trim();
+  const smtpServername = String(config.servername || smtpHost).trim();
+
   return nodemailer.createTransport({
-    host: config.host,
+    host: smtpHost,
     port: config.port,
     secure: config.secure,
 
     /*
       DŮLEŽITÉ PRO RENDER:
-      mail.webglobe.cz se může resolvnout na IPv6 adresu.
-      Render pak padá na ENETUNREACH, protože se na IPv6 SMTP nedostane.
-      Tímhle vynutíme IPv4.
+      Render se přes IPv6 na mail.webglobe.cz nedostane.
+      family: 4 někdy nestačí, proto přidáváme i vlastní DNS lookup.
     */
     family: 4,
+
+    lookup: (hostname, options, callback) => {
+      dns.lookup(hostname, { family: 4, all: false }, callback);
+    },
+
+    /*
+      Když host bude IPv4 adresa, TLS musí pořád ověřovat certifikát
+      proti mail.webglobe.cz.
+    */
+    tls: {
+      servername: smtpServername,
+      minVersion: "TLSv1.2",
+    },
 
     auth: {
       user: config.user,
@@ -762,6 +788,7 @@ async function handleInquiryRequest(req, res) {
           toInternal: config.to,
           from: config.from,
           smtpHost: config.host,
+          smtpServername: config.servername,
           smtpPort: config.port,
           smtpSecure: config.secure,
         });
