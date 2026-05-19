@@ -3,6 +3,17 @@ const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
 const dns = require("dns");
+
+/*
+  Render + mail.webglobe.cz:
+  snažíme se všude preferovat IPv4, protože IPv6 spojení padá na ENETUNREACH.
+*/
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch (error) {
+  console.warn("DNS ipv4first setup failed:", error.message);
+}
+
 const nodemailer = require("nodemailer");
 const puppeteer = require("puppeteer");
 
