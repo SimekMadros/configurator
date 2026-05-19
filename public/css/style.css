@@ -1011,7 +1011,7 @@ html[data-view="configurator"] body{
   --primaryText: #0B1440;
 }
 
-/* top bar like JECH */
+/* top bar */
 .topBar{
   height: 76px;                /* vyšší jako JECH */
   background: #3a3a3a;         /* šedá místo modré */
@@ -1756,7 +1756,7 @@ html[data-view="configurator"] body{
 
 #stepBarLanding{
   position: fixed;
-  top: 76px;
+  top: 91px;
   left: 0;
   right: 0;
   z-index: 900;
@@ -1958,7 +1958,7 @@ html[data-view="configurator"] #summaryBox{
 }
 
 #viewLanding .landingLayout{
-  padding-top: 56px;  /* výška stepbaru */
+  padding-top: 72px;  /* prostor pro stepbar pod horni listou */
 }
 
 /* ===== Hezčí scrollbar (globálně pro celou stránku) ===== */
@@ -3679,7 +3679,7 @@ body{
   border-radius: 14px;
   overflow: hidden;
 
-  background: rgba(0,0,0,0.28);
+  background: #f7f5f2;
   border: 1px solid rgba(255,255,255,0.10);
 
   display: flex;              /* ✅ */
@@ -7544,5 +7544,4064 @@ body{
 
   #viewLanding .heroChips{
     display: none;
+  }
+}
+
+/* =========================================================
+   MOBILE UX OVERRIDES
+   Keep this last: desktop styles above stay intact, mobile gets
+   a simpler touch-first layout with fewer overlapping fixed layers.
+   ========================================================= */
+
+@media (max-width: 760px){
+  :root{
+    --mobile-topbar-h: 58px;
+    --mobile-stepbar-h: 48px;
+    --mobile-safe-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  html,
+  body{
+    width: 100%;
+    min-width: 0;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .topBar{
+    height: var(--mobile-topbar-h);
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 0 10px;
+    position: relative;
+    z-index: 3100;
+  }
+
+  .brandLogo{
+    height: 26px;
+  }
+
+  .topCenter{
+    min-width: 0;
+    font-size: 16px;
+    line-height: 1.1;
+    justify-self: center;
+  }
+
+  .topRight{
+    min-width: 0;
+  }
+
+  .draftsTopBtn{
+    width: 42px;
+    min-width: 42px;
+    max-width: 42px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 0;
+  }
+
+  .draftsTopBtn::before{
+    content: "";
+    width: 18px;
+    height: 18px;
+    display: block;
+    background: currentColor;
+    -webkit-mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9'/%3E%3Cpath d='M3 15h6l2 3h2l2-3h6'/%3E%3Cpath d='M3 15v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E");
+    mask: center / contain no-repeat url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9'/%3E%3Cpath d='M3 15h6l2 3h2l2-3h6'/%3E%3Cpath d='M3 15v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E");
+  }
+
+  .draftsButtonCount{
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  #viewConfigurator{
+    top: var(--mobile-topbar-h);
+    height: auto;
+  }
+
+  #threeRoot{
+    height: 100%;
+    touch-action: none;
+  }
+
+  .cameraControls{
+    top: calc(var(--mobile-topbar-h) + var(--mobile-stepbar-h) + 28px);
+    left: 8px;
+    gap: 7px;
+    z-index: 2100;
+  }
+
+  .cameraControls .camBtn{
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 17px;
+    background: rgba(24,24,24,0.56);
+  }
+
+  #stepBar,
+  #stepBarLanding{
+    top: var(--mobile-topbar-h);
+    height: var(--mobile-stepbar-h);
+    z-index: 1900;
+  }
+
+  #stepBar .stepDock,
+  #stepBarLanding .stepDock{
+    left: 0;
+    right: 54px;
+    top: 0;
+    transform: none;
+    width: auto;
+    height: var(--mobile-stepbar-h);
+    overflow: auto hidden !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #stepBar .stepDock::-webkit-scrollbar,
+  #stepBarLanding .stepDock::-webkit-scrollbar{
+    display: none;
+  }
+
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    min-width: max-content;
+    gap: 8px;
+    padding: 7px 10px 8px;
+  }
+
+  #stepBar .stepTrack::before,
+  #stepBarLanding .stepTrack::before{
+    width: 100%;
+    height: var(--mobile-stepbar-h);
+    border-radius: 0 0 16px 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .stepBar .step{
+    min-height: 34px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    gap: 6px;
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .stepBar .step.active{
+    padding: 7px 11px;
+    border-radius: 999px;
+    box-shadow: none;
+  }
+
+  .stepBar .step .num{
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  #stepBar .stepToggle,
+  #stepBarLanding .stepToggle{
+    position: absolute;
+    left: auto;
+    right: 8px;
+    top: 9px;
+    width: 40px;
+    height: 30px;
+    transform: none;
+    z-index: 1910;
+  }
+
+  #stepBar.is-collapsed .stepDock,
+  #stepBarLanding.is-collapsed .stepDock{
+    transform: translateY(-58px);
+  }
+
+  #stepBar.is-collapsed .stepToggle,
+  #stepBarLanding.is-collapsed .stepToggle{
+    transform: rotate(180deg);
+  }
+
+  #summaryBox{
+    left: 10px;
+    right: auto;
+    bottom: calc(12px + var(--equip-raise, 0px) + var(--mobile-safe-bottom));
+
+    width: clamp(205px, 50vw, 238px);
+    min-width: 0;
+    max-width: none;
+    overflow: visible;
+
+    padding: 11px 12px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    z-index: 1500;
+
+    background: rgba(255,255,255,0.90);
+    border: 1px solid rgba(255,255,255,0.62);
+    box-shadow: 0 18px 42px rgba(0,0,0,0.13);
+    backdrop-filter: blur(8px);
+  }
+
+  #summaryBox .title-row{
+    margin-bottom: 7px;
+  }
+
+  #summaryBox .title{
+    font-size: 14px;
+    letter-spacing: 0.01em;
+  }
+
+  /* základní řádky uvnitř summary */
+  #summaryBox .line{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.25;
+    margin-top: 4px;
+
+    /* důležité: cena nesmí šednout kvůli opacity rodiče */
+    opacity: 1 !important;
+    color: #1f1f1f !important;
+  }
+
+  /* cena: label nahoře, cena pod tím */
+  #summaryBox .title-row + .line{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3px;
+    justify-items: start;
+    margin-top: 0;
+    opacity: 1 !important;
+  }
+
+  /* text "Aktuální cena od:" – šedší bude jen label, ne celý řádek */
+  #summaryBox .title-row + .line > span:first-child{
+    font-size: 12px;
+    line-height: 1.15;
+    opacity: 1 !important;
+    color: rgba(31,31,31,0.78) !important;
+  }
+
+  /* cena čistě černá */
+  #summaryBox .title-row + .line .priceWithDiscount{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    line-height: 1.1;
+    opacity: 1 !important;
+    color: #000 !important;
+  }
+
+  #summaryBox .title-row + .line .priceOld{
+    font-size: 11px;
+    color: rgba(31,31,31,0.38) !important;
+  }
+
+  #summaryBox .title-row + .line .priceNew{
+    font-size: 15px;
+    font-weight: 900;
+    color: #000 !important;
+    opacity: 1 !important;
+  }
+
+  #summaryBox .title-row + .line .discountBadge{
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+
+  /* Rozměr + Šířka/Hloubka v jednom kompaktním řádku/bloku */
+  #summaryBox .summaryRangeBlock{
+    margin-top: 7px;
+    display: grid;
+    grid-template-columns: 66px 1fr;
+    column-gap: 8px;
+    align-items: start;
+  }
+
+  #summaryBox .summaryRangeTitle{
+    font-size: 12px;
+    line-height: 18px;
+    opacity: 0.82;
+    margin: 0;
+  }
+
+  #summaryBox .summaryMetrics{
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  #summaryBox .summaryMetric{
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 22px;
+    align-items: center;
+    column-gap: 5px;
+    font-size: 11px;
+    line-height: 18px;
+    margin: 0;
+  }
+
+  #summaryBox .summaryMetricLabel{
+    white-space: nowrap;
+  }
+
+  #summaryBox .summaryMetric .hint{
+    min-width: 0;
+    margin-left: 0;
+
+    /* tooltip se nebude počítat podle úzké ikonky, ale podle summary karty */
+    position: static !important;
+  }
+
+  #summaryBox .summaryMetric .hintValue{
+    white-space: nowrap;
+  }
+
+  /* otazník zase hezky kulatý */
+  #summaryBox .qmark{
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    flex: 0 0 18px;
+    box-sizing: border-box;
+
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  /* tooltip bude vždy uvnitř obrazovky, zarovnaný podle summary karty */
+  #summaryBox .tooltip{
+    position: absolute;
+    left: 0;
+    right: auto;
+    bottom: calc(100% + 10px);
+
+    width: min(280px, calc(100vw - 24px));
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+
+    box-sizing: border-box;
+    z-index: 9999;
+  }
+
+  /* šipku na mobilu schováme, aby nemířila mimo ikonku */
+  #summaryBox .tooltip::after{
+    display: none;
+  }
+
+  .step2ContinueBtn{
+    left: auto;
+    right: 10px;
+    bottom: calc(12px + var(--equip-raise, 0px) + var(--mobile-safe-bottom));
+
+    width: clamp(132px, 34vw, 165px);
+    min-height: 50px;
+
+    padding: 0 16px;
+    font-size: 15px;
+    z-index: 2050;
+  }
+
+  #bottomBar.bottomBar{
+    padding: 0 8px var(--mobile-safe-bottom);
+    display: block;
+  }
+
+  #bottomBar .bottomDock{
+    width: 100%;
+  }
+
+  #bottomBar .bottomToggle{
+    width: 48px;
+    height: 30px;
+  }
+
+  #bottomBar .bottomTabs{
+    position: static;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 0 7px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 2px 3px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #bottomBar .bottomTabs::-webkit-scrollbar{
+    display: none;
+  }
+
+  #bottomBar .bottomTab{
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  #bottomBar .fabricPriceTab{
+    min-width: 120px;
+  }
+
+  #bottomBar .bottomPanel{
+    height: min(52vh, 430px);
+    max-height: min(52vh, 430px);
+    border-radius: 16px 16px 12px 12px;
+    padding: 10px;
+  }
+
+  #bottomBar .bottomContent{
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #legsCardRow{
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #legsCardRow .tileCard{
+    flex: 0 0 132px;
+    min-width: 132px;
+  }
+
+  #bottomBar #legsColorBlock,
+  #bottomBar #legsColorBlock.is-expanded{
+    display: flex !important;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 0 !important;
+    gap: 10px;
+  }
+
+  #bottomBar #legsColorGrid,
+  #bottomBar #legsColorGrid.is-expanded,
+  #bottomBar .shelfColorGrid{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    max-height: 210px;
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 4px !important;
+  }
+
+  #bottomBar #btnLegsShowAll,
+  #bottomBar #legsColorBlock.is-expanded #btnLegsShowAll{
+    grid-column: auto !important;
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    margin: 0 !important;
+    font-size: 14px;
+  }
+
+  #bottomBar .tileCard{
+    min-width: 0;
+    border-radius: 12px;
+  }
+
+  #bottomBar .tileImg{
+    height: 52px;
+  }
+
+  #armrestsEquipWrap .armrestsLayout,
+  .armrestsLayout{
+    display: flex !important;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .armrestsLeftRow{
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #armrestsTypeBlock,
+  #armrestWidthBlock,
+  #sofaDimsBlock{
+    flex: none;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #armrestsCardRow,
+  #hingesCardRow{
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #armrestsCardRow .tileCard,
+  #hingesCardRow .tileCard{
+    --cardSize: 142px;
+    flex-basis: var(--cardSize);
+    min-width: var(--cardSize);
+    height: var(--cardSize);
+  }
+
+  #armrestWidthBlock .armrestWidthPanel{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .armrestWidthQuickGrid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .chipBtn.chipBig{
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .armrestWidthCustomCol{
+    min-width: 0;
+  }
+
+  .armrestWidthNote,
+  #armrestWidthBlock .armrestWidthNote{
+    max-width: none;
+    font-size: 11px;
+  }
+
+  .sofaDimsCol{
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  /* MOBILE STEP 3: Rozměry v jednom vodorovném řádku */
+  #sofaDimsBlock{
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    box-sizing: border-box !important;
+
+    padding-bottom: 4px !important;
+  }
+
+  #sofaDimsRows,
+  #sofaDimsRows[data-branches="2"],
+  #sofaDimsRows[data-branches="3"],
+  #sofaDimsRows[data-mode="4plus"]{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+
+    gap: 10px !important;
+
+    width: max-content !important;
+    min-width: max-content !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 0 14px 4px 0 !important;
+
+    overflow: visible !important;
+
+    scroll-snap-type: x proximity;
+    box-sizing: border-box !important;
+  }
+
+  #sofaDimsRows .dimsRow{
+    flex: 0 0 255px !important;
+    width: 255px !important;
+    min-width: 255px !important;
+    max-width: 255px !important;
+
+    grid-column: auto !important;
+    grid-row: auto !important;
+
+    box-sizing: border-box !important;
+    scroll-snap-align: start;
+  }
+
+  #sofaDimsRows .dimsNote,
+  #sofaDimsRows .dimsCustomAllWrap{
+    display: none !important;
+  }
+
+  #sofaDimsBlock .dimsRow{
+    display: grid !important;
+    grid-template-columns: minmax(70px, 1fr) auto !important;
+    grid-template-rows: auto auto !important;
+
+    gap: 6px 8px !important;
+    padding: 10px 12px !important;
+
+    overflow: hidden !important;
+  }
+
+  #sofaDimsBlock .dimsTitle{
+    min-width: 0 !important;
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+
+  #sofaDimsBlock .dimsControl{
+    justify-self: end !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+
+    gap: 4px !important;
+    padding: 3px !important;
+
+    max-width: 112px !important;
+    box-sizing: border-box !important;
+  }
+
+  #sofaDimsBlock .dimsBtn{
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    flex: 0 0 26px !important;
+  }
+
+  #sofaDimsBlock .dimsValue{
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+
+    font-size: 15px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+
+    white-space: nowrap !important;
+  }
+
+  #sofaDimsBlock .dimsRange{
+    grid-column: 1 / -1 !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+  }
+
+  #sofaDimsBlock::-webkit-scrollbar{
+    height: 5px;
+  }
+
+  #sofaDimsBlock::-webkit-scrollbar-track{
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+  }
+
+  #sofaDimsBlock::-webkit-scrollbar-thumb{
+    background: rgba(255,255,255,0.32);
+    border-radius: 999px;
+  }
+
+  #extrasModuleList{
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .extrasCard{
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+
+  .extrasThumb{
+    width: 92px;
+    height: 72px;
+  }
+
+  #bottomBar .fabricBrowserMain{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  #bottomBar .fabricFamilyColumn{
+    padding: 0 0 10px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+
+  #bottomBar .fabricFamilyTabs{
+    flex-direction: row;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 0 6px 0;
+  }
+
+  #bottomBar .fabricFamilyTab{
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 132px;
+  }
+
+  #bottomBar .fabricColumnTitle{
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  #bottomBar .fabricShadesHeader{
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  #bottomBar .fabricTargetToggle,
+  #bottomBar .fabricInfoBtn{
+    max-width: 100%;
+  }
+
+  #bottomBar .fabricShadesGrid{
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .fabricInfoPopover{
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: calc(12px + var(--mobile-safe-bottom)) !important;
+    width: auto;
+    max-width: none;
+    max-height: min(70vh, 520px);
+    transform: translateY(8px) scale(0.98);
+  }
+
+  .fabricInfoPopover.is-open{
+    transform: translateY(0) scale(1);
+  }
+
+  .fabricInfoPopover::before{
+    display: none;
+  }
+
+  #modulePicker{
+    align-items: stretch;
+    padding: calc(var(--mobile-topbar-h) + 8px) 8px 8px;
+    box-sizing: border-box;
+  }
+
+  .picker-window,
+  .confirmWindow,
+  #legsUntouchedConfirmModal .confirmWindow{
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    min-height: 0;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .picker-header{
+    font-size: 18px;
+  }
+
+  .picker-tabs{
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .picker-tabs button{
+    flex: 0 0 auto;
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .picker-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding-right: 2px;
+  }
+
+  .moduleItem{
+    padding: 9px;
+  }
+
+  .moduleItem .title{
+    font-size: 12px;
+  }
+
+  .moduleItem .price{
+    font-size: 11px;
+  }
+
+  #moduleActionMenu{
+    position: fixed;
+    left: 14px !important;
+    right: 14px;
+    bottom: calc(14px + var(--mobile-safe-bottom));
+    top: auto !important;
+
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 11px;
+
+    padding: 10px;
+    border-radius: 26px;
+
+    /* zpět tmavý výrazný panel */
+    background: rgba(22,22,22,0.88);
+    border: 1px solid rgba(255,255,255,0.16);
+
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.40),
+      0 8px 18px rgba(0,0,0,0.20),
+      inset 0 1px 0 rgba(255,255,255,0.10);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    z-index: 5000;
+  }
+
+  #moduleActionMenu.visible{
+    display: grid;
+  }
+
+  #moduleActionMenu .module-action-btn{
+    min-height: 56px;
+    padding: 0 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    border-radius: 999px;
+
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 950;
+    letter-spacing: 0.015em;
+    text-transform: uppercase;
+
+    cursor: pointer;
+    transform: translateZ(0);
+
+    transition:
+      transform .12s ease,
+      filter .12s ease,
+      box-shadow .12s ease;
+  }
+
+  #moduleActionMenu .module-action-btn.replace{
+    border: 1px solid rgba(255,255,255,0.26);
+    background: linear-gradient(180deg, #19b9ea 0%, #08a6da 100%);
+    color: #ffffff;
+
+    /* bez modrého underglow */
+    box-shadow:
+      0 8px 18px rgba(0,0,0,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.28);
+  }
+
+  #moduleActionMenu .module-action-btn.delete{
+    background: linear-gradient(180deg, #4a4a4a 0%, #2d2d2d 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.12);
+
+    box-shadow:
+      0 14px 28px rgba(0,0,0,0.28),
+      inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+
+  #moduleActionMenu .module-action-btn.replace::before{
+    content: "";
+    width: 20px;
+    height: 20px;
+
+    display: inline-block;
+    flex: 0 0 20px;
+
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+
+    /* ikonka podle tvého vzoru */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 8h10'/%3E%3Cpath d='M15 5l3 3-3 3'/%3E%3Cpath d='M16 16H6'/%3E%3Cpath d='M9 13l-3 3 3 3'/%3E%3C/g%3E%3C/svg%3E");
+
+    transform: translateY(-1px);
+  }
+
+  #moduleActionMenu .module-action-btn.delete::before{
+    content: "🗑️";
+    width: 25px;
+    height: 25px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 21px;
+    line-height: 1;
+    color: #ff1e1e;
+
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.30));
+  }
+
+  #moduleActionMenu .module-action-btn:active{
+    transform: scale(0.975);
+    filter: brightness(0.98);
+  }
+
+  #moduleActionMenu .module-action-btn.disabled{
+    opacity: 0.42;
+    filter: grayscale(0.35);
+    cursor: not-allowed;
+  }
+
+  .toast{
+    left: 10px;
+    right: 10px;
+    bottom: calc(16px + var(--equip-raise, 0px) + var(--mobile-safe-bottom));
+    transform: none;
+    text-align: center;
+  }
+
+  .toast.show{
+    transform: translateY(-4px);
+  }
+}
+
+@media (max-width: 760px) and (orientation: landscape){
+  :root{
+    --mobile-topbar-h: 50px;
+    --mobile-stepbar-h: 42px;
+  }
+
+  .topCenter{
+    font-size: 14px;
+  }
+
+  #summaryBox{
+    display: none !important;
+  }
+
+  .cameraControls{
+    top: calc(var(--mobile-topbar-h) + 48px);
+  }
+
+  #bottomBar .bottomPanel{
+    height: min(62vh, 330px);
+    max-height: min(62vh, 330px);
+  }
+
+  #bottomBar .fabricShadesGrid{
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px){
+  #viewLanding .landingLayout{
+    display: block;
+    padding-top: calc(var(--mobile-stepbar-h) + 8px);
+  }
+
+  #viewLanding .filterPanel{
+    display: none;
+  }
+
+  #viewLanding .productList{
+    padding: 14px 10px 90px;
+  }
+
+  #viewLanding .pageTitle{
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  #viewLanding .pageSubtitle{
+    font-size: 14px;
+  }
+
+  #viewLanding .modelCard{
+    margin: 14px auto;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  #viewLanding .modelHero.heroWithChips{
+    height: 210px;
+  }
+
+  #viewLanding .modelBody{
+    padding: 14px;
+  }
+
+  #viewLanding .modelMeta{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #viewLanding .metaDivider{
+    display: none;
+  }
+
+  #viewLanding .presetRowTiles{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #viewLanding .presetTile{
+    min-width: 0;
+  }
+
+  #viewLanding .presetThumb{
+    height: 74px;
+    object-fit: contain;
+  }
+
+  .draftsPopover{
+    padding: calc(var(--mobile-topbar-h) + 8px) 8px 8px;
+  }
+
+  .draftsPanel{
+    width: 100%;
+    max-height: calc(100vh - var(--mobile-topbar-h) - 16px);
+  }
+}
+
+/* Mobile step navigation polish for the landing/configurator top area. */
+@media (max-width: 760px){
+  :root{
+    --mobile-topbar-h: 58px;
+    --mobile-stepbar-h: 44px;
+  }
+
+  .topBar{
+    position: sticky;
+    top: 0;
+    height: var(--mobile-topbar-h);
+    padding: 0 12px;
+    background: #333;
+    box-shadow: none;
+  }
+
+  .brand{
+    min-width: 112px;
+  }
+
+  .brandLogo{
+    height: 24px;
+    max-width: 112px;
+    object-fit: contain;
+  }
+
+  .topCenter{
+    font-size: 16px;
+    font-weight: 700;
+    opacity: 0.86;
+  }
+
+  .draftsTopBtn{
+    position: relative;
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+  }
+
+  .draftsButtonCount{
+    top: -5px;
+    right: -5px;
+    min-width: 17px;
+    height: 17px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #2f2f2f;
+    border: 1px solid rgba(255,255,255,0.45);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 900;
+  }
+
+  #stepBar,
+  #stepBarLanding{
+    top: var(--mobile-topbar-h);
+    height: var(--mobile-stepbar-h);
+    background: #2f2f2f;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+  }
+
+  #stepBar .stepDock,
+  #stepBarLanding .stepDock{
+    left: 0;
+    right: 0;
+    height: var(--mobile-stepbar-h);
+    overflow: hidden !important;
+  }
+
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 50px 5px 7px;
+  }
+
+  #stepBar .stepTrack::before,
+  #stepBarLanding .stepTrack::before{
+    display: none;
+  }
+
+  .stepBar .step{
+    flex: 0 0 41px;
+    width: 41px;
+    min-width: 0;
+    box-sizing: border-box;
+    min-height: 34px;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.86);
+    font-size: 0;
+  }
+
+  .stepBar .step::before{
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .stepBar .step[data-step="1"]::before{ content: "\1F6CB\FE0F"; }
+  .stepBar .step[data-step="2"]::before{ content: "\1F9E9"; }
+  .stepBar .step[data-step="3"]::before{ content: "\2699\FE0F"; }
+  .stepBar .step[data-step="4"]::before{ content: "\1F3A8"; }
+  .stepBar .step[data-step="5"]::before{ content: "\2705"; }
+
+  .stepBar .step.active{
+    flex-basis: 104px;
+    width: 104px;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    justify-content: flex-start;
+    background: #5FB3CE;
+    color: #0B1440;
+  }
+
+  .stepBar .step.active::before{
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .stepBar .step.active[data-step="1"]::before{ content: "\1F6CB\FE0F  Model"; }
+  .stepBar .step.active[data-step="2"]::before{ content: "\1F9E9  Sestava"; }
+  .stepBar .step.active[data-step="3"]::before{ content: "\2699\FE0F  Vybaveni"; }
+  .stepBar .step.active[data-step="4"]::before{ content: "\1F3A8  Material"; }
+  .stepBar .step.active[data-step="5"]::before{ content: "\2705  Rekap."; }
+
+  .stepBar .step .num{
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    font-size: 11px;
+  }
+
+  .stepBar .step.locked::after{
+    top: -7px;
+    right: -3px;
+    left: auto;
+    transform: none;
+    width: 15px;
+    height: 15px;
+    font-size: 9px;
+  }
+
+  #stepBar .stepToggle,
+  #stepBarLanding .stepToggle{
+    right: 8px;
+    top: 7px;
+    width: 38px;
+    height: 30px;
+    background: rgba(70,70,70,0.96);
+  }
+
+  #stepBar.is-collapsed .stepDock,
+  #stepBarLanding.is-collapsed .stepDock{
+    transform: translateY(calc(-1 * var(--mobile-stepbar-h)));
+  }
+
+  #viewLanding .landingLayout{
+    padding-top: var(--mobile-stepbar-h);
+  }
+}
+
+/* Mobile landing heroes: closer crop focused on the sofa. */
+@media (max-width: 620px){
+  #viewLanding .modelHero.heroWithChips{
+    height: 250px;
+  }
+
+  #viewLanding .modelHero.heroWithChips .modelHeroImg{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.16);
+    transform-origin: center center;
+    object-position: 44% 58%;
+  }
+
+  #viewLanding .modelCard[data-model="MANILA"] .modelHeroImg{
+    object-position: 34% 58%;
+  }
+
+  #viewLanding .modelCard[data-model="MELBOURNE"] .modelHeroImg,
+  #viewLanding .modelCard[data-model="MANCHESTER"] .modelHeroImg{
+    object-position: 42% 58%;
+  }
+}
+
+/* Latest polish: desktop landing stepbar tucks under topBar via stacking, not spacing. */
+@media (min-width: 761px){
+  .topBar{
+    z-index: 1200;
+  }
+
+  #stepBarLanding{
+    top: 76px;
+    z-index: 850;
+  }
+
+  #viewLanding .landingLayout{
+    padding-top: 56px;
+  }
+}
+
+/* Mobile stepbar uses the same dark curved plate as desktop, clipped behind topBar. */
+@media (max-width: 760px){
+  .topBar{
+    z-index: 3200;
+  }
+
+  #stepBar,
+  #stepBarLanding{
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    z-index: 1800;
+  }
+
+  #stepBar .stepDock,
+  #stepBarLanding .stepDock{
+    overflow: visible !important;
+  }
+
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    position: relative;
+    overflow: visible;
+  }
+
+  #stepBar .stepTrack::before,
+  #stepBarLanding .stepTrack::before{
+    content: "";
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: -28px;
+    width: min(980px, calc(100vw + 260px));
+    height: 86px;
+    background: #2f2f2f;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.20);
+    transform: translateX(-50%);
+    z-index: 0;
+    pointer-events: none;
+
+    -webkit-mask-image: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 160' preserveAspectRatio='none'>\
+      <path fill='white' d='\
+        M0 0 \
+        H1000 \
+        C980 0 960 160 880 160 \
+        L120 160 \
+        C40 160 20 0 0 0 \
+        Z'/>\
+    </svg>");
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-image: url("data:image/svg+xml;utf8,\
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 160' preserveAspectRatio='none'>\
+      <path fill='white' d='\
+        M0 0 \
+        H1000 \
+        C980 0 960 160 880 160 \
+        L120 160 \
+        C40 160 20 0 0 0 \
+        Z'/>\
+    </svg>");
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+  }
+
+  #stepBar .stepTrack > *,
+  #stepBarLanding .stepTrack > *{
+    position: relative;
+    z-index: 2;
+  }
+}
+
+/* Mobile landing hero: no right fade/chips crop, sofa is larger and centered. */
+@media (max-width: 620px){
+  #viewLanding .modelHero.heroWithChips{
+    height: 280px;
+  }
+
+  #viewLanding .modelHero.heroWithChips::after{
+    display: none;
+  }
+
+  #viewLanding .modelHero.heroWithChips .modelHeroImg{
+    transform: scale(1.34);
+    object-position: 44% 56%;
+  }
+
+  #viewLanding .modelCard[data-model="MANILA"] .modelHeroImg{
+    object-position: 39% 56%;
+  }
+
+  #viewLanding .modelCard[data-model="MELBOURNE"] .modelHeroImg,
+  #viewLanding .modelCard[data-model="MANCHESTER"] .modelHeroImg{
+    object-position: 43% 56%;
+  }
+}
+
+/* =========================================================
+   MOBILE / LANDING FINAL POLISH
+   ========================================================= */
+
+@media (min-width: 761px){
+  #stepBarLanding{
+    top: 76px;
+    height: 64px;
+    z-index: 850;
+  }
+
+  #viewLanding .landingLayout{
+    padding-top: 64px;
+  }
+}
+
+@media (max-width: 760px){
+  .topBar{
+    align-items: center;
+  }
+
+  .topCenter,
+  .brand,
+  .topRight{
+    align-self: center;
+  }
+
+  .draftsTopBtn{
+    overflow: visible;
+  }
+
+  .draftsButtonCount{
+    top: -8px;
+    right: -8px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #5FB3CE;
+    border: 2px solid #2f2f2f;
+    color: #0B1440;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.26);
+  }
+
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    align-items: center;
+    gap: 8px;
+    padding: 7px 56px 7px 14px;
+  }
+
+  .stepBar .step{
+    flex-basis: 46px;
+    width: 46px;
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 9px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.13);
+  }
+
+  .stepBar .step.active{
+    flex-basis: 114px;
+    width: 114px;
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 11px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stepBar .step .num{
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+    font-size: 11px;
+  }
+
+  .stepBar .step::before{
+    font-size: 14px;
+    transform: translateY(0);
+  }
+
+  .stepBar .step.active::before{
+    font-size: 12px;
+    line-height: 1;
+    transform: translateY(0);
+  }
+
+  .stepBar .step.locked::after{
+    top: -8px;
+    right: 50%;
+    left: auto;
+    transform: translateX(23px);
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+
+  .stepBar .step.active.locked::after{
+    transform: translateX(57px);
+  }
+
+  #stepBar .stepToggle,
+  #stepBarLanding .stepToggle{
+    right: 9px;
+    top: 7px;
+    transform: none !important;
+    transition: box-shadow .18s ease, background .18s ease;
+  }
+
+  #stepBar.is-collapsed .stepToggle,
+  #stepBarLanding.is-collapsed .stepToggle{
+    transform: none !important;
+  }
+
+  #stepBar .stepToggle .chev,
+  #stepBarLanding .stepToggle .chev{
+    transform: rotate(-135deg);
+    transition: transform .22s ease;
+  }
+
+  #stepBar.is-collapsed .stepToggle .chev,
+  #stepBarLanding.is-collapsed .stepToggle .chev{
+    transform: rotate(45deg);
+    margin-top: -2px;
+  }
+}
+
+@media (max-width: 620px){
+  #viewLanding .modelHero.heroWithChips{
+    height: 292px;
+  }
+
+  #viewLanding .modelHero.heroWithChips .modelHeroImg{
+    transform: scale(1.38);
+    object-position: 10% 56%;
+  }
+
+  #viewLanding .modelCard[data-model="MANILA"] .modelHeroImg{
+    object-position: 0% 56%;
+  }
+
+  #viewLanding .modelCard[data-model="MELBOURNE"] .modelHeroImg,
+  #viewLanding .modelCard[data-model="MANCHESTER"] .modelHeroImg{
+    object-position: 10% 56%;
+  }
+}
+
+/* Mobile stepbar spacing pass: lower, roomier pills with centered lock badges. */
+@media (max-width: 760px){
+  #stepBar,
+  #stepBarLanding{
+    height: 52px;
+  }
+
+  #stepBar .stepDock,
+  #stepBarLanding .stepDock{
+    height: 52px;
+  }
+
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    height: 52px;
+    align-items: center;
+    gap: 4px;
+    padding: 13px 50px 5px 8px;
+  }
+
+  #stepBar .stepTrack::before,
+  #stepBarLanding .stepTrack::before{
+    top: -28px;
+    height: 96px;
+  }
+
+  .stepBar .step{
+    flex-basis: 50px;
+    width: 50px;
+    height: 38px;
+    min-height: 38px;
+    padding: 7px 10px;
+    gap: 6px;
+  }
+
+  .stepBar .step.active{
+    flex-basis: 112px;
+    width: 112px;
+    height: 38px;
+    min-height: 38px;
+    padding: 7px 13px;
+    gap: 7px;
+  }
+
+  .stepBar .step .num{
+    width: 25px;
+    height: 25px;
+    flex-basis: 25px;
+  }
+
+  .stepBar .step.locked::after,
+  .stepBar .step.active.locked::after{
+    left: 50%;
+    right: auto;
+    top: -8px;
+    transform: translateX(-50%);
+  }
+
+  #stepBar .stepToggle,
+  #stepBarLanding .stepToggle{
+    top: 14px;
+    right: 8px;
+  }
+
+  #viewLanding .landingLayout{
+    padding-top: 52px;
+  }
+}
+
+/* Mobile final: stronger hero zoom and consistent compact stepbar in every step. */
+@media (max-width: 620px){
+  #viewLanding .modelHero.heroWithChips .modelHeroImg{
+    transform: scale(1.72);
+    object-position: 0% 56%;
+  }
+
+  #viewLanding .modelCard[data-model="MANILA"] .modelHeroImg{
+    object-position: 0% 56%;
+  }
+}
+
+@media (max-width: 760px){
+  #viewConfigurator #stepBar,
+  #stepBar,
+  #stepBarLanding{
+    top: var(--mobile-topbar-h) !important;
+    height: 52px !important;
+  }
+
+  #viewConfigurator #stepBar{
+    display: block;
+  }
+
+  #stepBar .stepDock,
+  #stepBarLanding .stepDock{
+    height: 52px !important;
+  }
+
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    gap: 1px;
+    padding-left: 4px;
+    padding-right: 44px;
+    height: 52px !important;
+  }
+
+  .stepBar .step,
+  .stepBar .step.active{
+    font-size: 0 !important;
+    line-height: 1 !important;
+    overflow: visible;
+  }
+
+  .stepBar .step{
+    flex-basis: 56px;
+    width: 56px;
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  .stepBar .step.active{
+    flex-basis: 110px;
+    width: 110px;
+  }
+
+  .stepBar .step::before,
+  .stepBar .step .num{
+    position: relative;
+    z-index: 2;
+  }
+
+  .stepBar .step.active[data-step="1"]::before{ content: "\1F6CB\FE0F  Model"; }
+  .stepBar .step.active[data-step="2"]::before{ content: "\1F9E9  Sestava"; }
+  .stepBar .step.active[data-step="3"]::before{ content: "\2699\FE0F  Vybaveni"; }
+  .stepBar .step.active[data-step="4"]::before{ content: "\1F3A8  Material"; }
+  .stepBar .step.active[data-step="5"]::before{ content: "\2705  Rekap."; }
+
+  .stepBar .step:not(.active)::before{
+    content: none !important;
+    display: none !important;
+  }
+
+  .stepBar .step:not(.active){
+    gap: 0;
+  }
+
+  .stepBar .step:not(.active) .num{
+    margin: 0 auto;
+  }
+}
+
+/* Mobile refinement: centered numeric pills and per-model hero framing. */
+@media (max-width: 760px){
+  #stepBar .stepTrack,
+  #stepBarLanding .stepTrack{
+    gap: 3px !important;
+    padding-left: 6px !important;
+    padding-right: 44px !important;
+  }
+
+  .stepBar .step{
+    position: relative;
+    flex-basis: 46px !important;
+    width: 46px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 6px 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .stepBar .step.active{
+    flex-basis: 110px !important;
+    width: 110px !important;
+    padding: 6px 12px !important;
+    gap: 7px !important;
+  }
+
+  .stepBar .step:not(.active){
+    gap: 0 !important;
+  }
+
+  .stepBar .step .num{
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
+    margin: 0 !important;
+  }
+
+  .stepBar .step:not(.active) .num{
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  .stepBar .step.active .num{
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 620px){
+  #viewLanding .modelHero.heroWithChips .modelHeroImg{
+    object-fit: cover !important;
+    transform-origin: center center !important;
+  }
+
+  #viewLanding .modelCard[data-model="MANILA"] .modelHeroImg{
+    transform: translateX(25px) scale(1.82) !important;
+    object-position: 0% 56% !important;
+  }
+
+
+  #viewLanding .modelCard[data-model="MENDOZA"] .modelHeroImg{
+    transform: translateX(30px) scale(1.66) !important;
+    object-position: 0% 56% !important;
+  }
+
+  #viewLanding .modelCard[data-model="MELBOURNE"] .modelHeroImg{
+    transform: translateX(27px) scale(1.6) !important;
+    object-position: 0% 56% !important;
+  }
+
+  #viewLanding .modelCard[data-model="MANCHESTER"] .modelHeroImg{
+    transform: translateX(25px) scale(1.48) !important;
+    object-position: 0% 56% !important;
+  }
+}
+
+/* Mobile preset thumbnails: fotka = sloní kost, text = béžový podklad */
+@media (max-width: 620px){
+  #viewLanding .presetBtn.presetTile{
+    background: #f7f5f2 !important;
+    border-color: rgba(255,255,255,0.28) !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetThumb{
+    object-fit: contain !important;
+    object-position: center center !important;
+    box-sizing: border-box !important;
+    padding: 4px 6px !important;
+
+    /* stejné jako THREE.Color(0xf7f5f2) */
+    background: #f7f5f2 !important;
+
+    transform-origin: center center !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetLabel{
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    font-size: 13px !important;
+    letter-spacing: 0 !important;
+
+    /* pozadí textu – přesně tvoje barva */
+    background: #E2D4C333 !important;
+
+    color: rgba(0,0,0,0.62) !important;
+    white-space: nowrap !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-preset=""] .presetThumb{
+    object-fit: cover !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-model="MANILA"]:not([data-preset=""]) .presetThumb{
+    transform: scale(1.1) !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-model="MENDOZA"]:not([data-preset=""]) .presetThumb{
+    transform: scale(1.07) !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-model="MELBOURNE"]:not([data-preset=""]) .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-model="MANCHESTER"]:not([data-preset=""]) .presetThumb{
+    transform: scale(1.05) !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-preset="mendoza-2-roh-1"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="mendoza-2-roh-2"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MENDOZA_ROH_2"] .presetThumb{
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-preset="mendoza-2-roh-1mo"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MELBOURNE_2_ROH_1"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MELBOURNE_2_ROH_1MO"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MELBOURNE_2_ROH_2"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MANCHESTER_2_ROH_1"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MANCHESTER_2_ROH_1MO"] .presetThumb,
+  #viewLanding .presetBtn.presetTile[data-preset="MANCHESTER_2_ROH_2"] .presetThumb{
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    transform: scale(1.02) !important;
+  }
+}
+
+/* MOBILE FIX: kroky + šipka zarovnané, bez změny výšky stepbaru */
+@media (max-width: 760px){
+  .stepBar .step{
+    top: 4px !important;
+  }
+
+  /* otevřený stav: šipka ve stejné výšce jako kroky */
+  #stepBar .stepToggle,
+  #stepBarLanding .stepToggle{
+    top: 18px !important;
+  }
+
+  /* zavřený stav: šipka trochu výš, aby tolik nezacláněla */
+  #stepBar.is-collapsed .stepToggle,
+  #stepBarLanding.is-collapsed .stepToggle{
+    top: 4px !important;
+  }
+}
+
+/* MOBILE FIX: po zatažení horního stepbaru posunout levá tlačítka kamery nahoru */
+@media (max-width: 760px){
+  .cameraControls{
+    transition: transform .28s ease, top .28s ease;
+    will-change: transform;
+  }
+
+  html:has(#stepBar.is-collapsed) .cameraControls{
+    transform: translateY(-62px) !important;
+  }
+}
+
+/* MOBILE: schovat větu nahoře v tabulce modulů */
+@media (max-width: 760px){
+  #modulePicker .pickerNote{
+    display: none !important;
+  }
+}
+
+/* MOBILE: picker taby vždy viditelné pod nadpisem, bez horizontálního scrollu */
+@media (max-width: 760px){
+  #modulePicker .picker-window{
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  #modulePicker .picker-header{
+    flex: 0 0 auto !important;
+    margin-bottom: 8px !important;
+  }
+
+  #modulePicker .pickerNote{
+    display: none !important;
+  }
+
+  #modulePicker .picker-tabs{
+    flex: 0 0 auto !important;
+
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+
+    gap: 10px !important;
+    margin: 0 0 12px 0 !important;
+    padding: 0 0 2px 0 !important;
+
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+
+    white-space: nowrap !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+
+  #modulePicker .picker-tabs button{
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+
+    padding: 7px 4px !important;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+
+    white-space: nowrap !important;
+    text-align: center !important;
+  }
+
+  #modulePicker .picker-grid{
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    position: relative !important;
+    z-index: 1 !important;
+  }
+}
+
+/* MOBILE: v tabulce modulů zobrazit jen zlevněnou cenu */
+@media (max-width: 760px){
+  #modulePicker .moduleItem .priceOld,
+  #modulePicker .moduleItem .discountBadge{
+    display: none !important;
+  }
+
+  #modulePicker .moduleItem .priceWithDiscount{
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+
+  #modulePicker .moduleItem .priceNew{
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    color: #111 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  #modulePicker .moduleItem .price{
+    margin-top: 2px !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* MOBILE: nadpis 3D Konfigurátor přesně na střed celé horní lišty */
+@media (max-width: 760px){
+  .topBar{
+    position: sticky;
+    top: 0;
+  }
+
+  .topCenter{
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+
+    width: max-content !important;
+    max-width: 52vw !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    text-align: center !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+
+  .topTitleBtn{
+    pointer-events: auto !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    text-align: center !important;
+  }
+
+  .brand,
+  .brandBtn,
+  .topRight{
+    position: relative !important;
+    z-index: 2 !important;
+  }
+}
+
+/* Step 3: split armrests and dimensions into separate tabs */
+#bottomBar .bottomSection[data-tabpanel="armrests"] .armrestsLayout{
+  display: block;
+}
+
+#bottomBar .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 520px;
+  gap: 22px;
+  align-items: start;
+}
+
+#bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsBlock{
+  justify-self: end;
+}
+
+#bottomBar .bottomSection[data-tabpanel="dimensions"] .dimensionsPlanToggle{
+  display: none;
+}
+
+@media (min-width: 761px){
+  html[data-step="3"] #bottomBar .bottomTab[data-tab="dimensions"]{
+    display: none !important;
+  }
+
+  /*
+    Desktop: spojený tab Područky a rozměry
+    PLATÍ JEN V KROKU 3.
+    Díky html[data-step="3"] se to už nikdy nespustí v kroku 4.
+  */
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomContent{
+    position: relative !important;
+
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 520px) !important;
+
+    gap: 24px !important;
+    align-items: start !important;
+
+    overflow: hidden !important;
+  }
+
+  /* Levá část: područky + šířky */
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="armrests"]{
+    grid-column: 1 !important;
+
+    min-width: 0 !important;
+    height: 100% !important;
+
+    justify-self: start !important;
+    align-self: start !important;
+  }
+
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="armrests"] .armrestsLayout{
+    display: block !important;
+  }
+
+  /*
+    Dimensions sekci rozpustíme jen ve step 3,
+    aby půdorys mohl být uprostřed a rozměry vpravo.
+  */
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"],
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+    display: contents !important;
+  }
+
+  /* Na desktopu ve step 3 nechceme tlačítko "Zobrazit půdorys" */
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"] .dimensionsPlanToggle{
+    display: none !important;
+  }
+
+  /*
+    PŮDORYS:
+    Nezabírá místo v gridu.
+    Je vždy přesně uprostřed bottomContent.
+    Jen krok 3.
+  */
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"] #sofaPlanBlock{
+    display: flex !important;
+
+    position: absolute !important;
+    left: 50% !important;
+    top: 0 !important;
+    transform: translateX(-50%) !important;
+
+    width: 320px !important;
+    min-width: 320px !important;
+    max-width: 320px !important;
+
+    margin: 0 !important;
+
+    z-index: 1 !important;
+  }
+
+  /*
+    ROZMĚRY:
+    Drží se vpravo.
+    Jen krok 3.
+  */
+  html[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"] #sofaDimsBlock{
+    grid-column: 2 !important;
+
+    width: 100% !important;
+    max-width: 520px !important;
+
+    justify-self: end !important;
+    align-self: start !important;
+
+    margin: 0 !important;
+
+    z-index: 2 !important;
+  }
+}
+
+@media (max-width: 980px){
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+    grid-template-columns: 1fr;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsBlock{
+    justify-self: stretch;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px){
+  html.equip-menu-open #summaryBox{
+    display: none !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="dimensions"]:not(.hidden)) .bottomPanel{
+    height: auto !important;
+    max-height: 172px !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+  }
+
+  #bottomBar.is-dimensions-plan-open:has(.bottomSection[data-tabpanel="dimensions"]:not(.hidden)) .bottomPanel{
+    max-height: min(48dvh, 360px) !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="dimensions"]:not(.hidden)) .bottomContent{
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaPlanBlock{
+    display: none !important;
+  }
+
+  #bottomBar.is-dimensions-plan-open .bottomSection[data-tabpanel="dimensions"] #sofaPlanBlock{
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  #bottomBar.is-dimensions-plan-open .bottomSection[data-tabpanel="dimensions"] .sofaPlanWrap{
+    height: 150px !important;
+    min-height: 0 !important;
+    padding: 6px !important;
+    border-radius: 13px !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar.is-dimensions-plan-open .bottomSection[data-tabpanel="dimensions"] #sofaPlanSvg{
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] .dimensionsPlanToggle{
+    width: fit-content !important;
+    max-width: 100% !important;
+    min-height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 0 13px !important;
+    border-radius: 13px !important;
+    border: 1px solid rgba(95, 179, 206, 0.95) !important;
+    background: rgba(20, 28, 32, 0.52) !important;
+    color: rgba(255,255,255,0.96) !important;
+    font: inherit !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    cursor: pointer !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] .dimensionsPlanToggleIcon{
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid rgba(95, 179, 206, 0.95) !important;
+    color: #8fdcff !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    font-style: normal !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsBlock{
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows,
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows[data-branches="2"],
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows[data-branches="3"],
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows[data-mode="4plus"]{
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+
+    gap: 8px !important;
+    margin: 0 !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    padding: 0 44px 4px 0 !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-padding-right: 44px !important;
+
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsRow{
+    flex: 0 0 210px !important;
+    width: 210px !important;
+    min-width: 210px !important;
+    max-width: 210px !important;
+
+    grid-column: auto !important;
+    grid-row: auto !important;
+
+    display: grid !important;
+    grid-template-columns: minmax(68px, 1fr) auto !important;
+    grid-template-rows: auto auto !important;
+
+    gap: 6px 8px !important;
+    padding: 10px 11px !important;
+    border-radius: 13px !important;
+
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsTitle{
+    min-width: 0 !important;
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+    align-self: center !important;
+    white-space: nowrap !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsControl{
+    justify-self: end !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+
+    gap: 4px !important;
+    padding: 3px !important;
+
+    min-width: 108px !important;
+    max-width: 112px !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsBtn{
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    flex: 0 0 26px !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsValue{
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+
+    font-size: 14px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+
+    white-space: nowrap !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsRange{
+    grid-column: 1 / -1 !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsNote,
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] #sofaDimsRows .dimsCustomAllWrap,
+  #bottomBar .bottomSection[data-tabpanel="dimensions"] .dimsCustomAllNote{
+    display: none !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="dimensions"]:not(.hidden)) .bottomTabs{
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  html.equip-menu-open #btnStep3Continue{
+    bottom: var(--step3-continue-bottom, calc(12px + var(--mobile-safe-bottom))) !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="armrests"]:not(.hidden)) .bottomPanel{
+    height: auto !important;
+    max-height: min(36dvh, 300px) !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="armrests"]:not(.hidden)) .bottomContent{
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .armrestsLayout,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .armrestsLeftCol{
+    display: block !important;
+    min-width: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .armrestsLeftRow{
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 132px !important;
+    gap: 10px !important;
+    align-items: start !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsTypeBlock{
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestWidthBlock{
+    display: contents !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestWidthBlock .equipLabel{
+    display: none !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard{
+    --cardSize: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 132px !important;
+    flex: none !important;
+    grid-template-rows: 72px 1fr !important;
+    padding: 7px !important;
+    border-radius: 13px !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileImg{
+    width: 100% !important;
+    height: 72px !important;
+    border-radius: 10px !important;
+    object-fit: cover !important;
+    object-position: 50% 50% !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle{
+    min-height: 0 !important;
+    padding: 0 2px !important;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestWidthBlock .armrestWidthPanel{
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .armrestWidthQuickGrid{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .armrestWidthCustomCol{
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .chipBtn.chipBig{
+    min-width: 0 !important;
+    min-height: 48px !important;
+    padding: 8px 6px !important;
+    border-radius: 14px !important;
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .chipBtn.chipCustom{
+    width: 100% !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestWidthCustom{
+    display: none !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="armrests"] .armrestWidthNote,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestWidthBlock .armrestWidthNote{
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 4px 6px 0 !important;
+    border: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    opacity: 0.78 !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="hinges"]:not(.hidden)) .bottomPanel{
+    height: auto !important;
+    max-height: 190px !important;
+    min-height: 156px !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  #bottomBar:has(.bottomSection[data-tabpanel="hinges"]:not(.hidden)) .bottomContent{
+    width: 100% !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="hinges"] #hingesEquipWrap,
+  #bottomBar .bottomSection[data-tabpanel="hinges"] #hingesTypeBlock{
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="hinges"] #hingesCardRow{
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="hinges"] #hingesCardRow .tileCard{
+    --cardSize: auto !important;
+    flex: 0 1 142px !important;
+    width: 142px !important;
+    min-width: 0 !important;
+    height: 134px !important;
+    padding: 8px !important;
+    border-radius: 13px !important;
+    grid-template-rows: 82px 1fr !important;
+    gap: 6px !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="hinges"] #hingesCardRow .tileImg{
+    width: 100% !important;
+    height: 82px !important;
+    border-radius: 10px !important;
+    object-fit: cover !important;
+    object-position: 50% 78% !important;
+  }
+
+  #bottomBar .bottomSection[data-tabpanel="hinges"] #hingesCardRow .tileTitle{
+    min-height: 0 !important;
+    padding: 0 4px !important;
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+  }
+}
+
+/* MOBILE STEP 3: compact equipment sheet */
+@media (max-width: 760px){
+  #viewConfigurator[data-step="3"] #bottomBar.bottomBar{
+    padding: 0 8px calc(8px + var(--mobile-safe-bottom)) !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .bottomDock{
+    width: 100% !important;
+  }
+
+  html[data-view="configurator"][data-step="3"] #bottomBar .bottomToggle{
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: var(--bottom-toggle-bottom, calc(12px + var(--mobile-safe-bottom))) !important;
+    width: 44px !important;
+    height: 28px !important;
+    margin: 0 !important;
+    z-index: 2060 !important;
+    transform: translateX(-50%) rotate(var(--bt-rot, 0deg)) !important;
+    transition:
+      bottom 320ms cubic-bezier(.22,1,.36,1),
+      transform var(--equip-anim) var(--equip-ease) !important;
+    will-change: bottom, transform !important;
+  }
+
+  html[data-view="configurator"][data-step="3"] #bottomBar.is-collapsed .bottomToggle,
+  html[data-view="configurator"][data-step="3"] #bottomBar.is-hiding .bottomToggle{
+    bottom: calc(146px + var(--mobile-safe-bottom)) !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .bottomTabs{
+    position: static !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    margin: 0 0 6px !important;
+    padding: 0 2px 3px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+
+    /* ✅ žádné společné pozadí / stín pod taby */
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .bottomTabs::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .bottomTab{
+    flex: 0 0 auto !important;
+    min-height: 34px !important;
+    padding: 7px 11px !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+
+    /* ✅ odstraní ten černý matný stín pod tlačítky */
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .bottomPanel{
+    height: min(36dvh, 305px) !important;
+    max-height: min(36dvh, 305px) !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+
+    /* ✅ odstraní stín panelu, který se rozlévá nahoru pod tabs */
+    box-shadow: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .bottomContent{
+    height: 100% !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0 4px 0 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .equipWrap,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection{
+    min-height: 0 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .tileCard{
+    border-radius: 12px !important;
+    padding: 6px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar .tileTitle{
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #legsEquipWrap{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #legsCardRow{
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 0 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #viewConfigurator[data-step="3"] #legsCardRow .tileCard{
+    flex: 0 0 112px !important;
+    min-width: 112px !important;
+    grid-template-rows: 42px auto !important;
+  }
+
+  #viewConfigurator[data-step="3"] #legsCardRow .tileImg{
+    height: 42px !important;
+    border-radius: 9px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar #legsColorBlock,
+  #viewConfigurator[data-step="3"] #bottomBar #legsColorBlock.is-expanded{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar #legsColorGrid,
+  #viewConfigurator[data-step="3"] #bottomBar #legsColorGrid.is-expanded,
+  #viewConfigurator[data-step="3"] #bottomBar .shelfColorGrid{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #legsColorGrid .tileCard{
+    grid-template-rows: 34px auto !important;
+  }
+
+  #viewConfigurator[data-step="3"] #legsColorGrid .tileImg{
+    height: 34px !important;
+    border-radius: 9px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #bottomBar #btnLegsShowAll,
+  #viewConfigurator[data-step="3"] #bottomBar #legsColorBlock.is-expanded #btnLegsShowAll{
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 40px !important;
+    padding: 0 14px !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .armrestsLayout,
+  #viewConfigurator[data-step="3"] #armrestsEquipWrap .armrestsLayout,
+  #viewConfigurator[data-step="3"] .armrestsLeftRow{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 9px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaPlanBlock{
+    display: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #armrestsTypeBlock,
+  #viewConfigurator[data-step="3"] #armrestWidthBlock,
+  #viewConfigurator[data-step="3"] #sofaDimsBlock{
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    flex: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    justify-self: stretch !important;
+  }
+
+  #viewConfigurator[data-step="3"] #armrestsCardRow,
+  #viewConfigurator[data-step="3"] #hingesCardRow{
+    display: flex !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 0 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #viewConfigurator[data-step="3"] #armrestsCardRow .tileCard,
+  #viewConfigurator[data-step="3"] #hingesCardRow .tileCard{
+    --cardSize: 112px !important;
+    flex: 0 0 var(--cardSize) !important;
+    min-width: var(--cardSize) !important;
+    width: var(--cardSize) !important;
+    height: var(--cardSize) !important;
+    grid-template-rows: 1fr 24px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #hingesCardRow .tileTitle{
+    min-height: 0 !important;
+    padding: 0 4px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #armrestWidthBlock .armrestWidthPanel{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  #viewConfigurator[data-step="3"] .armrestWidthQuickGrid{
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .chipBtn.chipBig{
+    min-width: 0 !important;
+    min-height: 38px !important;
+    padding: 8px 6px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .armrestWidthCustomCol{
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .armrestWidthNote,
+  #viewConfigurator[data-step="3"] #armrestWidthBlock .armrestWidthNote{
+    display: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock{
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsRows,
+  #viewConfigurator[data-step="3"] #sofaDimsRows,
+  #viewConfigurator[data-step="3"] #sofaDimsRows[data-branches="2"],
+  #viewConfigurator[data-step="3"] #sofaDimsRows[data-branches="3"],
+  #viewConfigurator[data-step="3"] #sofaDimsRows[data-mode="4plus"]{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+
+    width: max-content !important;
+    min-width: max-content !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 0 14px 4px 0 !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsRows .dimsRow{
+    flex: 0 0 290px !important;
+    width: 290px !important;
+    min-width: 290px !important;
+    max-width: 290px !important;
+
+    grid-column: auto !important;
+    grid-row: auto !important;
+
+    box-sizing: border-box !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsRows .dimsNote,
+  #viewConfigurator[data-step="3"] #sofaDimsRows .dimsCustomAllWrap{
+    display: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsRow{
+    display: grid !important;
+    grid-template-columns: minmax(92px, 1fr) auto !important;
+    grid-template-rows: auto auto !important;
+    gap: 4px 10px !important;
+    padding: 9px 10px !important;
+    border-radius: 12px !important;
+    overflow: visible !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsTitle{
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsControl{
+    gap: 5px !important;
+    padding: 3px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsBtn{
+    width: 27px !important;
+    height: 27px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsValue{
+    min-width: 38px !important;
+    font-size: 15px !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsRange{
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsNote{
+    margin-top: 0 !important;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+
+  #viewConfigurator[data-step="3"] #sofaDimsBlock .dimsNote span{
+    max-width: none !important;
+  }
+
+  #viewConfigurator[data-step="3"] #extrasModuleList{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding-bottom: 4px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .extrasCard{
+    grid-template-columns: 84px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    border-radius: 13px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .extrasThumb{
+    width: 84px !important;
+    height: 64px !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .extrasTitle{
+    font-size: 13px !important;
+    margin-bottom: 4px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .extrasStatus{
+    font-size: 11px !important;
+    margin-bottom: 7px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .extrasChips{
+    gap: 6px !important;
+  }
+
+  #viewConfigurator[data-step="3"] .extrasChip{
+    padding: 8px 10px !important;
+    gap: 7px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* =========================================================
+   FIX MOBILE: odstranit černý matný stín kolem bottomTabs
+   DŮLEŽITÉ: bez #viewConfigurator[data-step="3"],
+   protože #viewConfigurator ten atribut v DOM nemá.
+   ========================================================= */
+@media (max-width: 760px){
+
+  /* samotný wrapper tabs nesmí mít žádné pozadí ani efekt */
+  #bottomBar .bottomTabs{
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+
+    box-shadow: none !important;
+    filter: none !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    border: 0 !important;
+    outline: 0 !important;
+  }
+
+  #bottomBar .bottomTabs::before,
+  #bottomBar .bottomTabs::after{
+    content: none !important;
+    display: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  /* tohle je hlavní: obecný styl dával tlačítkům černý stín */
+  #bottomBar .bottomTab,
+  #bottomBar .bottomTab:hover,
+  #bottomBar .bottomTab.active,
+  #bottomBar .bottomTab:active{
+    box-shadow: none !important;
+    filter: none !important;
+
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* panel pod tabama taky nesmí házet stín nahoru pod tlačítka */
+  #bottomBar .bottomPanel{
+    box-shadow: none !important;
+  }
+}
+
+/* =========================================================
+   MOBILE: tabs větší, blíž u sebe, ale pořád responzivní
+   ========================================================= */
+@media (max-width: 760px){
+
+  #bottomBar .bottomTabs{
+    /* ✅ větší než předtím, ale pořád se přizpůsobí šířce */
+    --mobile-tab-font: clamp(11px, 3vw, 12.5px);
+    --mobile-tab-pad-x: clamp(8px, 2.4vw, 11px);
+    --mobile-tab-pad-y: clamp(7px, 1.9vw, 9px);
+    --mobile-tab-gap: clamp(5px, 1.4vw, 7px);
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+
+    /* ✅ místo space-between: tlačítka budou blíž u sebe */
+    justify-content: center !important;
+
+    gap: var(--mobile-tab-gap) !important;
+
+    margin: 0 0 7px !important;
+    padding: 0 2px 3px !important;
+
+    /* ✅ na tvém screenu se vejdou, na extrémně malém půjde jemně posunout */
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  #bottomBar .bottomTabs::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  #bottomBar .bottomTab{
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+
+    min-height: clamp(34px, 8.8vw, 40px) !important;
+    padding: var(--mobile-tab-pad-y) var(--mobile-tab-pad-x) !important;
+
+    border-radius: 999px !important;
+
+    font-size: var(--mobile-tab-font) !important;
+    line-height: 1 !important;
+    letter-spacing: -0.01em !important;
+
+    white-space: nowrap !important;
+
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  #bottomBar .bottomTab.active{
+    font-size: var(--mobile-tab-font) !important;
+  }
+}
+
+/* =========================================================
+   STEP 3 / NOHY – MOBILE REDESIGN
+   - horní řádek: typy nohou horizontálně
+   - spodní řádek: 6 barev horizontálně + tlačítko na konci
+   - expanded: jen všechny barvy
+   ========================================================= */
+
+@media (max-width: 760px){
+
+  /* celý obsah záložky Nohy */
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsEquipWrap{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* =========================
+     1) HORNÍ ŘÁDEK – TYPY NOHOU
+     ========================= */
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsTypeBlock{
+    display: block !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsCardRow{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+
+    grid-template-columns: none !important;
+
+    gap: 8px !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    padding: 0 2px 7px !important;
+    margin: 0 !important;
+
+    scroll-snap-type: x proximity;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsCardRow::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsCardRow .tileCard{
+    flex: 0 0 118px !important;
+    width: 118px !important;
+    min-width: 118px !important;
+    max-width: 118px !important;
+
+    height: 82px !important;
+
+    display: grid !important;
+    grid-template-rows: 46px 20px !important;
+    gap: 5px !important;
+
+    padding: 6px !important;
+    border-radius: 12px !important;
+
+    scroll-snap-align: start;
+    box-sizing: border-box !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsCardRow .tileImg{
+    width: 100% !important;
+    height: 46px !important;
+
+    object-fit: contain !important;
+    border-radius: 9px !important;
+  }
+
+  /* =========================
+     2) SPODNÍ ŘÁDEK – BARVY + TLAČÍTKO NA KONCI
+     ========================= */
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+
+    gap: 8px !important;
+
+    height: 88px !important;
+    min-height: 88px !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    padding: 0 2px 8px !important;
+    margin: 0 !important;
+
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+
+    box-sizing: border-box !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock:not(.is-expanded) #legsColorGrid{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+
+    grid-template-columns: none !important;
+
+    flex: 0 0 auto !important;
+    width: max-content !important;
+    max-width: none !important;
+
+    gap: 8px !important;
+
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* v normálním stavu ukážeme jen prvních 6 barev */
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock:not(.is-expanded) #legsColorGrid .tileCard:nth-child(n+7){
+    display: none !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorGrid .tileCard{
+    flex: 0 0 108px !important;
+    width: 108px !important;
+    min-width: 108px !important;
+    max-width: 108px !important;
+
+    height: 82px !important;
+
+    display: grid !important;
+    grid-template-rows: 38px 32px !important;
+    gap: 4px !important;
+
+    padding: 6px !important;
+    border-radius: 12px !important;
+
+    box-sizing: border-box !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorGrid .tileImg{
+    width: 100% !important;
+    height: 38px !important;
+
+    object-fit: cover !important;
+    border-radius: 9px !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorGrid .tileTitle,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsCardRow .tileTitle{
+    font-size: 10.5px !important;
+    line-height: 1.02 !important;
+    letter-spacing: 0 !important;
+    text-align: center !important;
+
+    white-space: normal !important;
+    overflow: hidden !important;
+
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding-top: 1px !important;
+  }
+
+  /* tlačítko bude jako poslední "kartička" za šesti barvami */
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #btnLegsShowAll{
+    flex: 0 0 150px !important;
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
+
+    height: 80px !important;
+    min-height: 80px !important;
+
+    margin: 0 !important;
+    padding: 0 12px !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    border-radius: 14px !important;
+
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+    white-space: normal !important;
+
+    box-sizing: border-box !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #btnLegsShowAll[hidden],
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #btnLegsShowAll.hidden{
+    display: none !important;
+  }
+
+  /* =========================
+     3) EXPANDED MODE – JEN VŠECHNY BARVY
+     Funguje, když JS přidá:
+     - #legsColorBlock.is-expanded
+     - #legsColorGrid.is-expanded
+     - #legsEquipWrap.is-colors-only
+     ========================= */
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsEquipWrap.is-colors-only #legsTypeBlock,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsEquipWrap:has(#legsColorBlock.is-expanded) #legsTypeBlock,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsEquipWrap:has(#legsColorGrid.is-expanded) #legsTypeBlock{
+    display: none !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock.is-expanded,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock:has(#legsColorGrid.is-expanded){
+    display: flex !important;
+    flex-direction: column !important;
+
+    height: 100% !important;
+    min-height: 0 !important;
+
+    gap: 8px !important;
+
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock.is-expanded #legsColorGrid,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorGrid.is-expanded{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    gap: 8px !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+
+    padding: 0 4px 14px 0 !important;
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+  }
+
+  /* v expanded modu se znovu zobrazí všechny barvy */
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock.is-expanded #legsColorGrid .tileCard,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorGrid.is-expanded .tileCard{
+    display: grid !important;
+
+    flex: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 78px !important;
+
+    grid-template-rows: 39px 28px !important;
+  }
+
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock.is-expanded #btnLegsShowAll,
+  :is(#viewConfigurator[data-step="3"] #bottomBar, #bottomBar) #legsColorBlock:has(#legsColorGrid.is-expanded) #btnLegsShowAll{
+    flex: 0 0 42px !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 42px !important;
+    min-height: 42px !important;
+
+    margin: 0 !important;
+    padding: 0 14px !important;
+
+    border-radius: 12px !important;
+  }
+}
+
+/* =========================================================
+   STEP 3 / NOHY – MOBILE: nižší bottom menu
+   ========================================================= */
+@media (max-width: 760px){
+
+  /* panel zmenšíme jen když je aktivní tab Nohy */
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) .bottomPanel{
+    height: 205px !important;
+    max-height: 205px !important;
+    min-height: 0 !important;
+
+    padding: 8px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) .bottomContent{
+    height: 100% !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding-right: 0 !important;
+  }
+
+  /* celý obsah záložky Nohy */
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsEquipWrap{
+    gap: 8px !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* horní řádek typů nohou – menší výška */
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsCardRow{
+    padding-bottom: 5px !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsCardRow .tileCard{
+    height: 74px !important;
+    grid-template-rows: 40px 18px !important;
+    padding: 5px !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsCardRow .tileImg{
+    height: 40px !important;
+  }
+
+  /* spodní řádek barev – menší výška */
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsColorBlock{
+    height: 76px !important;
+    min-height: 76px !important;
+    padding-bottom: 4px !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsColorGrid .tileCard{
+    height: 74px !important;
+    grid-template-rows: 32px 32px !important;
+    padding: 5px !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #legsColorGrid .tileImg{
+    height: 32px !important;
+  }
+
+  /* tlačítko "Zobrazit více barev" jako menší kartička */
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]) #btnLegsShowAll{
+    height: 70px !important;
+    min-height: 70px !important;
+
+    flex-basis: 140px !important;
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorGrid.is-expanded) .bottomPanel,
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorBlock.is-expanded) .bottomPanel{
+    height: 244px !important;
+    max-height: 244px !important;
+    min-height: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorGrid.is-expanded) #legsEquipWrap,
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorBlock.is-expanded) #legsEquipWrap{
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorGrid.is-expanded) #legsColorBlock,
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorBlock.is-expanded) #legsColorBlock{
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorGrid.is-expanded) #legsColorGrid,
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorBlock.is-expanded) #legsColorGrid{
+    flex: 0 0 158px !important;
+    height: 158px !important;
+    max-height: 158px !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding-bottom: 10px !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorGrid.is-expanded) #btnLegsShowAll,
+  #bottomBar:has(.bottomTab.active[data-tab="legs"]):has(#legsColorBlock.is-expanded) #btnLegsShowAll{
+    margin-top: 10px !important;
+    flex: 0 0 42px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    align-self: stretch !important;
+  }
+}
+
+/* STEP 3 / POLICKA - mobile same behavior as expanded leg colors */
+@media (max-width: 760px){
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .bottomPanel{
+    height: 224px !important;
+    max-height: 224px !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .bottomContent{
+    height: 100% !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding-right: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .bottomSection[data-tabpanel="shelf"]{
+    display: block !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfWrap,
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorBlock{
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorBlock{
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorGrid{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+
+    padding: 0 4px 18px 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorGrid::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorGrid .tileCard{
+    display: grid !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 74px !important;
+    grid-template-rows: 32px 32px !important;
+    gap: 4px !important;
+    padding: 5px !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorGrid .tileImg{
+    width: 100% !important;
+    height: 32px !important;
+    object-fit: cover !important;
+    border-radius: 9px !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="shelf"]) .shelfColorGrid .tileTitle{
+    font-size: 10.5px !important;
+    line-height: 1.02 !important;
+    letter-spacing: 0 !important;
+    text-align: center !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding-top: 1px !important;
+  }
+}
+
+/* STEP 3 / PRIPLATKY - compact mobile list */
+@media (max-width: 760px){
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .bottomPanel{
+    height: 224px !important;
+    max-height: 224px !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .bottomContent{
+    height: 100% !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding-right: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .bottomSection[data-tabpanel="extras"],
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) #extrasEquipWrap,
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) #extrasBlock{
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) #extrasBlock{
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) #extrasModuleList{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+
+    padding: 0 4px 12px 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) #extrasModuleList::-webkit-scrollbar{
+    display: none !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasCard{
+    display: grid !important;
+    grid-template-columns: 70px minmax(0, 1fr) !important;
+    gap: 9px !important;
+    align-items: start !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    padding: 9px !important;
+    border-radius: 13px !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasThumb{
+    width: 70px !important;
+    height: 54px !important;
+    margin: 0 !important;
+    border-radius: 11px !important;
+    background: #f7f5f2 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasThumb img{
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasTitle{
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+    margin: 0 0 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasStatus{
+    font-size: 10.5px !important;
+    line-height: 1.1 !important;
+    margin: 0 0 6px !important;
+    opacity: 0.82 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasChips{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 5px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasChip{
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 31px !important;
+    padding: 6px 8px !important;
+    gap: 5px !important;
+    border-radius: 999px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    font-size: 11px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasChipLabel{
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasChipPrice{
+    flex: 0 0 auto !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  #bottomBar:has(.bottomTab.active[data-tab="extras"]) .extrasEmptyHint{
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+/* Mobile modal: rozklad types stacked with readable photos */
+@media (max-width: 760px){
+  #bedTypeModal.bedTypeModal{
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  #bedTypeModal .bedTypeBox{
+    width: min(400px, calc(100vw - 28px)) !important;
+    max-height: min(82dvh, 620px) !important;
+    padding: 16px !important;
+    border-radius: 15px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #bedTypeModal .bedTypeGrid{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  #bedTypeModal .bedTypeCard{
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+  }
+
+  #bedTypeModal .bedTypeImgWrap{
+    height: 190px !important;
+    border-radius: 12px !important;
+    background: #f7f5f2 !important;
+  }
+
+  #bedTypeModal .bedTypeImg{
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    transform: none !important;
+    display: block !important;
+  }
+
+  #bedTypeModal .bedTypeInfo{
+    padding: 34px 11px 9px !important;
+  }
+}
+
+/* =========================================================
+   DESKTOP + MOBILE: schovat "Zobrazit více barev" u kovových nohou
+   DŮVOD:
+   Desktop pravidlo #bottomBar #btnLegsShowAll má display:inline-flex !important,
+   proto musí mít hidden stav ještě silnější selector.
+   ========================================================= */
+
+/* když JS přidá class hidden */
+#bottomBar #btnLegsShowAll.hidden{
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* když JS nastaví hidden atribut */
+#bottomBar #btnLegsShowAll[hidden]{
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* když JS nastaví aria-hidden="true" */
+#bottomBar #btnLegsShowAll[aria-hidden="true"]{
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* =========================================================
+   MOBILE STEP 3: vlastní stále viditelné scroll indikátory
+   - nepoužívá nativní scrollbar prohlížeče
+   - funguje vodorovně i svisle
+   - viditelné pořád, nejen při scrollování
+   ========================================================= */
+
+@media (max-width: 760px){
+
+  /*
+    Nativní scrollbary na mobilu schováme.
+    Skutečný indikátor dělá JS přes .madrosScrollTrack.
+  */
+  #bottomBar .bottomTabs,
+  #bottomBar .bottomContent,
+  #bottomBar #sofaDimsBlock,
+  #bottomBar #sofaDimsRows,
+  #bottomBar #armrestsCardRow,
+  #bottomBar #armrestWidthQuick,
+  #bottomBar #legsCardRow,
+  #bottomBar #legsColorBlock,
+  #bottomBar #legsColorGrid,
+  #bottomBar #hingesCardRow,
+  #bottomBar #shelfColorGrid,
+  #bottomBar #extrasModuleList,
+  #bottomBar .extrasChips,
+  #bottomBar .tileGrid,
+  #bottomBar .swatchRow{
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #bottomBar .bottomTabs::-webkit-scrollbar,
+  #bottomBar .bottomContent::-webkit-scrollbar,
+  #bottomBar #sofaDimsBlock::-webkit-scrollbar,
+  #bottomBar #sofaDimsRows::-webkit-scrollbar,
+  #bottomBar #armrestsCardRow::-webkit-scrollbar,
+  #bottomBar #armrestWidthQuick::-webkit-scrollbar,
+  #bottomBar #legsCardRow::-webkit-scrollbar,
+  #bottomBar #legsColorBlock::-webkit-scrollbar,
+  #bottomBar #legsColorGrid::-webkit-scrollbar,
+  #bottomBar #hingesCardRow::-webkit-scrollbar,
+  #bottomBar #shelfColorGrid::-webkit-scrollbar,
+  #bottomBar #extrasModuleList::-webkit-scrollbar,
+  #bottomBar .extrasChips::-webkit-scrollbar,
+  #bottomBar .tileGrid::-webkit-scrollbar,
+  #bottomBar .swatchRow::-webkit-scrollbar{
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   MADROS CUSTOM SCROLLBAR OVERLAY
+   Tyhle prvky vytváří JS do <body>.
+   ========================================================= */
+
+.madrosScrollTrack{
+  position: fixed;
+  z-index: 2400;
+  pointer-events: none;
+
+  border-radius: 999px;
+
+  background: rgba(10, 12, 16, 0.42);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 6px 16px rgba(0,0,0,0.22);
+
+  opacity: 1;
+  transition: opacity .16s ease, background .16s ease;
+}
+
+.madrosScrollTrack.is-hidden{
+  opacity: 0;
+}
+
+.madrosScrollTrack.is-x{
+  height: 7px;
+  min-width: 34px;
+}
+
+.madrosScrollTrack.is-y{
+  width: 7px;
+  min-height: 34px;
+}
+
+.madrosScrollThumb{
+  position: absolute;
+  border-radius: 999px;
+
+  background: linear-gradient(
+    90deg,
+    rgba(95,179,206,0.72),
+    rgba(95,179,206,1)
+  );
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.18),
+    0 0 12px rgba(95,179,206,0.38);
+
+  transition: background .16s ease, box-shadow .16s ease;
+}
+
+.madrosScrollTrack.is-x .madrosScrollThumb{
+  top: 1px;
+  bottom: 1px;
+  left: 1px;
+}
+
+.madrosScrollTrack.is-y .madrosScrollThumb{
+  left: 1px;
+  right: 1px;
+  top: 1px;
+}
+
+/* jemnější na desktopu úplně vypnout */
+@media (min-width: 761px){
+  .madrosScrollTrack{
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   MOBILE / MANCHESTER – područky:
+   cena pod názvem, ne vedle názvu
+   ========================================================= */
+@media (max-width: 760px){
+
+  /*
+    Cílíme silněji, protože v CSS už existuje mobilní pravidlo,
+    které kartám područek nastavuje pevnou velikost.
+  */
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard{
+    height: 132px !important;
+    min-height: 132px !important;
+    max-height: 132px !important;
+
+    grid-template-rows: 72px 42px !important;
+    gap: 4px !important;
+
+    padding: 7px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileImg,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileImg,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileImg{
+    height: 72px !important;
+  }
+
+  /*
+    Titulek karty:
+    místo jednoho řádku:
+    Polohovací (-3 523 Kč)
+
+    bude:
+    Polohovací
+    (-3 523 Kč)
+  */
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle{
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 3px !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    min-height: 0 !important;
+
+    padding: 0 2px !important;
+    margin: 0 !important;
+
+    font-size: 11px !important;
+    line-height: 1.05 !important;
+    text-align: center !important;
+
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText{
+    display: block !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    font-size: 11px !important;
+    line-height: 1.05 !important;
+    font-weight: 900 !important;
+
+    text-align: center !important;
+    white-space: nowrap !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tilePriceDelta,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tilePriceDelta,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tilePriceDelta{
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    flex: 0 0 auto !important;
+
+    margin: 0 !important;
+    padding: 2px 6px !important;
+
+    max-width: calc(100% - 4px) !important;
+
+    border-radius: 999px !important;
+
+    font-size: 9px !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    letter-spacing: 0 !important;
+
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+
+    color: rgba(255,255,255,0.92) !important;
+    background: rgba(255,255,255,0.10) !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+
+    box-shadow: none !important;
+  }
+
+  /*
+    Aktivní područka cenu schovává dál.
+    Cena se ukáže jen u druhé varianty.
+  */
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard.is-active .tilePriceDelta,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard.active .tilePriceDelta,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard.is-active .tilePriceDelta,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard.active .tilePriceDelta,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard.is-active .tilePriceDelta,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileCard.active .tilePriceDelta{
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   DESKTOP SAFETY:
+   Step 3 půdorys/rozměry se nesmí zobrazovat mimo krok 3
+   ========================================================= */
+
+@media (min-width: 761px){
+
+  html:not([data-step="3"]) #bottomBar .bottomSection[data-tabpanel="dimensions"],
+  html:not([data-step="3"]) #bottomBar .bottomSection[data-tabpanel="dimensions"] *,
+  html:not([data-step="3"]) #bottomBar #sofaPlanBlock,
+  html:not([data-step="3"]) #bottomBar #sofaDimsBlock{
+    display: none !important;
   }
 }

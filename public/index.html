@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>3D Konfigurator</title>
 
   <script>
@@ -623,7 +624,8 @@
 
         <div class="bottomTabs">
           <!-- KROK 3 -->
-          <button class="bottomTab" data-tab="armrests">Područky a rozměry</button>
+          <button class="bottomTab" data-tab="armrests">Područky</button>
+          <button class="bottomTab" data-tab="dimensions">Rozměry</button>
           <button class="bottomTab active" data-tab="legs">Nohy</button>
           <button class="bottomTab hidden" data-tab="shelf">Polička</button>
           <button class="bottomTab" data-tab="hinges">Panty</button>
@@ -742,6 +744,19 @@
                       </div>
                     </div>
                   </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div class="bottomSection hidden" data-tabpanel="dimensions">
+              <div class="equipWrap dimensionsWrap" id="dimensionsEquipWrap">
+                <div class="dimensionsLayout">
+
+                  <button type="button" class="dimensionsPlanToggle" id="dimensionsPlanToggle" aria-expanded="false">
+                    <span class="dimensionsPlanToggleIcon" aria-hidden="true">i</span>
+                    <span class="dimensionsPlanToggleText">Zobrazit půdorys</span>
+                  </button>
 
                   <!-- STŘED: půdorys (bez nadpisu a bez hintu) -->
                   <div class="equipBlock" id="sofaPlanBlock">
