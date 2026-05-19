@@ -4510,10 +4510,43 @@ async function sendRecapInquiry(customerEmail) {
     throw new Error("Nepodařilo se připravit stav konfigurace pro sdílený odkaz.");
   }
 
-  const configurationUrl = await createShortConfigurationShareUrl(shareState);
+  /*
+    Nejdřív se pokusíme vytvořit krátký odkaz přes Render.
+    Když Render spí / timeoutne / endpoint selže, nesmí to zastavit poptávku.
+  */
+  let configurationUrl = "";
 
+  try {
+    configurationUrl = await createShortConfigurationShareUrl(shareState);
+  } catch (error) {
+    console.warn("Short configuration URL failed, using encoded fallback URL:", error);
+  }
+
+  /*
+    Fallback bez serverového krátkého odkazu:
+    uložíme konfiguraci přímo do URL jako shareState.
+    Bude to delší URL, ale poptávka se nezastaví a odkaz pořád umí obnovit sestavu.
+  */
   if (!configurationUrl) {
-    throw new Error("Nepodařilo se vytvořit krátký odkaz na konfiguraci.");
+    try {
+      const fallbackUrl = new URL(getShareUrlBase());
+
+      fallbackUrl.searchParams.delete("share");
+      fallbackUrl.searchParams.set("shareState", encodeSharedConfigurationState(shareState));
+
+      const model =
+        String(shareState?.route?.model || "").trim().toUpperCase() ||
+        String(getModelKey?.() || "").trim().toUpperCase();
+
+      if (model) {
+        fallbackUrl.searchParams.set("model", model);
+      }
+
+      configurationUrl = fallbackUrl.href;
+    } catch (error) {
+      console.warn("Encoded fallback URL failed, using plain base URL:", error);
+      configurationUrl = getShareUrlBase();
+    }
   }
 
   const pdfDoc = await buildRecapPdfHtml();
@@ -19966,8 +19999,18 @@ function getShareConfigEndpoints(token = "") {
 
 async function fetchShareJson(endpoint, options = {}) {
   const controller = new AbortController();
-  const { timeoutMs = 4500, ...fetchOptions } = options;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  /*
+    Render free/levnější instance se může probouzet pomalu.
+    4.5 s bylo moc málo, proto to padalo na AbortError.
+  */
+  const { timeoutMs = 20000, ...fetchOptions } = options;
+
+  const timer = setTimeout(() => {
+    try {
+      controller.abort();
+    } catch (e) {}
+  }, timeoutMs);
 
   try {
     const response = await fetch(endpoint, {
@@ -20079,6 +20122,13 @@ async function createShortConfigurationShareUrl(state) {
         headers: {
           "Content-Type": "application/json",
         },
+
+        /*
+          Důležité pro Render:
+          endpoint /api/share-config někdy čeká na probuzení služby.
+        */
+        timeoutMs: 20000,
+
         body: JSON.stringify({
           state,
           urlBase: getShareUrlBase(),
