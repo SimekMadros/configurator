@@ -3489,33 +3489,40 @@ async function urlToDataUrl(url) {
 
 async function inlineRecapPdfAssets(root) {
   const images = Array.from(root.querySelectorAll("img"));
-  for (const img of images) {
+  await Promise.all(images.map(async (img) => {
     const src = img.getAttribute("src");
-    if (!src) continue;
+    if (!src) return;
     try {
       img.setAttribute("src", await urlToDataUrl(src));
     } catch (e) {
       console.warn("Recap PDF image inline failed:", src, e);
     }
-  }
+  }));
 
   const elements = Array.from(root.querySelectorAll("*"));
-  for (const el of elements) {
+  await Promise.all(elements.map(async (el) => {
     const bg = el.style.backgroundImage || window.getComputedStyle(el).backgroundImage;
-    if (!bg || bg === "none") continue;
+    if (!bg || bg === "none") return;
 
     const urls = [...bg.matchAll(/url\(["']?([^"')]+)["']?\)/g)];
     let nextBg = bg;
-    for (const match of urls) {
+    const replacements = await Promise.all(urls.map(async (match) => {
       try {
         const dataUrl = await urlToDataUrl(match[1]);
-        nextBg = nextBg.replace(match[1], dataUrl);
+        return { from: match[1], to: dataUrl };
       } catch (e) {
         console.warn("Recap PDF background inline failed:", match[1], e);
+        return null;
       }
+    }));
+
+    for (const replacement of replacements) {
+      if (!replacement) continue;
+      nextBg = nextBg.replace(replacement.from, replacement.to);
     }
+
     el.style.backgroundImage = nextBg;
-  }
+  }));
 }
 
 function createRecapPdfPageElements(sourceSheet) {
@@ -3622,7 +3629,7 @@ function optimizeRecapPdfAssetReferences(root) {
 async function renderRecapPdfPageToJpeg(pageSheet) {
   const width = 794;
   const height = 1123;
-  const scale = 2;
+  const scale = 1.35;
   const page = wrapRecapPdfPage(pageSheet);
   await inlineRecapPdfAssets(page);
 
@@ -3671,7 +3678,7 @@ async function renderRecapPdfPageToJpeg(pageSheet) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     return {
-      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+      dataUrl: canvas.toDataURL("image/jpeg", 0.76),
       width: canvas.width,
       height: canvas.height,
     };
@@ -4065,6 +4072,52 @@ async function buildRecapPdfHtml({ autoPrint = false } = {}) {
   return { html, fileName };
 }
 
+async function buildRecapRasterPdfDocument() {
+  const totalStart = pdfPerfNow();
+  pdfPerfLog("raster pdf start");
+
+  if (recapDimsEditMode) exitRecapDimsEditMode({ save: true, render: false });
+
+  const renderStart = pdfPerfNow();
+  renderRecapView();
+  await renderRecapSofaImageDeferred();
+  copyCurrentPlanToRecap();
+  await waitRecapFrame();
+  pdfPerfLog("raster recap prepared", { ms: pdfPerfMs(renderStart) });
+
+  const sourceSheet = document.querySelector("#recapView .recapSheet");
+  if (!sourceSheet) throw new Error("Recap source sheet is not available.");
+
+  const pageSheets = createRecapPdfPageElements(sourceSheet);
+  const pages = [];
+
+  for (let i = 0; i < pageSheets.length; i += 1) {
+    const pageStart = pdfPerfNow();
+    const page = await renderRecapPdfPageToJpeg(pageSheets[i]);
+    pages.push(page);
+    pdfPerfLog("raster page", {
+      page: i + 1,
+      ms: pdfPerfMs(pageStart),
+      chars: page?.dataUrl?.length || 0,
+      width: page?.width,
+      height: page?.height,
+    });
+  }
+
+  const buildStart = pdfPerfNow();
+  const blob = buildPdfFromJpegPages(pages);
+  const fileName = getRecapPdfFilename();
+  pdfPerfLog("raster pdf done", {
+    ms: pdfPerfMs(totalStart),
+    buildMs: pdfPerfMs(buildStart),
+    bytes: blob.size,
+    pages: pages.length,
+    fileName,
+  });
+
+  return { blob, fileName };
+}
+
 async function openRecapPdfDocument() {
   const pdfDoc = await buildRecapPdfHtml({ autoPrint: true });
   if (!pdfDoc) return;
@@ -4092,6 +4145,25 @@ function getRecapPdfEndpoints() {
 async function downloadRecapPdfDocument() {
   const totalStart = pdfPerfNow();
   pdfPerfLog("download start");
+
+  if (!window.RECAP_FORCE_SERVER_PDF) {
+    try {
+      const rasterStart = pdfPerfNow();
+      const rasterDoc = await buildRecapRasterPdfDocument();
+      downloadBlob(rasterDoc.blob, rasterDoc.fileName);
+      pdfPerfLog("download raster total", {
+        ms: pdfPerfMs(totalStart),
+        rasterMs: pdfPerfMs(rasterStart),
+        bytes: rasterDoc.blob.size,
+      });
+      return;
+    } catch (error) {
+      pdfPerfLog("raster fallback to server", {
+        ms: pdfPerfMs(totalStart),
+        message: error?.message || String(error),
+      });
+    }
+  }
 
   const buildStart = pdfPerfNow();
   const pdfDoc = await buildRecapPdfHtml();
