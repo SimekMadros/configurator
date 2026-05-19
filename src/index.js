@@ -1208,6 +1208,20 @@ function waitRecapFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
+function pdfPerfNow() {
+  return performance?.now?.() || Date.now();
+}
+
+function pdfPerfMs(start) {
+  return Math.round((pdfPerfNow() - start) * 10) / 10;
+}
+
+function pdfPerfLog(label, data = {}) {
+  try {
+    console.log(`[PDF PERF] ${label}`, data);
+  } catch (e) {}
+}
+
 async function applyCurrentMaterialsBeforeRecapCapture() {
   const tabKey = getAppliedFabricTabKey();
   const selected = getSelectedFabricForTabKey(tabKey);
@@ -1244,17 +1258,34 @@ async function renderRecapSofaImageDeferred() {
   if (!imageEl) return;
 
   const seq = ++recapImageCaptureSeq;
+  const totalStart = pdfPerfNow();
 
   try {
+    const materialsStart = pdfPerfNow();
     await applyCurrentMaterialsBeforeRecapCapture();
+    pdfPerfLog("recap sofa materials", { ms: pdfPerfMs(materialsStart) });
+
+    const frameStart = pdfPerfNow();
     await waitRecapFrame();
     await waitRecapFrame();
+    pdfPerfLog("recap sofa frame wait", { ms: pdfPerfMs(frameStart) });
 
     if (seq !== recapImageCaptureSeq || appState.step !== 5) return;
 
-    const img = captureRecapSofaImage();
+    const captureStart = pdfPerfNow();
+    const img = captureRecapSofaImage({
+      mimeType: "image/jpeg",
+      quality: 0.82,
+    });
+    pdfPerfLog("recap sofa capture", {
+      ms: pdfPerfMs(captureStart),
+      chars: img?.length || 0,
+    });
+
     if (img) imageEl.src = img;
     else imageEl.removeAttribute("src");
+
+    pdfPerfLog("recap sofa total", { ms: pdfPerfMs(totalStart) });
   } catch (e) {
     console.warn("Recap deferred image capture failed:", e);
     if (seq === recapImageCaptureSeq) imageEl.removeAttribute("src");
@@ -1472,8 +1503,8 @@ function getRecapCaptureAspect() {
 
 function getRecapCaptureSize() {
   const aspect = getRecapCaptureAspect();
-  const width = 1500;
-  const height = Math.max(620, Math.round(width / aspect));
+  const width = 1150;
+  const height = Math.max(480, Math.round(width / aspect));
 
   return { width, height, aspect };
 }
@@ -3566,8 +3597,8 @@ function optimizeRecapPdfAssetReferences(root) {
     const tileMedia = img.closest(".recapTileMedia");
     const isTileImage = !!tileMedia;
     const needsTransparency = tileMedia?.classList.contains("is-leg-image");
-    const width = isLogo ? 520 : isTileImage ? 260 : 420;
-    const quality = needsTransparency ? 0.8 : isLogo ? 0.84 : 0.64;
+    const width = isLogo ? 420 : isTileImage ? 190 : 300;
+    const quality = needsTransparency ? 0.7 : isLogo ? 0.78 : 0.54;
     const format = needsTransparency ? "png" : "jpeg";
 
     img.setAttribute("src", getRecapPdfAssetUrl(src, { format, width, quality }));
@@ -3581,8 +3612,8 @@ function optimizeRecapPdfAssetReferences(root) {
       el.classList.contains("recapMaterialSwatch") ||
       el.classList.contains("is-swatch");
     const isTileMedia = el.classList.contains("recapTileMedia");
-    const width = isSwatch ? 180 : isTileMedia ? 260 : 320;
-    const quality = isSwatch ? 0.58 : 0.64;
+    const width = isSwatch ? 120 : isTileMedia ? 190 : 240;
+    const quality = isSwatch ? 0.45 : 0.54;
 
     el.style.backgroundImage = rewriteRecapPdfBackgroundAssets(bg, { width, quality });
   });
@@ -3650,16 +3681,26 @@ async function renderRecapPdfPageToJpeg(pageSheet) {
 }
 
 async function buildRecapPdfHtml({ autoPrint = false } = {}) {
+  const totalStart = pdfPerfNow();
+  pdfPerfLog("build html start", { autoPrint });
+
   if (recapDimsEditMode) exitRecapDimsEditMode({ save: true, render: false });
 
+  const renderStart = pdfPerfNow();
   renderRecapView();
+  pdfPerfLog("render recap view", { ms: pdfPerfMs(renderStart) });
+
   await renderRecapSofaImageDeferred();
+
+  const planStart = pdfPerfNow();
   copyCurrentPlanToRecap();
   await waitRecapFrame();
+  pdfPerfLog("copy plan + frame", { ms: pdfPerfMs(planStart) });
 
   const sourceSheet = document.querySelector("#recapView .recapSheet");
   if (!sourceSheet) return null;
 
+  const cloneStart = pdfPerfNow();
   const cleaned = sourceSheet.cloneNode(true);
 
   // V tiskové verzi nechceme editaci ani akční tlačítka
@@ -3669,6 +3710,7 @@ async function buildRecapPdfHtml({ autoPrint = false } = {}) {
 
   absolutizeRecapPrintAssets(cleaned);
   optimizeRecapPdfAssetReferences(cleaned);
+  pdfPerfLog("clone + optimize assets", { ms: pdfPerfMs(cloneStart) });
 
   const sourceHeader = cleaned.querySelector(".recapHeader");
   const sourceHero = cleaned.querySelector(".recapHero");
@@ -4014,6 +4056,12 @@ async function buildRecapPdfHtml({ autoPrint = false } = {}) {
     </html>
   `;
 
+  pdfPerfLog("build html done", {
+    ms: pdfPerfMs(totalStart),
+    htmlChars: html.length,
+    fileName,
+  });
+
   return { html, fileName };
 }
 
@@ -4042,13 +4090,22 @@ function getRecapPdfEndpoints() {
 }
 
 async function downloadRecapPdfDocument() {
+  const totalStart = pdfPerfNow();
+  pdfPerfLog("download start");
+
+  const buildStart = pdfPerfNow();
   const pdfDoc = await buildRecapPdfHtml();
   if (!pdfDoc) throw new Error("Recap PDF source is not available.");
+  pdfPerfLog("download build html", {
+    ms: pdfPerfMs(buildStart),
+    htmlChars: pdfDoc.html.length,
+  });
 
   let lastError = null;
 
   for (const endpoint of getRecapPdfEndpoints()) {
     try {
+      const fetchStart = pdfPerfNow();
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -4059,16 +4116,33 @@ async function downloadRecapPdfDocument() {
           filename: pdfDoc.fileName,
         }),
       });
+      pdfPerfLog("server response", {
+        ms: pdfPerfMs(fetchStart),
+        status: response.status,
+        endpoint,
+      });
 
       if (!response.ok) {
         const message = await response.text().catch(() => "");
         throw new Error(message || `PDF server returned ${response.status}`);
       }
 
+      const blobStart = pdfPerfNow();
       const blob = await response.blob();
+      pdfPerfLog("response blob", {
+        ms: pdfPerfMs(blobStart),
+        bytes: blob.size,
+      });
+
       downloadBlob(blob, pdfDoc.fileName);
+      pdfPerfLog("download total", { ms: pdfPerfMs(totalStart) });
       return;
     } catch (error) {
+      pdfPerfLog("endpoint failed", {
+        endpoint,
+        ms: pdfPerfMs(totalStart),
+        message: error?.message || String(error),
+      });
       lastError = error;
     }
   }
