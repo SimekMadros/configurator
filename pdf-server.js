@@ -859,9 +859,22 @@ async function handleTestEmailRequest(req, res) {
     const info = await sendBrevoEmail({
       from: config.from,
       to: config.to,
-      subject: "Test email z MADROS konfigurátoru",
-      text: "Pokud tento e-mail dorazil, Brevo API z Renderu funguje.",
-      html: "<p>Pokud tento e-mail dorazil, Brevo API z Renderu funguje.</p>",
+      replyTo: "test@madros.cz",
+      subject: "Test interního e-mailu z MADROS konfigurátoru",
+      text: [
+        "Toto je test interního e-mailu z konfigurátoru.",
+        "",
+        `Odesílatel: ${config.from}`,
+        `Příjemce: ${config.to}`,
+        "",
+        "Pokud tento e-mail dorazil, interní příjem přes Brevo funguje.",
+      ].join("\n"),
+      html: `
+        <p>Toto je test interního e-mailu z konfigurátoru.</p>
+        <p><strong>Odesílatel:</strong> ${escapeHtml(config.from)}</p>
+        <p><strong>Příjemce:</strong> ${escapeHtml(config.to)}</p>
+        <p>Pokud tento e-mail dorazil, interní příjem přes Brevo funguje.</p>
+      `,
     });
 
     console.log("[TestEmail] Brevo email sent", info);
@@ -969,7 +982,11 @@ async function handleInquiryRequest(req, res) {
           html: buildInquiryEmailHtml({ customerEmail: email, summary: emailSummary }),
         });
 
-        console.log("[Inquiry] Internal email sent via Brevo", internalInfo);
+        console.log("[Inquiry] Internal email sent via Brevo", {
+          to: config.to,
+          from: config.from,
+          result: internalInfo,
+        });
 
       } catch (error) {
         console.error("Inquiry email background send error:", {
