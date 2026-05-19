@@ -16,6 +16,7 @@ try {
 
 const nodemailer = require("nodemailer");
 const puppeteer = require("puppeteer");
+const sharp = require("sharp");
 
 const PORT = Number(process.env.PDF_PORT || 3001);
 const MAX_BODY_SIZE = 50 * 1024 * 1024;
@@ -470,61 +471,55 @@ function parsePositiveNumber(value, fallback, min, max) {
 async function optimizeImageBuffer(buffer, mimeType, maxSize, quality, format = "jpeg") {
   if (!/^image\/(png|jpe?g|webp)$/i.test(mimeType)) return { buffer, mimeType };
 
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
   try {
-    const base64 = buffer.toString("base64");
-    const result = await page.evaluate(async ({ dataUrl, format, maxSize, quality }) => {
-      const img = new Image();
-      img.decoding = "async";
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = dataUrl;
+    const usePng = format === "png";
+    let pipeline = sharp(buffer, {
+      animated: false,
+      limitInputPixels: 60 * 1000 * 1000,
+    })
+      .rotate()
+      .resize({
+        width: maxSize,
+        height: maxSize,
+        fit: "inside",
+        withoutEnlargement: true,
+        fastShrinkOnLoad: true,
       });
 
-      const sourceWidth = img.naturalWidth || img.width || maxSize;
-      const sourceHeight = img.naturalHeight || img.height || maxSize;
-      const ratio = Math.min(1, maxSize / Math.max(sourceWidth, sourceHeight));
-      const width = Math.max(1, Math.round(sourceWidth * ratio));
-      const height = Math.max(1, Math.round(sourceHeight * ratio));
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const usePng = format === "png";
-      const ctx = canvas.getContext("2d", { alpha: usePng });
-      if (!usePng) {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, width, height);
-      }
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(img, 0, 0, width, height);
-
-      return canvas
-        .toDataURL(usePng ? "image/png" : "image/jpeg", quality)
-        .split(",")[1];
-    }, {
-      dataUrl: `data:${mimeType};base64,${base64}`,
-      format,
-      maxSize,
-      quality,
-    });
+    if (usePng) {
+      pipeline = pipeline.png({
+        compressionLevel: 6,
+        adaptiveFiltering: false,
+        effort: 4,
+      });
+    } else {
+      pipeline = pipeline
+        .flatten({ background: "#ffffff" })
+        .jpeg({
+          quality: Math.round(quality * 100),
+          mozjpeg: true,
+          progressive: false,
+        });
+    }
 
     return {
-      buffer: Buffer.from(result, "base64"),
-      mimeType: format === "png" ? "image/png" : "image/jpeg",
+      buffer: await pipeline.toBuffer(),
+      mimeType: usePng ? "image/png" : "image/jpeg",
     };
-  } finally {
-    await page.close().catch(() => {});
+  } catch (error) {
+    console.warn("[PDF ASSET] sharp optimize failed, using original", {
+      message: error?.message || String(error),
+      mimeType,
+      maxSize,
+      quality,
+      format,
+    });
+    return { buffer, mimeType };
   }
 }
 
 async function handlePdfAssetRequest(req, res) {
+  const startedAt = Date.now();
   try {
     const requestUrl = new URL(req.originalUrl || req.url || "", "http://localhost");
     const src = requestUrl.searchParams.get("src") || "";
@@ -549,6 +544,10 @@ async function handlePdfAssetRequest(req, res) {
     const cached = optimizedAssetCache.get(cacheKey);
 
     if (cached) {
+      const durationMs = Date.now() - startedAt;
+      if (durationMs > 80) {
+        console.log("[PDF ASSET] cache hit", { durationMs, src, bytes: cached.buffer.length });
+      }
       sendBuffer(res, 200, cached.buffer, cached.mimeType);
       return;
     }
@@ -556,6 +555,17 @@ async function handlePdfAssetRequest(req, res) {
     const sourceBuffer = await fs.readFile(assetPath);
     const optimized = await optimizeImageBuffer(sourceBuffer, sourceMime, maxSize, quality, format);
     optimizedAssetCache.set(cacheKey, optimized);
+
+    const durationMs = Date.now() - startedAt;
+    console.log("[PDF ASSET] optimized", {
+      durationMs,
+      src,
+      sourceBytes: sourceBuffer.length,
+      outputBytes: optimized.buffer.length,
+      maxSize,
+      quality,
+      format,
+    });
 
     sendBuffer(res, 200, optimized.buffer, optimized.mimeType);
   } catch (error) {
@@ -576,7 +586,7 @@ async function waitForPdfAssets(page) {
       Původně se čekalo až 30 sekund na všechny obrázky/backgroundy/fonty.
       Na Render free to zbytečně prodlužovalo generování PDF.
     */
-    const timeout = new Promise((resolve) => setTimeout(resolve, 7000));
+    const timeout = new Promise((resolve) => setTimeout(resolve, 1800));
 
     const imagePromises = Array.from(document.images || []).map((img) => {
       if (img.complete && img.naturalWidth > 0) return Promise.resolve();
@@ -603,6 +613,8 @@ async function renderPdfFromHtml(html) {
   const page = await browser.newPage();
 
   try {
+    await page.setCacheEnabled(true).catch(() => {});
+
     await page.setViewport({
       width: 794,
       height: 1123,
@@ -616,13 +628,18 @@ async function renderPdfFromHtml(html) {
 
     await page.emulateMediaType("print");
 
+    const contentStartedAt = Date.now();
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 20000,
     });
+    console.log("[PDF] setContent ms", Date.now() - contentStartedAt);
 
+    const assetsStartedAt = Date.now();
     await waitForPdfAssets(page);
+    console.log("[PDF] waitForAssets ms", Date.now() - assetsStartedAt);
 
+    const pdfStartedAt = Date.now();
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -634,6 +651,7 @@ async function renderPdfFromHtml(html) {
         left: "0",
       },
     });
+    console.log("[PDF] page.pdf ms", Date.now() - pdfStartedAt);
 
     console.log("[PDF] Rendered in ms", {
       durationMs: Date.now() - startedAt,
