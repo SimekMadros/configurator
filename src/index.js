@@ -295,6 +295,8 @@ function positionPortalHint(anchorEl) {
   if (!bubble || !anchorEl) return;
 
   const r = anchorEl.getBoundingClientRect();
+  const bar = anchorEl.closest?.(".stepBar");
+  const barRect = bar?.getBoundingClientRect?.();
 
   // nejdĹ™Ă­v zobrazĂ­me, aĹĄ znĂˇme rozmÄ›ry bubliny
   bubble.style.display = "block";
@@ -303,13 +305,10 @@ function positionPortalHint(anchorEl) {
 
   const br = bubble.getBoundingClientRect();
 
-  // vĂ˝chozĂ­ pozice: NAD stepem (aby to bylo nad Ĺˇipkou i nad stepbarem)
+  // U stepbaru patří hláška pod celý horní ovládací pruh, aby nelezla pod topbar.
   const gap = 12;
   let x = r.left + r.width / 2 - br.width / 2;
-  let y = r.top - br.height - gap;
-
-  // kdyĹľ by to nahoĹ™e nevlezlo, hoÄŹ to POD step
-  if (y < 8) y = r.bottom + gap;
+  let y = barRect ? barRect.bottom + gap : r.bottom + gap;
 
   // clamp do viewportu
   const pad = 12;
@@ -553,6 +552,7 @@ async function setStep(step, { push = true } = {}) {
   }
 
   appState.step = step;
+  document.documentElement.setAttribute("data-step", String(step));
 
   // update step bar in configurator
   document.querySelectorAll("#stepBar .step").forEach(el => {
@@ -4616,6 +4616,16 @@ function isHeadrestStepActive() {
 // kterĂ˝ sub-tab je aktivnĂ­ v kroku 3 (bottom bar)
 let currentEquipTabKey = "armrests";
 let currentFabricTabKey = "cat1";
+
+function isMobileEquipmentLayout() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(max-width: 760px)")?.matches || false;
+}
+
+function normalizeEquipmentTabKey(key) {
+  if (appState.step !== 3) return key;
+  return !isMobileEquipmentLayout() && key === "dimensions" ? "armrests" : key;
+}
 let currentFabricTargetMode = "sofa";
 const renderedFabricTabs = new Set();
 
@@ -5062,6 +5072,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
 
   const overlay = document.createElement("div");
   overlay.id = "bedTypeModal";
+  overlay.className = "bedTypeModal";
   overlay.style.position = "fixed";
   overlay.style.inset = "0";
   overlay.style.background = "rgba(0,0,0,0.55)";
@@ -5071,6 +5082,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
   overlay.style.zIndex = "99999";
 
   const box = document.createElement("div");
+  box.className = "bedTypeBox";
   box.style.width = "min(980px, 92vw)";
   box.style.maxHeight = "86vh";
   box.style.overflow = "auto";
@@ -5138,6 +5150,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
   box.appendChild(header);
 
   const grid = document.createElement("div");
+  grid.className = "bedTypeGrid";
   grid.style.display = "grid";
   grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
   grid.style.gap = "14px";
@@ -5145,6 +5158,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
   const mkOption = (title, imgSrc, price, onPick) => {
     const card = document.createElement("button");
     card.type = "button";
+    card.className = "bedTypeCard";
     card.style.border = "1px solid rgba(0,0,0,0.12)";
     card.style.borderRadius = "14px";
     card.style.padding = "12px";
@@ -5156,6 +5170,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
 
     // ===== image wrapper (text bude uvnitĹ™ obrĂˇzku) =====
     const imgWrap = document.createElement("div");
+    imgWrap.className = "bedTypeImgWrap";
     imgWrap.style.position = "relative";
     imgWrap.style.width = "100%";
     imgWrap.style.height = "250px";
@@ -5165,6 +5180,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
     imgWrap.style.border = "none";
 
     const img = document.createElement("img");
+    img.className = "bedTypeImg";
     img.src = imgSrc;
     img.alt = title;
     img.style.position = "absolute";
@@ -5177,6 +5193,7 @@ function openBedTypeModalForRec(rec, diffBed, diffBed2) {
 
     // ===== overlay text =====
     const overlayInfo = document.createElement("div");
+    overlayInfo.className = "bedTypeInfo";
     overlayInfo.style.position = "absolute";
     overlayInfo.style.left = "0";
     overlayInfo.style.right = "0";
@@ -9716,16 +9733,45 @@ function syncEquipLayout(){
 
   const isHidden = bottomBarEl.classList.contains("is-hidden");
   const isCollapsed = bottomBarEl.classList.contains("is-collapsed");
+  document.documentElement.classList.toggle("equip-menu-open", !isHidden && !isCollapsed);
 
   // KdyĹľ je bar skrytĂ˝ nebo "sbalenĂ˝", SummaryUI mĂˇ bĂ˝t dole jako ve 2. kroku
   if(isHidden || isCollapsed){
     document.documentElement.style.setProperty("--equip-raise", "0px");
+    document.documentElement.style.removeProperty("--step3-continue-bottom");
+    document.documentElement.style.removeProperty("--bottom-toggle-bottom");
     return;
   }
 
   const rect = bottomBarEl.getBoundingClientRect();
   const raise = Math.max(0, Math.round(rect.height + 12));
   document.documentElement.style.setProperty("--equip-raise", `${raise}px`);
+
+  const tabs = bottomBarEl.querySelector(".bottomTabs");
+  const tabsRect = tabs?.getBoundingClientRect?.();
+  const viewportHeight = window.visualViewport?.height || window.innerHeight || 0;
+  if (tabsRect && viewportHeight) {
+    const continueGap = 6;
+    const bottom = Math.max(0, Math.round(viewportHeight - tabsRect.top + continueGap));
+    document.documentElement.style.setProperty("--step3-continue-bottom", `${bottom}px`);
+    document.documentElement.style.setProperty("--bottom-toggle-bottom", `${bottom}px`);
+  }
+}
+
+function scheduleEquipLayoutSync() {
+  try { syncEquipLayout(); } catch (e) {}
+
+  requestAnimationFrame(() => {
+    try { syncEquipLayout(); } catch (e) {}
+
+    requestAnimationFrame(() => {
+      try { syncEquipLayout(); } catch (e) {}
+    });
+  });
+
+  setTimeout(() => {
+    try { syncEquipLayout(); } catch (e) {}
+  }, 90);
 }
 
 function measureEquipRaise(){
@@ -9812,12 +9858,20 @@ function updateBottomBarUI() {
   }
 
   const shelfAvailable = shouldShowMelbourneShelfTab();
+  const mobileEquipment = isMobileEquipmentLayout();
   if (appState.step === 3 && currentEquipTabKey === "shelf" && !shelfAvailable) {
     currentEquipTabKey = "legs";
   }
   const hingesAvailable = shouldShowHingesTab();
   if (appState.step === 3 && currentEquipTabKey === "hinges" && !hingesAvailable) {
     currentEquipTabKey = "legs";
+  }
+  const armrestsAvailable = shouldShowArmrestsTab();
+  if (appState.step === 3 && currentEquipTabKey === "armrests" && !armrestsAvailable && mobileEquipment) {
+    currentEquipTabKey = "dimensions";
+  }
+  if (appState.step === 3 && currentEquipTabKey === "dimensions" && !mobileEquipment) {
+    currentEquipTabKey = "armrests";
   }
   const extrasAvailable = shouldShowExtrasTab();
   if (appState.step === 3 && currentEquipTabKey === "extras" && !extrasAvailable) {
@@ -9829,18 +9883,31 @@ function updateBottomBarUI() {
     const step = Number(t.dataset.step || 3);   // step3 taby nemajĂ­ data-step => ber 3
     const isShelfTab = t.dataset.tab === "shelf";
     const isHingesTab = t.dataset.tab === "hinges";
+    const isArmrestsTab = t.dataset.tab === "armrests";
+    const isDimensionsTab = t.dataset.tab === "dimensions";
     const isExtrasTab = t.dataset.tab === "extras";
     const visible =
       step === appState.step &&
       (!isShelfTab || shelfAvailable) &&
       (!isHingesTab || hingesAvailable) &&
+      (!isArmrestsTab || armrestsAvailable || !mobileEquipment) &&
+      (!isDimensionsTab || mobileEquipment) &&
       (!isExtrasTab || extrasAvailable);
     t.classList.toggle("hidden", !visible);
+
+    if (appState.step === 3 && isArmrestsTab) {
+      t.textContent = mobileEquipment ? "Područky" : "Područky a rozměry";
+    }
   });
 
   // aktivnĂ­ obsah podle kroku
   if (appState.step === 3) {
+    currentEquipTabKey = normalizeEquipmentTabKey(currentEquipTabKey);
     setBottomPanelByKey(currentEquipTabKey);
+    if (currentEquipTabKey === "dimensions" || (!mobileEquipment && currentEquipTabKey === "armrests")) {
+      try { window.refreshSofaDimsUI?.(); } catch (e) {}
+      try { window.__refreshSofaPlanEverywhere?.(); } catch (e) {}
+    }
     if (currentEquipTabKey === "shelf") bindShelfEquipmentUI();
   } else {
     setBottomPanelByKey(currentFabricTabKey);
@@ -12064,15 +12131,42 @@ function renderFabricBrowserPaspule(tabKey = currentFabricTabKey) {
 }
 
 function setBottomPanelByKey(key) {
+  key = normalizeEquipmentTabKey(key);
+
+  const showDesktopCombinedDims =
+    appState.step === 3 &&
+    key === "armrests" &&
+    !isMobileEquipmentLayout();
+
   document.querySelectorAll(".bottomTab").forEach((x) => {
     const step = Number(x.dataset.step || 3);
-    if (step !== appState.step) return;
+    const isForThisStep = step === appState.step;
+
+    /*
+      DŮLEŽITÉ:
+      Když přejdu z kroku 3 do kroku 4, staré aktivní taby
+      z kroku 3 nesmí zůstat active.
+      Jinak CSS selector :has(.bottomTab.active[data-tab="armrests"])
+      znovu zapne půdorys a rozměry i v kroku 4.
+    */
+    if (!isForThisStep) {
+      x.classList.remove("active");
+      return;
+    }
+
     x.classList.toggle("active", x.dataset.tab === key);
   });
 
   document.querySelectorAll(".bottomSection").forEach((p) => {
-    p.classList.toggle("hidden", p.dataset.tabpanel !== key);
+    const panel = p.dataset.tabpanel;
+    const isVisible =
+      panel === key ||
+      (showDesktopCombinedDims && panel === "dimensions");
+
+    p.classList.toggle("hidden", !isVisible);
   });
+
+  scheduleEquipLayoutSync();
 }
 
 function updateBuildModeUI() {
@@ -12195,6 +12289,27 @@ function bindBottomToggle(){
   });
 }
 
+function bindDimensionsPlanToggle() {
+  const btn = document.getElementById("dimensionsPlanToggle");
+  const bar = document.getElementById("bottomBar");
+  if (!btn || !bar) return;
+
+  btn.addEventListener("click", () => {
+    const next = !bar.classList.contains("is-dimensions-plan-open");
+    bar.classList.toggle("is-dimensions-plan-open", next);
+    btn.setAttribute("aria-expanded", next ? "true" : "false");
+
+    const label = btn.querySelector(".dimensionsPlanToggleText");
+    if (label) label.textContent = next ? "Skrýt půdorys" : "Zobrazit půdorys";
+
+    if (next) {
+      try { window.__refreshSofaPlanEverywhere?.(); } catch (e) {}
+    }
+
+    scheduleEquipLayoutSync();
+  });
+}
+
 // =====================================================
 // CAMERA FOCUS HELPERS (tabs: legs / armrests / hinges)
 // =====================================================
@@ -12269,6 +12384,7 @@ function focusCameraOnBox(box, { padding = 1.25, yTargetOffset = 0.0 } = {}) {
   if (!isFinite(viewDir.x) || !isFinite(viewDir.y) || !isFinite(viewDir.z)) {
     viewDir.set(0.6, 0.35, 0.75).normalize();
   }
+  const fitViewDir = cameraDirectionForViewport(viewDir);
 
   // fit vzdĂˇlenost podle fov / aspect
   const fov = THREE.MathUtils.degToRad(camera.fov);
@@ -12293,9 +12409,9 @@ function focusCameraOnBox(box, { padding = 1.25, yTargetOffset = 0.0 } = {}) {
   // trochu pĹ™idej i hloubku, aby to nebylo nalepenĂ©
   dist = Math.max(dist, depth * 0.9);
 
-  dist *= padding;
+  dist = cameraDistanceForViewport(dist * padding);
 
-  const newPos = target.clone().add(viewDir.multiplyScalar(dist));
+  const newPos = target.clone().add(fitViewDir.multiplyScalar(dist));
 
   // nastav â€śauto cameraâ€ť cĂ­le â€“ tĂ­m vyuĹľijeĹˇ tvoje plynulĂ© dolerpovĂˇnĂ­ (ĹľĂˇdnĂ˝ lock)
   camGoalTarget.copy(target);
@@ -12504,6 +12620,11 @@ function bindBottomTabs() {
   if (!tabs.length || !panels.length) return;
 
   function setActiveTab(key) {
+    key = normalizeEquipmentTabKey(key);
+
+    if (appState.step === 3 && key === "armrests" && !shouldShowArmrestsTab() && isMobileEquipmentLayout()) {
+      key = "dimensions";
+    }
     if (appState.step === 3 && key === "shelf" && !shouldShowMelbourneShelfTab()) {
       key = "legs";
     }
@@ -12528,13 +12649,34 @@ function bindBottomTabs() {
     }
 
     // 2) pĹ™epnout UI
+    const showDesktopCombinedDims =
+      appState.step === 3 &&
+      key === "armrests" &&
+      !isMobileEquipmentLayout();
+
     tabs.forEach((x) => {
       const isForThisStep = Number(x.dataset.step || 3) === appState.step;
-      if (!isForThisStep) return;
+
+      /*
+        DŮLEŽITÉ:
+        Když přejdu z kroku 3 do kroku 4, starý aktivní tab
+        z kroku 3 nesmí zůstat active. Jinak desktop CSS pro
+        Područky + rozměry dál zapíná půdorys a rozměry i v kroku 4.
+      */
+      if (!isForThisStep) {
+        x.classList.remove("active");
+        return;
+      }
+
       x.classList.toggle("active", x.dataset.tab === key);
     });
 
-    panels.forEach((p) => p.classList.toggle("hidden", p.dataset.tabpanel !== key));
+    panels.forEach((p) => {
+      const panel = p.dataset.tabpanel;
+      const isVisible = panel === key || (showDesktopCombinedDims && panel === "dimensions");
+      p.classList.toggle("hidden", !isVisible);
+    });
+    scheduleEquipLayoutSync();
 
     // 3) krok 3: extras logika + headrest viditelnost + pokraÄŤovat
     if (appState.step === 3) {
@@ -12544,12 +12686,16 @@ function bindBottomTabs() {
         renderExtrasModuleList();
       } else if (key === "shelf") {
         bindShelfEquipmentUI();
+      } else if (key === "dimensions" || showDesktopCombinedDims) {
+        window.refreshSofaDimsUI?.();
+        window.__refreshSofaPlanEverywhere?.();
       } else {
         clearHoveredModule();
       }
 
       updateStep3ContinueUI();
       focusCameraForBottomTab(key);
+      scheduleEquipLayoutSync();
     }
 
     // 4) krok 4: render lĂˇtek
@@ -12559,15 +12705,28 @@ function bindBottomTabs() {
       updateFabricSelectionIndicators?.();
       updateStep4ContinueUI?.();
       // (kamera pro lĂˇtky klidnÄ› zatĂ­m neĹ™eĹˇ)
+      scheduleEquipLayoutSync();
     }
   }
 
-  // bind klikĹŻ
+  // bind kliků
   tabs.forEach((t) => {
     t.addEventListener("click", () => {
       const isForThisStep = Number(t.dataset.step || 3) === appState.step;
       if (!isForThisStep) return;
-      setActiveTab(t.dataset.tab);
+
+      /*
+        DŮLEŽITÉ:
+        Kamera se má oddálit jen při ručním kliknutí na tab,
+        ne při initu, reloadu, restore stavu nebo jiných automatických přepnutích.
+      */
+      isBottomTabClickCameraFocus = true;
+
+      try {
+        setActiveTab(t.dataset.tab);
+      } finally {
+        isBottomTabClickCameraFocus = false;
+      }
     });
   });
 
@@ -12596,6 +12755,11 @@ const LEGS_UI_BY_MODEL = {
 // helper â€“ normalizace klĂ­ÄŤe modelu
 function getModelKey() {
   return String(appState?.model || "").trim().toUpperCase();
+}
+
+function shouldShowArmrestsTab() {
+  const cfg = MODEL_EQUIP_CONFIG?.[getModelKey()];
+  return Array.isArray(cfg?.armrests) && cfg.armrests.length > 1;
 }
 
 // default noha pro model
@@ -12827,9 +12991,21 @@ function bindLegsEquipmentUI() {
     // zapamatuj si, co bylo vybranĂ© pĹ™ed pĹ™ekreslenĂ­m
     const prevSelected = colorSelect.value;
 
+    if (!isWood) {
+      showAllWoodColors = false;
+      pinnedWoodColorId = null;
+    }
+
     // tlaÄŤĂ­tko "vĹˇechny" jen pro dĹ™evo
     if (btnShowAll) {
+      if (!isWood && document.activeElement === btnShowAll) {
+        btnShowAll.blur();
+      }
+
       btnShowAll.classList.toggle("hidden", !isWood);
+      btnShowAll.hidden = !isWood;
+      btnShowAll.setAttribute("aria-hidden", isWood ? "false" : "true");
+      btnShowAll.style.display = isWood ? "" : "none";
       btnShowAll.textContent = showAllWoodColors ? "Zobrazit méně barev" : "Zobrazit více barev";
     }
 
@@ -12942,8 +13118,15 @@ function bindLegsEquipmentUI() {
   // TlaÄŤĂ­tko ALL barvy
   if (btnShowAll) {
     btnShowAll.onclick = () => {
+      const currentLeg = typeSelect.value || selectedLegs || defaultLeg;
+      if (getLegMaterialType(currentLeg) !== "wood") {
+        showAllWoodColors = false;
+        renderColorsForLeg(currentLeg);
+        return;
+      }
+
       showAllWoodColors = !showAllWoodColors;
-      renderColorsForLeg(typeSelect.value || selectedLegs || defaultLeg);
+      renderColorsForLeg(currentLeg);
     };
   }
 
@@ -19245,6 +19428,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   updateStepLocks();
 
   bindBottomToggle();
+  bindDimensionsPlanToggle();
   bindBottomTabs();
   bindLegsEquipmentUI();
   bindShelfEquipmentUI();
@@ -19516,6 +19700,24 @@ let pendingAddPosition = null;
 let hoveredButton = null;
 let hoveredModule = null;
 let selectedModule = null;
+
+/* MOBILE FIX:
+   Po otevření tabulky modulů krátce ignorujeme kliky na karty,
+   aby původní tap na 3D tlačítko rovnou nevybral modul pod prstem. */
+let modulePickerIgnoreClicksUntil = 0;
+
+/* MOBILE FIX:
+   Modul, pro který je otevřené menu Vyměnit/Odstranit,
+   zůstane zesvětlený jen na mobilu. */
+let actionMenuHighlightedModule = null;
+
+function isMobileModuleActionHighlightEnabled() {
+  return (
+    window.matchMedia?.("(max-width: 760px)")?.matches ||
+    window.matchMedia?.("(pointer: coarse)")?.matches
+  );
+}
+
 let pendingAddButton = null;
 let pendingAddDirection = null;
 let pickerClosedManually = false;
@@ -20782,10 +20984,114 @@ const moduleActionMenu = document.getElementById("moduleActionMenu");
 const DEFAULT_CAM_POS = new THREE.Vector3(0, 1.5, 1.5);
 const DEFAULT_TARGET  = new THREE.Vector3(0, 0, 0);
 
+// Mobile viewports need extra distance because the 3D canvas is much narrower.
+// Increase this to push every automatic camera fit/focus farther away on mobile.
+const MOBILE_CAMERA_DISTANCE_MULTIPLIER = 1;
+const MOBILE_CAMERA_BUTTON_FIT_MARGIN = 0.15;
+const MOBILE_CAMERA_MAX_DIRECTION_Y = 0.16;
+
+function isMobileCameraView() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(max-width: 760px)")?.matches ||
+    window.matchMedia?.("(pointer: coarse)")?.matches
+  );
+}
+
+function cameraDistanceForViewport(distance) {
+  const value = Number(distance) || 0;
+  return isMobileCameraView() ? value * MOBILE_CAMERA_DISTANCE_MULTIPLIER : value;
+}
+
+function defaultCameraPosForViewport() {
+  const offset = DEFAULT_CAM_POS.clone().sub(DEFAULT_TARGET);
+  return DEFAULT_TARGET.clone().add(offset.multiplyScalar(
+    isMobileCameraView() ? MOBILE_CAMERA_DISTANCE_MULTIPLIER : 1
+  ));
+}
+
+function cameraDirectionForViewport(direction, opts = {}) {
+  const dir = direction?.clone?.() || new THREE.Vector3(0, 0.2, 1);
+  if (dir.lengthSq() < 1e-6) dir.set(0, 0.2, 1);
+  dir.normalize();
+
+  /*
+    Některé taby potřebují i na mobilu pohled víc zezhora.
+    Typicky Polička, kde je důležité vidět horní plochu rohového modulu.
+  */
+  if (opts.allowMobileTopView) {
+    return dir;
+  }
+
+  if (!isMobileCameraView() || dir.y <= MOBILE_CAMERA_MAX_DIRECTION_Y) {
+    return dir;
+  }
+
+  const horizontal = new THREE.Vector3(dir.x, 0, dir.z);
+  if (horizontal.lengthSq() < 1e-6) horizontal.set(0, 0, 1);
+
+  horizontal.normalize().multiplyScalar(
+    Math.sqrt(Math.max(0.0001, 1 - MOBILE_CAMERA_MAX_DIRECTION_Y ** 2))
+  );
+
+  return new THREE.Vector3(
+    horizontal.x,
+    MOBILE_CAMERA_MAX_DIRECTION_Y,
+    horizontal.z
+  ).normalize();
+}
+
+function expandCameraFitBoxForMobileButtons(box) {
+  if (!box || !isMobileCameraView()) return box;
+  if (!Array.isArray(activeButtons) || !activeButtons.length) return box;
+
+  let addedButton = false;
+
+  activeButtons.forEach((buttonRecord) => {
+    const buttonMesh = buttonRecord?.mesh;
+    if (!buttonMesh || !buttonMesh.visible || !buttonMesh.parent) return;
+
+    buttonMesh.updateMatrixWorld?.(true);
+    box.expandByObject(buttonMesh);
+    addedButton = true;
+  });
+
+  if (addedButton) {
+    box.expandByScalar(MOBILE_CAMERA_BUTTON_FIT_MARGIN);
+  }
+
+  return box;
+}
+
 // =========================
 //  CAMERA FOCUS PER TAB
 // =========================
 let lastFocusedTabKey = null;
+
+/* =====================================================
+   MOBILE: oddálení kamer pouze při kliknutí na bottom tabs
+   1.00 = původní stav
+   1.20 = trochu dál
+   1.35 = doporučené oddálení
+   1.50 = hodně dál
+   ===================================================== */
+const MOBILE_BOTTOM_TAB_CAMERA_DISTANCE_SCALE = 1.35;
+
+let isBottomTabClickCameraFocus = false;
+
+function scaleBottomTabCameraDistance(distanceMul) {
+  const value = Number(distanceMul) || 1;
+
+  if (
+    isBottomTabClickCameraFocus &&
+    typeof isMobileEquipmentLayout === "function" &&
+    isMobileEquipmentLayout()
+  ) {
+    return value * MOBILE_BOTTOM_TAB_CAMERA_DISTANCE_SCALE;
+  }
+
+  return value;
+}
 
 function getExtremeModuleMesh(side = "right") {
   // activeModules: [{ mesh, ... }]
@@ -20851,7 +21157,7 @@ function focusCameraOnObject(mesh, {
 
   // vzdĂˇlenost podle velikosti
   const base = Math.max(size.x, size.y, size.z);
-  const dist = Math.max(1.2, base * distanceMul);
+  const dist = cameraDistanceForViewport(Math.max(1.2, base * distanceMul));
 
   let finalDir;
 
@@ -20874,6 +21180,8 @@ function focusCameraOnObject(mesh, {
       finalDir = userViewDir.clone().normalize();
     }
   }
+
+  finalDir = cameraDirectionForViewport(finalDir);
 
   // goal pozice/target
   camGoalTarget.copy(target);
@@ -21044,7 +21352,7 @@ function focusCameraBehindModule(moduleMesh, opts = {}) {
   box.getSize(size);
 
   const base = Math.max(size.x, size.y, size.z);
-  const dist = Math.max(1.2, base * distanceMul);
+  const dist = cameraDistanceForViewport(Math.max(1.2, base * distanceMul));
 
   // "zezadu" = -Z v lokĂˇlu modulu -> svÄ›t
   const backDir = new THREE.Vector3(0, 0, -1)
@@ -21062,18 +21370,21 @@ function focusCameraBehindModule(moduleMesh, opts = {}) {
     .add(sideDir.multiplyScalar(sideAmount))
     .add(new THREE.Vector3(0, upTilt, 0))
     .normalize();
+  const fitDir = cameraDirectionForViewport(dir, {
+    allowMobileTopView: !!opts.allowMobileTopView
+  });
 
   const target = center.clone();
   target.y += targetYOffset;
 
   camGoalTarget.copy(target);
-  camGoalPos.copy(target).add(dir.multiplyScalar(dist));
+  camGoalPos.copy(target).add(fitDir.multiplyScalar(dist));
 
   autoCamActive = true;
 }
 
 function focusCameraForBottomTab(tabKey) {
-  // aĹĄ to nespamuje, kdyĹľ user klikne na uĹľ aktivnĂ­ tab
+  // ať to nespamuje, když user klikne na už aktivní tab
   if (tabKey === lastFocusedTabKey) return;
   lastFocusedTabKey = tabKey;
 
@@ -21081,48 +21392,41 @@ function focusCameraForBottomTab(tabKey) {
   if (!firstModule) return;
 
   if (tabKey === "extras") {
-    // zatĂ­m jen obecnĂ˝ pohled na modul (pozdÄ›ji zamÄ›Ĺ™Ă­me sedĂˇky / konkrĂ©tnĂ­ modul)
     focusCameraOnObject(firstModule, {
       lockToModuleFront: true,
       frontTiltY: 0.22,
       targetYOffset: 0.25,
-      distanceMul: 2.25
+
+      /* bylo 2.25 */
+      distanceMul: scaleBottomTabCameraDistance(2.25)
     });
     return;
   }
 
   if (tabKey === "legs") {
-    // 1) nohy bereme z PRVNĂŤHO modulu (uĹľ ne nejvĂ­c vpravo)
     const legMeshes = collectMeshesByKeywords(firstModule, [
       "leg", "noha", "nohy", "foot"
     ]);
 
-    // 2) vyber jednu konkrĂ©tnĂ­ nohu: tu "nejvĂ­c vpĹ™edu" na tom modulu
     const leg = pickMostInFrontOfModule(legMeshes, firstModule) || firstModule;
 
-    // 3) vĹľdy ze pĹ™edu modulu (ignoruje userViewDir)
     focusCameraOnObject(leg, {
       lockToModuleFront: true,
-      frontTiltY: 0.06,        // nĂ­Ĺľ (vĂ­c k noĹľiÄŤkĂˇm)
-      targetYOffset: -0.04,    // mĂ­Ĺ™ nĂ­Ĺľ
-      distanceMul: 1.9
+      frontTiltY: 0.06,
+      targetYOffset: -0.04,
+
+      /* bylo 1.9 */
+      distanceMul: scaleBottomTabCameraDistance(1.9)
     });
     return;
   }
 
-  if (tabKey === "armrests") {
-    // U "Podrucky a rozmery" nech kamera zustat tam, kde prave je.
+  if (tabKey === "armrests" || tabKey === "dimensions") {
+    // U područek/rozměrů nech kameru zůstat tam, kde právě je.
     return;
   }
 
   if (tabKey === "shelf") {
-    // Polička:
-    // - najde první rohový modul Roh_L / Roh_P
-    // - i když jich je víc, vezme jen jeden
-    // - v něm najde mesh "plane"
-    // - kameru řeší stejně jako ostatní taby přes focusCameraOnObject,
-    //   takže rychlost zůstává stejná přes CAMERA_LERP v animate()
-
     const cornerRec = (activeModules || []).find((rec) => {
       if (!rec?.mesh) return false;
 
@@ -21133,7 +21437,6 @@ function focusCameraForBottomTab(tabKey) {
         ""
       ).trim();
 
-      // match např. Melbourne_roh_L / Melbourne_roh_P / *_roh_L / *_roh_P
       return /(^|_)roh_[lp]$/i.test(variantId);
     });
 
@@ -21151,7 +21454,6 @@ function focusCameraForBottomTab(tabKey) {
 
       const name = String(o.name || "").trim().toLowerCase();
 
-      // Blender často dělá Plane, Plane.001 apod.
       if (
         name === "plane" ||
         name.startsWith("plane.") ||
@@ -21171,8 +21473,6 @@ function focusCameraForBottomTab(tabKey) {
         ).trim()
       });
 
-      // pojistka: když by v GLB chyběl/změnil se název plane,
-      // kamera aspoň necukne do chyby a zaměří celý roh
       planeMesh = cornerRec.mesh;
     }
 
@@ -21189,35 +21489,44 @@ function focusCameraForBottomTab(tabKey) {
       1;
 
     focusCameraBehindModule(cornerRec.mesh, {
-      distanceMul: 2.55,
+      distanceMul: scaleBottomTabCameraDistance(3.8),
+
       targetYOffset: -0.2,
+
+      /*
+        Polička potřebuje i na mobilu pohled více zezhora.
+        Bez allowMobileTopView ji cameraDirectionForViewport()
+        na mobilu ořízne přes MOBILE_CAMERA_MAX_DIRECTION_Y.
+      */
       upTilt: 0.5,
+      allowMobileTopView: true,
+
       sideAmount: 0.5,
       sideSign: shelfCameraSideSign
     });
 
     return;
-
-    return;
   }
 
   if (tabKey === "hinges") {
-    // 1) vyber modul s nejvĂ­c hlavovkama (kdyĹľ ĹľĂˇdnĂ˝, tak fallback prvnĂ­ modul)
     let moduleMesh = pickModuleWithMostHeadrests();
     if (!moduleMesh && activeModules?.length) moduleMesh = activeModules[0]?.mesh;
 
     if (!moduleMesh) return;
 
-    // 2) zvedni jen ty hlavovky, co nejsou zvednutĂ©
     raiseAllHeadrestsOnModule(moduleMesh);
 
-    // 3) kamera zezadu na vybranĂ˝ modul (jako â€śpohled na pantyâ€ť)
     focusCameraBehindModule(moduleMesh, {
-      distanceMul: 0.4,   // blĂ­Ĺľ (zkus 1.8 aĹľ 2.3)
+      /*
+        Panty měly původně 0.4, což je extrémně blízko.
+        Na mobilu to i po škálování vycházelo pořád moc blízko.
+      */
+      distanceMul: scaleBottomTabCameraDistance(1.45),
+
       targetYOffset: 0.10,
       upTilt: 0.16,
-      sideAmount: 0.45,   // vĂ­c z boku (0.5 aĹľ 0.8)
-      sideSign: 1         // 1 pravĂˇ strana, -1 levĂˇ strana
+      sideAmount: 0.45,
+      sideSign: 1
     });
 
     return;
@@ -21228,11 +21537,11 @@ function hardResetCameraToDefault() {
   if (!camera || !controls) return;
 
   // okamĹľitÄ› nastavit kameru i target (ĹľĂˇdnĂ˝ lerp)
-  camera.position.copy(DEFAULT_CAM_POS);
+  camera.position.copy(defaultCameraPosForViewport());
   controls.target.copy(DEFAULT_TARGET);
 
   // sladit auto-fit promÄ›nnĂ©, aby ti to dalĹˇĂ­mi kroky "necuklo"
-  camGoalPos.copy(DEFAULT_CAM_POS);
+  camGoalPos.copy(defaultCameraPosForViewport());
   camGoalTarget.copy(DEFAULT_TARGET);
 
   // reset stavu auto-fit logiky
@@ -21328,7 +21637,7 @@ const CAMERA_FIT_DIR = new THREE.Vector3(0, 0.20, 1).normalize();
 const CAMERA_FIT_TARGET_Y = 0.10;
 
 // pro plynulĂ˝ pĹ™echod
-let camGoalPos = DEFAULT_CAM_POS.clone();
+let camGoalPos = defaultCameraPosForViewport();
 let camGoalTarget = DEFAULT_TARGET.clone();
 let cameraPinned = false; // po prvnĂ­m "auto-nastavenĂ­" uĹľ jen oddalujeme
 const FIRST_MODULE_DIR = new THREE.Vector3(0, 1.4, 6).normalize(); 
@@ -21766,7 +22075,18 @@ function _getWoodTextures(colorId) {
 async function applyWoodColorToAllLegs(colorId) {
   const tex = await _getWoodTextures(colorId);
 
-  // âś… stejnĂ© rozpoznĂˇnĂ­ nohou jako ve forceLegsOnly()
+  /*
+    OCHRANA:
+    Když sem omylem přijde kovová barva typu "metal_chrome",
+    _getWoodTextures() vrátí null. Bez téhle kontroly pak spadne:
+    Cannot read properties of null (reading 'map')
+  */
+  if (!tex || !tex.map) {
+    console.warn("[applyWoodColorToAllLegs] Přeskakuji neplatnou dřevěnou barvu:", colorId);
+    return;
+  }
+
+  // stejné rozpoznání nohou jako ve forceLegsOnly()
   const isLegThing = (name) => {
     const n = (name || "").toLowerCase();
     return (
@@ -21778,34 +22098,34 @@ async function applyWoodColorToAllLegs(colorId) {
     );
   };
 
-  for (const rec of activeModules) {
+  for (const rec of activeModules || []) {
     if (!rec?.mesh) continue;
 
     rec.mesh.traverse((obj) => {
-      if (!obj.isMesh) return;
+      if (!obj?.isMesh) return;
 
       const n = (obj.name || "").toLowerCase();
 
-      // âś… BYLO: if (!n.includes("legs")) return;
-      // âś… NOVÄš: bereme i noha/nohy/podnoz/feet
       if (!isLegThing(n)) return;
       if (_isMetalLegMeshName(n)) return;
 
-      // âś… jen aktuĂˇlnÄ› vybranĂˇ/viditelnĂˇ varianta nohou
+      // jen aktuálně vybraná / viditelná varianta nohou
       if (!obj.visible) return;
 
       const mat = MAT_WOOD.clone();
-      mat.map = tex.map;
-      mat.normalMap = tex.normalMap;
-      mat.roughnessMap = tex.roughnessMap;
 
-      // vyÄŤisti metal vÄ›ci
+      mat.map = tex.map || null;
+      mat.normalMap = tex.normalMap || null;
+      mat.roughnessMap = tex.roughnessMap || null;
+
+      // vyčisti metal věci
       mat.metalness = 0.0;
       mat.metalnessMap = null;
       mat.envMap = null;
       mat.envMapIntensity = 0.0;
 
       mat.needsUpdate = true;
+
       obj.material = mat;
       obj.userData.materialRole = "other";
       obj.userData.originalMaterial = mat.clone();
@@ -22268,10 +22588,26 @@ async function warmupWebGL() {
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf7f5f2);
 
+function getThreeRootSize() {
+  const root = document.getElementById("threeRoot");
+  const width = Math.max(1, root?.clientWidth || window.innerWidth || 1);
+  const height = Math.max(1, root?.clientHeight || window.innerHeight || 1);
+  return { width, height };
+}
+
+function resizeRendererToThreeRoot() {
+  const { width, height } = getThreeRootSize();
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+const initialThreeRootSize = getThreeRootSize();
+
 // Kamera
 const camera = new THREE.PerspectiveCamera(
   45,
-  window.innerWidth / window.innerHeight,
+  initialThreeRootSize.width / initialThreeRootSize.height,
   0.1,
   1000
 );
@@ -22280,7 +22616,7 @@ camera.position.set(0, 1.2, 5);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(initialThreeRootSize.width, initialThreeRootSize.height);
 renderer.setClearColor(0xf7f5f2, 1);
 
 renderer.shadowMap.enabled = true;
@@ -22576,6 +22912,59 @@ function applyModuleHover(moduleRoot) {
       mat.needsUpdate = true;
     });
   });
+}
+
+function setActionMenuHighlightedModule(moduleRoot) {
+  if (!moduleRoot) return;
+
+  /* Trvalé zvýraznění menu chceme pouze na mobilu.
+     Na desktopu zůstane jen klasický hover myší. */
+  if (!isMobileModuleActionHighlightEnabled()) {
+    if (actionMenuHighlightedModule) {
+      resetModuleHover(actionMenuHighlightedModule);
+    }
+
+    actionMenuHighlightedModule = null;
+    return;
+  }
+
+  /* Když už byl zvýrazněný jiný modul, vrať ho do normálu. */
+  if (actionMenuHighlightedModule && actionMenuHighlightedModule !== moduleRoot) {
+    resetModuleHover(actionMenuHighlightedModule);
+  }
+
+  actionMenuHighlightedModule = moduleRoot;
+  hoveredModule = moduleRoot;
+  applyModuleHover(moduleRoot);
+
+  /* Důležité:
+     menu se v onPointerUp zobrazí až kousek po výběru modulu,
+     proto highlight ještě jednou potvrdíme v dalším frame.
+     Tím přebijeme případný pointerleave / cleanup po tapnutí. */
+  requestAnimationFrame(() => {
+    const menuOpen = moduleActionMenu?.classList.contains("visible");
+
+    if (
+      menuOpen &&
+      isMobileModuleActionHighlightEnabled() &&
+      actionMenuHighlightedModule === moduleRoot
+    ) {
+      hoveredModule = moduleRoot;
+      applyModuleHover(moduleRoot);
+    }
+  });
+}
+
+function clearActionMenuHighlightedModule() {
+  if (actionMenuHighlightedModule) {
+    resetModuleHover(actionMenuHighlightedModule);
+
+    if (hoveredModule === actionMenuHighlightedModule) {
+      hoveredModule = null;
+    }
+  }
+
+  actionMenuHighlightedModule = null;
 }
 
 // -----------------------------------------------------
@@ -23759,17 +24148,23 @@ function resetHeadrestDotHover(dot) {
 function hideModuleMenu() {
   const menu = document.getElementById("moduleActionMenu");
   menu.classList.remove("visible");
+
   selectedModule = null;
+  clearActionMenuHighlightedModule();
 }
 
 function closeActionMenu() {
   if (!moduleActionMenu) return;
+
   if (moduleActionMenu.classList.contains("visible")) {
     moduleActionMenu.classList.remove("visible");
     selectedModule = null;
     document.getElementById("actionMenuBlocker")?.classList.remove("active");
   }
+
+  clearActionMenuHighlightedModule();
   clearHoverEffects();
+
   downCandidate = null; 
 }
 
@@ -23835,9 +24230,22 @@ function onPointerDown(event) {
   cameraMovedThisClick = false;
   controlsStartedThisClick = false;
 
-  // kdyĹľ je otevĹ™enĂ© akÄŤnĂ­ menu, neĹ™eĹˇ klik do 3D
+  // Když je otevřené akční menu:
+  // - desktop: necháme staré chování, neřešíme klik do 3D
+  // - mobil: dovolíme kliknout na jiný modul, aby se aktivní menu i zvýraznění přepnulo
   if (moduleActionMenu?.classList.contains("visible")) {
-    return;
+    const clickedInsideMenu = event.target?.closest?.("#moduleActionMenu");
+
+    if (clickedInsideMenu) {
+      return;
+    }
+
+    if (!isMobileModuleActionHighlightEnabled()) {
+      return;
+    }
+
+    // Na mobilu pokračujeme dál do raycastu.
+    // Díky tomu klik na jiný modul vybere nový modul a starý se odznačí.
   }
 
   // start drag detekce (jen levĂ© tlaÄŤĂ­tko)
@@ -24050,6 +24458,11 @@ function onPointerUp(event) {
   if (downCandidate.type === "module") {
     selectedModule = downCandidate.root;
 
+    /* MOBILE FIX:
+       Když je otevřené menu Vyměnit/Odstranit, necháme daný modul zesvětlený,
+       aby bylo jasné, který modul uživatel upravuje. */
+    setActionMenuHighlightedModule(selectedModule);
+
     // Menu zobrazíme podle aktuálního místa puštění myši.
     // Díky helperu se počítá vůči viewportu a nebude ujíždět.
     positionModuleActionMenuAt(event.clientX, event.clientY);
@@ -24117,6 +24530,11 @@ function openModulePicker(worldPos) {
 
   const picker = document.getElementById("modulePicker");
   picker.classList.remove("hidden");
+
+  /* MOBILE FIX:
+     Krátká ochrana proti tomu, aby stejný tap, který otevřel picker,
+     okamžitě kliknul i na kartu modulu pod prstem. */
+  modulePickerIgnoreClicksUntil = performance.now() + 260;
 
   const list = document.getElementById("moduleList");
   list.innerHTML = "";
@@ -24361,11 +24779,21 @@ function openModulePicker(worldPos) {
       div.appendChild(price);
       div.appendChild(dims);
 
-      div.onclick = () => {
+      div.onclick = (event) => {
+        /* MOBILE FIX:
+           Když se picker právě otevřel, první "dojíždějící" click z původního tapu zahodíme.
+           Tím se už nestane, že se po kliknutí na + rovnou vloží modul z tabulky. */
+        if (performance.now() < modulePickerIgnoreClicksUntil) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+
         const cat = getCatalog?.(variantId);
         if (cat?.model) {
           enqueuePriorityJob(() => prefetchModelGLB(cat.model));
         }
+
         chooseModule(variantId);
       };
 
@@ -24601,7 +25029,7 @@ function recomputeCameraFit() {
   // 0 modulĹŻ => nĂˇvrat na default (a zruĹˇ pin, aby 1. modul mÄ›l zase â€śhezkĂ˝â€ť pohled)
   if (meshes.length === 0) {
     camGoalTarget.copy(DEFAULT_TARGET);
-    camGoalPos.copy(DEFAULT_CAM_POS);
+    camGoalPos.copy(defaultCameraPosForViewport());
 
     cameraPinned = false;
     userViewDir = null;
@@ -24613,6 +25041,7 @@ function recomputeCameraFit() {
   // bbox celĂ© sestavy
   const box = new THREE.Box3();
   for (const m of meshes) box.expandByObject(m);
+  const fitBox = expandCameraFitBoxForMobileButtons(box.clone());
 
   const size = new THREE.Vector3();
   box.getSize(size);
@@ -24624,15 +25053,6 @@ function recomputeCameraFit() {
   // target dĂˇme na stĹ™ed sestavy (trochu vĂ˝Ĺˇ dle chuti)
   camGoalTarget.copy(center);
   camGoalTarget.y += CAMERA_FIT_TARGET_Y;
-
-  // --- vzdĂˇlenost podle velikosti ---
-  const maxDim = Math.max(size.x, size.z);
-  const fov = THREE.MathUtils.degToRad(camera.fov);
-  const fitDist = (maxDim / (2 * Math.tan(fov / 2))) * CAMERA_FIT_PADDING;
-
-  const MIN_FIT_DIST = 2.6;   // zkus 2.4â€“3.2 podle chuti
-  const MAX_FIT_DIST = 12;    // volitelnĂ©
-  const fitDistClamped = THREE.MathUtils.clamp(fitDist, MIN_FIT_DIST, MAX_FIT_DIST);
 
   // --- smÄ›r (dir) ---
   // 1) prvnĂ­ modul = pouĹľij fixnĂ­ hezkĂ˝ smÄ›r (FIRST_MODULE_DIR)
@@ -24646,6 +25066,32 @@ function recomputeCameraFit() {
     dir = camera.position.clone().sub(controls.target).normalize();
     if (dir.lengthSq() < 1e-6) dir = FIRST_MODULE_DIR.clone().normalize();
   }
+  dir = cameraDirectionForViewport(dir);
+
+  // --- vzdĂˇlenost podle velikosti ---
+  let fitDist;
+
+  if (isMobileCameraView()) {
+    const aspect = Math.max(0.1, camera.aspect || 1);
+    fitDist = cameraDistanceForViewport(
+      getPerspectiveCameraFitDistanceForBox(
+        fitBox,
+        dir,
+        aspect,
+        camera.fov,
+        camGoalTarget,
+        CAMERA_FIT_PADDING
+      )
+    );
+  } else {
+    const maxDim = Math.max(size.x, size.z);
+    const fov = THREE.MathUtils.degToRad(camera.fov);
+    fitDist = (maxDim / (2 * Math.tan(fov / 2))) * CAMERA_FIT_PADDING;
+  }
+
+  const MIN_FIT_DIST = 2.6;   // zkus 2.4â€“3.2 podle chuti
+  const MAX_FIT_DIST = cameraDistanceForViewport(12);    // volitelnĂ©
+  const fitDistClamped = THREE.MathUtils.clamp(fitDist, MIN_FIT_DIST, MAX_FIT_DIST);
 
   // nastav pozici jen zmÄ›nou vzdĂˇlenosti po tom smÄ›ru
   camGoalPos.copy(camGoalTarget).add(dir.multiplyScalar(fitDistClamped));
@@ -25267,6 +25713,7 @@ async function chooseModule(name) {
   // đź”Ą globĂˇlnĂ­ pĹ™epoÄŤet rozloĹľenĂ­ + tlaÄŤĂ­tka
   relayoutFromAnchor();
   updateButtons();
+  recomputeCameraFit();
   window.__refreshSofaPlanEverywhere?.();
   refreshStepValidityAfterCompositionChange();
   saveStateDebounced();
@@ -25328,9 +25775,9 @@ function fitCameraToScene() {
   const fov = camera.fov * (Math.PI / 180);
   let distance = maxDim / (2 * Math.tan(fov / 2));
 
-  distance *= 1.4; // trochu oddĂˇlit
+  distance = cameraDistanceForViewport(distance * 1.4); // trochu oddĂˇlit
 
-  const direction = new THREE.Vector3(0, 0.22, 1).normalize();  // zepĹ™edu + lehce zvrchu
+  const direction = cameraDirectionForViewport(new THREE.Vector3(0, 0.22, 1));  // zepĹ™edu + lehce zvrchu
   const newPos = center.clone().add(direction.multiplyScalar(distance));
 
   camera.position.copy(newPos);
@@ -25457,7 +25904,14 @@ controls.maxPolarAngle = Math.PI / 2.1;
 controls.minDistance = 1.2;
 
 // (volitelnĂ©) maximĂˇlnĂ­ vzdĂˇlenost (aĹĄ uĹľivatel neodletĂ­ moc daleko)
-controls.maxDistance = 12;
+function updateResponsiveCameraLimits() {
+  if (!controls) return;
+  controls.maxDistance = cameraDistanceForViewport(12);
+}
+
+updateResponsiveCameraLimits();
+window.addEventListener("resize", updateResponsiveCameraLimits);
+window.visualViewport?.addEventListener("resize", updateResponsiveCameraLimits);
 
 // =====================================================
 //  CAMERA COLLISION (aura kolem sestavy)
@@ -25496,9 +25950,9 @@ controls.addEventListener("change", () => {
   }
 });
 
-camera.position.copy(DEFAULT_CAM_POS);
+camera.position.copy(defaultCameraPosForViewport());
 controls.target.copy(DEFAULT_TARGET);
-camGoalPos.copy(DEFAULT_CAM_POS);
+camGoalPos.copy(defaultCameraPosForViewport());
 camGoalTarget.copy(DEFAULT_TARGET);
 
 controls.update();
@@ -29151,36 +29605,62 @@ renderer.domElement.addEventListener("pointerleave", () => {
 // -----------------------------------------------------
 
 function clearHoverEffects() {
+  const menuOpen = moduleActionMenu?.classList.contains("visible");
+
+  /* MOBILE FIX:
+     Pokud je na mobilu otevřené menu Vyměnit/Odstranit,
+     nesmíme zhasnout modul, ke kterému menu patří.
+     Jinak ho pointerleave / hover cleanup hned po tapnutí resetuje. */
+  const keepActionMenuHighlight = (
+    menuOpen &&
+    isMobileModuleActionHighlightEnabled() &&
+    actionMenuHighlightedModule
+  );
+
   if (hoveredButton) {
     resetButtonHover(hoveredButton);
     hoveredButton = null;
   }
 
   if (hoveredModule) {
-    hoveredModule.traverse((o) => {
-      if (!o.isMesh) return;
+    const isProtectedMenuModule =
+      keepActionMenuHighlight &&
+      hoveredModule === actionMenuHighlightedModule;
 
-      // uklidit pĹ™Ă­padnĂ© "highlight" hodnoty
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
+    if (!isProtectedMenuModule) {
+      hoveredModule.traverse((o) => {
+        if (!o.isMesh) return;
 
-      mats.forEach((mat) => {
-        if (!mat || !mat.emissive) return;
+        // uklidit případné "highlight" hodnoty
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
 
-        if (mat.userData._hoverOrigEmissive) {
-          mat.emissive.copy(mat.userData._hoverOrigEmissive);
-          mat.emissiveIntensity = mat.userData._hoverOrigEmissiveIntensity ?? 0;
-          mat.needsUpdate = true;
-        } else {
-          // fallback
-          mat.emissive.setHex(0x000000);
-          mat.emissiveIntensity = 0;
-          mat.needsUpdate = true;
-        }
+        mats.forEach((mat) => {
+          if (!mat || !mat.emissive) return;
+
+          if (mat.userData._hoverOrigEmissive) {
+            mat.emissive.copy(mat.userData._hoverOrigEmissive);
+            mat.emissiveIntensity = mat.userData._hoverOrigEmissiveIntensity ?? 0;
+            mat.needsUpdate = true;
+          } else {
+            // fallback
+            mat.emissive.setHex(0x000000);
+            mat.emissiveIntensity = 0;
+            mat.needsUpdate = true;
+          }
+        });
       });
-    });
+
+      hoveredModule = null;
+    }
   }
 
-  hoveredModule = null;
+  if (keepActionMenuHighlight) {
+    hoveredModule = actionMenuHighlightedModule;
+    applyModuleHover(actionMenuHighlightedModule);
+  } else {
+    hoveredModule = null;
+  }
+
   document.body.style.cursor = "default";
 }
 
@@ -29196,9 +29676,24 @@ function onPointerMove(event) {
   const pickerOpen = !document.getElementById("modulePicker").classList.contains("hidden");
   const menuOpen = moduleActionMenu?.classList.contains("visible");
 
-  // kdyĹľ je otevĹ™enĂ˝ picker nebo menu, nechceme hover v 3D
-  if (pickerOpen || menuOpen) {
+  // když je otevřený picker, nechceme hover v 3D
+  if (pickerOpen) {
     clearHoverEffects();
+    document.body.style.cursor = "default";
+    return;
+  }
+
+  // když je otevřené menu Vyměnit/Odstranit:
+  // - mobil: necháme zvýrazněný aktivní modul
+  // - desktop: žádný trvalý highlight, zůstává jen klasický hover mimo menu
+  if (menuOpen) {
+    if (isMobileModuleActionHighlightEnabled() && actionMenuHighlightedModule) {
+      hoveredModule = actionMenuHighlightedModule;
+      applyModuleHover(actionMenuHighlightedModule);
+    } else {
+      clearHoverEffects();
+    }
+
     document.body.style.cursor = "default";
     return;
   }
@@ -30532,9 +31027,15 @@ function updateButtonHoverAnimations() {
 
 // === RESIZE ===
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  resizeRendererToThreeRoot();
+  try { updateBottomBarUI(); } catch (e) {}
+  try { scheduleEquipLayoutSync(); } catch (e) {}
+});
+
+window.visualViewport?.addEventListener("resize", () => {
+  resizeRendererToThreeRoot();
+  try { updateBottomBarUI(); } catch (e) {}
+  try { scheduleEquipLayoutSync(); } catch (e) {}
 });
 
 // zavĹ™enĂ­ pickeru pĹ™es âś•
@@ -30613,3 +31114,303 @@ window.addEventListener("resize", () => {
 });
 
 
+/* =========================================================
+   MADROS MOBILE STEP 3: vlastní stále viditelné scroll indikátory
+   - ukáže indikátor jen u prvků, které se opravdu dají scrollovat
+   - funguje horizontálně i vertikálně
+   - drží se nad obsahem jako fixed overlay, takže se neschová po scrollu
+   ========================================================= */
+
+(function initMadrosMobileScrollHints(){
+  const MOBILE_MAX = 760;
+
+  const SCROLL_SELECTORS = [
+    "#bottomBar .bottomTabs",
+
+    /* Rozměry */
+    "#bottomBar #sofaDimsBlock",
+    "#bottomBar #sofaDimsRows",
+
+    /* Područky */
+    "#bottomBar #armrestsCardRow",
+    "#bottomBar #armrestWidthQuick",
+
+    /* Nohy */
+    "#bottomBar #legsCardRow",
+    "#bottomBar #legsColorBlock",
+    "#bottomBar #legsColorGrid",
+
+    /* Panty */
+    "#bottomBar #hingesCardRow",
+
+    /* Polička */
+    "#bottomBar #shelfColorGrid",
+
+    /* Příplatky */
+    "#bottomBar #extrasModuleList",
+    "#bottomBar .extrasChips",
+
+    /* univerzální starší řádky */
+    "#bottomBar .tileGrid",
+    "#bottomBar .swatchRow"
+  ];
+
+  const overlays = new Map();
+  let raf = 0;
+  let observer = null;
+  let refreshTimer = null;
+
+  function isMobileStep3(){
+    return (
+      window.innerWidth <= MOBILE_MAX &&
+      document.documentElement.dataset.step === "3" &&
+      !document.getElementById("bottomBar")?.classList.contains("is-hidden") &&
+      !document.getElementById("bottomBar")?.classList.contains("is-collapsed")
+    );
+  }
+
+  function isVisible(el){
+    if (!el) return false;
+
+    const rect = el.getBoundingClientRect();
+    const style = window.getComputedStyle(el);
+
+    return (
+      rect.width > 8 &&
+      rect.height > 8 &&
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      style.opacity !== "0" &&
+      !el.closest(".hidden")
+    );
+  }
+
+  function getScrollAxes(el){
+    const canX = el.scrollWidth > el.clientWidth + 3;
+    const canY = el.scrollHeight > el.clientHeight + 3;
+
+    return { canX, canY };
+  }
+
+  function createTrack(axis){
+    const track = document.createElement("div");
+    track.className = `madrosScrollTrack is-${axis}`;
+
+    const thumb = document.createElement("div");
+    thumb.className = "madrosScrollThumb";
+
+    track.appendChild(thumb);
+    document.body.appendChild(track);
+
+    return { track, thumb };
+  }
+
+  function getOverlay(el){
+    let item = overlays.get(el);
+
+    if (!item) {
+      item = {
+        x: createTrack("x"),
+        y: createTrack("y")
+      };
+
+      overlays.set(el, item);
+    }
+
+    return item;
+  }
+
+  function hideOverlayItem(item){
+    if (!item) return;
+    item.x.track.classList.add("is-hidden");
+    item.y.track.classList.add("is-hidden");
+  }
+
+  function hideAll(){
+    overlays.forEach(hideOverlayItem);
+  }
+
+  function updateHorizontal(el, overlay, rect){
+    const track = overlay.x.track;
+    const thumb = overlay.x.thumb;
+
+    const pad = 10;
+    const trackLeft = rect.left + pad;
+    const trackWidth = Math.max(34, rect.width - pad * 2);
+
+    /*
+      U horizontálního scrollu dáme lištu těsně dovnitř spodní části prvku.
+      Když je prvek nízký, pořád zůstane čitelná.
+    */
+    const trackTop = rect.bottom - 9;
+
+    const maxScroll = Math.max(1, el.scrollWidth - el.clientWidth);
+    const ratio = el.clientWidth / Math.max(el.scrollWidth, 1);
+    const thumbWidth = Math.max(28, Math.round(trackWidth * ratio));
+    const maxThumbMove = Math.max(1, trackWidth - thumbWidth - 2);
+    const thumbLeft = Math.round((el.scrollLeft / maxScroll) * maxThumbMove);
+
+    track.style.left = `${Math.round(trackLeft)}px`;
+    track.style.top = `${Math.round(trackTop)}px`;
+    track.style.width = `${Math.round(trackWidth)}px`;
+    track.style.height = "7px";
+
+    thumb.style.width = `${thumbWidth}px`;
+    thumb.style.height = "5px";
+    thumb.style.transform = `translateX(${thumbLeft}px)`;
+
+    track.classList.remove("is-hidden");
+  }
+
+  function updateVertical(el, overlay, rect){
+    const track = overlay.y.track;
+    const thumb = overlay.y.thumb;
+
+    const pad = 10;
+    const trackTop = rect.top + pad;
+    const trackHeight = Math.max(34, rect.height - pad * 2);
+
+    /*
+      U vertikálního scrollu dáme lištu na pravý vnitřní okraj.
+    */
+    const trackLeft = rect.right - 9;
+
+    const maxScroll = Math.max(1, el.scrollHeight - el.clientHeight);
+    const ratio = el.clientHeight / Math.max(el.scrollHeight, 1);
+    const thumbHeight = Math.max(28, Math.round(trackHeight * ratio));
+    const maxThumbMove = Math.max(1, trackHeight - thumbHeight - 2);
+    const thumbTop = Math.round((el.scrollTop / maxScroll) * maxThumbMove);
+
+    track.style.left = `${Math.round(trackLeft)}px`;
+    track.style.top = `${Math.round(trackTop)}px`;
+    track.style.width = "7px";
+    track.style.height = `${Math.round(trackHeight)}px`;
+
+    thumb.style.width = "5px";
+    thumb.style.height = `${thumbHeight}px`;
+    thumb.style.transform = `translateY(${thumbTop}px)`;
+
+    track.classList.remove("is-hidden");
+  }
+
+  function updateOne(el){
+    const overlay = getOverlay(el);
+
+    if (!isMobileStep3() || !isVisible(el)) {
+      hideOverlayItem(overlay);
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+
+    /*
+      Nezobrazovat indikátor mimo viewport.
+    */
+    if (
+      rect.bottom < 0 ||
+      rect.top > window.innerHeight ||
+      rect.right < 0 ||
+      rect.left > window.innerWidth
+    ) {
+      hideOverlayItem(overlay);
+      return;
+    }
+
+    const { canX, canY } = getScrollAxes(el);
+
+    if (canX) updateHorizontal(el, overlay, rect);
+    else overlay.x.track.classList.add("is-hidden");
+
+    if (canY) updateVertical(el, overlay, rect);
+    else overlay.y.track.classList.add("is-hidden");
+  }
+
+  function getTargets(){
+    const seen = new Set();
+    const targets = [];
+
+    SCROLL_SELECTORS.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        if (seen.has(el)) return;
+        seen.add(el);
+        targets.push(el);
+      });
+    });
+
+    return targets;
+  }
+
+  function updateAll(){
+    raf = 0;
+
+    if (!isMobileStep3()) {
+      hideAll();
+      return;
+    }
+
+    getTargets().forEach(updateOne);
+  }
+
+  function requestUpdate(){
+    if (raf) return;
+    raf = requestAnimationFrame(updateAll);
+  }
+
+  function bindTargetScrollEvents(){
+    getTargets().forEach((el) => {
+      if (el.__madrosScrollHintBound) return;
+      el.__madrosScrollHintBound = true;
+      el.addEventListener("scroll", requestUpdate, { passive: true });
+    });
+  }
+
+  function refresh(){
+    bindTargetScrollEvents();
+    requestUpdate();
+  }
+
+  function start(){
+    refresh();
+
+    window.addEventListener("resize", refresh, { passive: true });
+    window.addEventListener("orientationchange", refresh, { passive: true });
+
+    document.addEventListener("click", () => {
+      setTimeout(refresh, 40);
+      setTimeout(refresh, 260);
+    }, true);
+
+    document.addEventListener("input", () => {
+      setTimeout(refresh, 40);
+    }, true);
+
+    observer = new MutationObserver(() => {
+      refresh();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      attributeFilter: ["class", "style", "data-step", "hidden", "aria-hidden"]
+    });
+
+    /*
+      Krátký interval je schválně:
+      bottom menu se u tebe animuje a výšky se často dopočítávají až po renderu.
+      Tohle udrží indikátory přesně na místě.
+    */
+    refreshTimer = window.setInterval(() => {
+      if (isMobileStep3()) refresh();
+      else hideAll();
+    }, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
+
+  window.__refreshMadrosScrollHints = refresh;
+})();
