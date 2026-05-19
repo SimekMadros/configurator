@@ -299,6 +299,59 @@ async function sendBrevoEmail({ from, to, replyTo, subject, text, html, attachme
   return responseText ? JSON.parse(responseText) : { ok: true };
 }
 
+async function sendCustomerInquiryEmail({ config, customerEmail, summary, attachment }) {
+  const subject = "Děkujeme za poptávku | MADROS";
+  const text = buildCustomerEmailText({ summary });
+  const html = buildCustomerEmailHtml({ summary });
+
+  try {
+    const transporter = createMailTransport(config);
+    const info = await transporter.sendMail({
+      from: config.from,
+      to: customerEmail,
+      replyTo: config.from,
+      subject,
+      text,
+      html,
+      attachments: [attachment],
+    });
+
+    return {
+      provider: "smtp",
+      result: {
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+        response: info.response,
+      },
+    };
+  } catch (smtpError) {
+    console.error("[Inquiry] Customer SMTP send failed, trying Brevo:", {
+      name: smtpError.name,
+      code: smtpError.code,
+      command: smtpError.command,
+      responseCode: smtpError.responseCode,
+      response: smtpError.response,
+      message: smtpError.message,
+    });
+
+    const brevoInfo = await sendBrevoEmail({
+      from: config.from,
+      to: customerEmail,
+      replyTo: config.from,
+      subject,
+      text,
+      html,
+      attachments: [attachment],
+    });
+
+    return {
+      provider: "brevo",
+      result: brevoInfo,
+    };
+  }
+}
+
 async function readJsonBody(req) {
   const chunks = [];
   let size = 0;
@@ -1008,18 +1061,17 @@ async function handleInquiryRequest(req, res) {
           sizeBytes: attachment.content.length,
         });
 
-        console.log("[Inquiry] Sending customer email via Brevo with PDF...");
+        console.log("[Inquiry] Sending customer email with PDF...");
 
-        const customerInfo = await sendBrevoEmail({
-          from: config.from,
-          to: email,
+        const customerInfo = await sendCustomerInquiryEmail({
+          config,
+          customerEmail: email,
           subject: "Děkujeme za poptávku | MADROS",
-          text: buildCustomerEmailText({ summary: emailSummary }),
-          html: buildCustomerEmailHtml({ summary: emailSummary }),
-          attachments: [attachment],
+          summary: emailSummary,
+          attachment,
         });
 
-        console.log("[Inquiry] Customer email sent via Brevo", customerInfo);
+        console.log("[Inquiry] Customer email sent", customerInfo);
 
         console.log("[Inquiry] Sending internal email via Brevo with PDF...");
 
