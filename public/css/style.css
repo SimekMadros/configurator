@@ -6952,6 +6952,29 @@ body{
   line-height: 1.45;
 }
 
+.recapPdfMessage{
+  display: none;
+  margin: -2px 0 2px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(78, 174, 208, .28);
+  background: rgba(78, 174, 208, .08);
+  color: #365366;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.recapPdfMessage.is-visible{
+  display: block;
+}
+
+.recapPdfMessage[data-tone="error"]{
+  border-color: rgba(180, 35, 24, .22);
+  background: rgba(180, 35, 24, .07);
+  color: #9f2f27;
+}
+
 .recapInquiryModal.hidden{
   display: none;
 }

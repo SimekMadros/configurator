@@ -519,7 +519,6 @@ async function optimizeImageBuffer(buffer, mimeType, maxSize, quality, format = 
 }
 
 async function handlePdfAssetRequest(req, res) {
-  const startedAt = Date.now();
   try {
     const requestUrl = new URL(req.originalUrl || req.url || "", "http://localhost");
     const src = requestUrl.searchParams.get("src") || "";
@@ -544,10 +543,6 @@ async function handlePdfAssetRequest(req, res) {
     const cached = optimizedAssetCache.get(cacheKey);
 
     if (cached) {
-      const durationMs = Date.now() - startedAt;
-      if (durationMs > 80) {
-        console.log("[PDF ASSET] cache hit", { durationMs, src, bytes: cached.buffer.length });
-      }
       sendBuffer(res, 200, cached.buffer, cached.mimeType);
       return;
     }
@@ -555,17 +550,6 @@ async function handlePdfAssetRequest(req, res) {
     const sourceBuffer = await fs.readFile(assetPath);
     const optimized = await optimizeImageBuffer(sourceBuffer, sourceMime, maxSize, quality, format);
     optimizedAssetCache.set(cacheKey, optimized);
-
-    const durationMs = Date.now() - startedAt;
-    console.log("[PDF ASSET] optimized", {
-      durationMs,
-      src,
-      sourceBytes: sourceBuffer.length,
-      outputBytes: optimized.buffer.length,
-      maxSize,
-      quality,
-      format,
-    });
 
     sendBuffer(res, 200, optimized.buffer, optimized.mimeType);
   } catch (error) {
@@ -608,7 +592,6 @@ async function waitForPdfAssets(page) {
 }
 
 async function renderPdfFromHtml(html) {
-  const startedAt = Date.now();
   const browser = await getBrowser();
   const page = await browser.newPage();
 
@@ -628,18 +611,13 @@ async function renderPdfFromHtml(html) {
 
     await page.emulateMediaType("print");
 
-    const contentStartedAt = Date.now();
     await page.setContent(html, {
       waitUntil: "domcontentloaded",
       timeout: 20000,
     });
-    console.log("[PDF] setContent ms", Date.now() - contentStartedAt);
 
-    const assetsStartedAt = Date.now();
     await waitForPdfAssets(page);
-    console.log("[PDF] waitForAssets ms", Date.now() - assetsStartedAt);
 
-    const pdfStartedAt = Date.now();
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -650,12 +628,6 @@ async function renderPdfFromHtml(html) {
         bottom: "0",
         left: "0",
       },
-    });
-    console.log("[PDF] page.pdf ms", Date.now() - pdfStartedAt);
-
-    console.log("[PDF] Rendered in ms", {
-      durationMs: Date.now() - startedAt,
-      sizeBytes: pdfBuffer.length,
     });
 
     return pdfBuffer;
@@ -784,10 +756,41 @@ function buildInquiryEmailHtml({ customerEmail, summary }) {
   `;
 }
 
+function decodePdfBase64Attachment(value) {
+  const clean = String(value || "")
+    .replace(/^data:application\/pdf;base64,/i, "")
+    .replace(/\s+/g, "");
+
+  if (!clean) return null;
+
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(clean)) {
+    throw new Error("PDF příloha má neplatný formát.");
+  }
+
+  const buffer = Buffer.from(clean, "base64");
+
+  if (!buffer.length) {
+    throw new Error("PDF příloha je prázdná.");
+  }
+
+  return buffer;
+}
+
+async function buildInquiryPdfAttachment({ pdfBuffer, pdfBase64, html, safeFilename }) {
+  const uploadedPdf = pdfBuffer || decodePdfBase64Attachment(pdfBase64);
+  const attachmentBuffer = uploadedPdf || await renderPdfFromHtml(html);
+
+  return {
+    filename: safeFilename,
+    content: attachmentBuffer,
+    contentType: "application/pdf",
+  };
+}
+
 async function handleInquiryRequestLegacy(req, res) {
   try {
     await loadLocalEnv();
-    const { customerEmail, filename, html, summary, shareState, shareUrlBase } = await readJsonBody(req);
+    const { customerEmail, filename, html, pdfBase64, summary, shareState, shareUrlBase } = await readJsonBody(req);
     const email = String(customerEmail || "").trim();
 
     if (!isValidEmail(email)) {
@@ -795,10 +798,14 @@ async function handleInquiryRequestLegacy(req, res) {
       return;
     }
 
-    if (!html || typeof html !== "string") {
+    const hasPdfAttachment = Boolean(String(pdfBase64 || "").trim());
+
+    if (!hasPdfAttachment && (!html || typeof html !== "string")) {
       sendText(res, 400, "Missing HTML");
       return;
     }
+
+    const uploadedPdfBuffer = hasPdfAttachment ? decodePdfBase64Attachment(pdfBase64) : null;
 
     const config = assertMailConfigured();
     const transporter = createMailTransport(config);
@@ -972,18 +979,16 @@ async function handleInquiryRequest(req, res) {
 
         console.log("[Inquiry] Rendering PDF attachment...");
 
-        const pdfStartedAt = Date.now();
-        const pdfBuffer = await renderPdfFromHtml(html);
-
-        const attachment = {
-          filename: safeFilename,
-          content: pdfBuffer,
-        };
+        const attachment = await buildInquiryPdfAttachment({
+          pdfBuffer: uploadedPdfBuffer,
+          pdfBase64,
+          html,
+          safeFilename,
+        });
 
         console.log("[Inquiry] PDF attachment ready", {
           filename: safeFilename,
-          sizeBytes: pdfBuffer.length,
-          durationMs: Date.now() - pdfStartedAt,
+          sizeBytes: attachment.content.length,
         });
 
         console.log("[Inquiry] Sending customer email via Brevo with PDF...");
