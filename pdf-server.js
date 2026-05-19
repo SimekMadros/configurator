@@ -214,6 +214,81 @@ function createMailTransport(config) {
   });
 }
 
+function parseEmailAddress(value, fallbackEmail = "") {
+  const raw = String(value || "").trim();
+
+  const match = raw.match(/^(.*?)<([^>]+)>$/);
+  if (match) {
+    return {
+      name: match[1].trim().replace(/^["']|["']$/g, "") || undefined,
+      email: match[2].trim(),
+    };
+  }
+
+  return {
+    email: raw || fallbackEmail,
+  };
+}
+
+async function sendBrevoEmail({ from, to, replyTo, subject, text, html, attachments = [] }) {
+  const apiKey = process.env.BREVO_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Chybí BREVO_API_KEY v Render Environment.");
+  }
+
+  const sender = parseEmailAddress(from, "info@madros.cz");
+
+  const recipients = String(to || "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean)
+    .map((email) => ({ email }));
+
+  if (!recipients.length) {
+    throw new Error("Chybí příjemce e-mailu.");
+  }
+
+  const payload = {
+    sender,
+    to: recipients,
+    subject,
+    textContent: text || "",
+    htmlContent: html || "",
+  };
+
+  if (replyTo) {
+    payload.replyTo = parseEmailAddress(replyTo);
+  }
+
+  if (attachments.length) {
+    payload.attachment = attachments.map((item) => ({
+      name: item.filename || "priloha.pdf",
+      content: Buffer.isBuffer(item.content)
+        ? item.content.toString("base64")
+        : Buffer.from(String(item.content || ""), "utf8").toString("base64"),
+    }));
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`Brevo API error ${response.status}: ${responseText}`);
+  }
+
+  return responseText ? JSON.parse(responseText) : { ok: true };
+}
+
 async function readJsonBody(req) {
   const chunks = [];
   let size = 0;
@@ -779,33 +854,25 @@ async function handleTestEmailRequest(req, res) {
       user: config.user,
     });
 
-    const transporter = createMailTransport(config);
+    console.log("[TestEmail] Sending via Brevo API...");
 
-    console.log("[TestEmail] Verifying SMTP...");
-    await transporter.verify();
-    console.log("[TestEmail] SMTP verified");
-
-    const info = await transporter.sendMail({
+    const info = await sendBrevoEmail({
       from: config.from,
       to: config.to,
       subject: "Test email z MADROS konfigurátoru",
-      text: "Pokud tento e-mail dorazil, SMTP z Renderu funguje.",
+      text: "Pokud tento e-mail dorazil, Brevo API z Renderu funguje.",
+      html: "<p>Pokud tento e-mail dorazil, Brevo API z Renderu funguje.</p>",
     });
+
+    console.log("[TestEmail] Brevo email sent", info);
 
     sendJson(res, 200, {
       ok: true,
-      messageId: info.messageId,
-      accepted: info.accepted,
-      rejected: info.rejected,
-      response: info.response,
+      provider: "brevo",
+      result: info,
       config: {
-        smtpHost: config.host,
-        smtpServername: config.servername,
-        smtpPort: config.port,
-        smtpSecure: config.secure,
         from: config.from,
         to: config.to,
-        user: config.user,
       },
     });
   } catch (error) {
@@ -879,20 +946,9 @@ async function handleInquiryRequest(req, res) {
           smtpSecure: config.secure,
         });
 
-        const transporter = createMailTransport(config);
+        console.log("[Inquiry] Sending customer email via Brevo without PDF...");
 
-        console.log("[Inquiry] Verifying SMTP...");
-        await transporter.verify();
-        console.log("[Inquiry] SMTP verified");
-
-        /*
-          DIAGNOSTIKA:
-          Nejdřív pošleme e-maily BEZ PDF.
-          Pokud tohle dorazí, SMTP funguje a problém je jen v PDF renderu.
-        */
-
-        console.log("[Inquiry] Sending customer email without PDF...");
-        const customerInfo = await transporter.sendMail({
+        const customerInfo = await sendBrevoEmail({
           from: config.from,
           to: email,
           subject: "Děkujeme za poptávku | MADROS",
@@ -900,15 +956,11 @@ async function handleInquiryRequest(req, res) {
           html: buildCustomerEmailHtml({ summary: emailSummary }),
         });
 
-        console.log("[Inquiry] Customer email sent", {
-          messageId: customerInfo.messageId,
-          accepted: customerInfo.accepted,
-          rejected: customerInfo.rejected,
-          response: customerInfo.response,
-        });
+        console.log("[Inquiry] Customer email sent via Brevo", customerInfo);
 
-        console.log("[Inquiry] Sending internal email without PDF...");
-        const internalInfo = await transporter.sendMail({
+        console.log("[Inquiry] Sending internal email via Brevo without PDF...");
+
+        const internalInfo = await sendBrevoEmail({
           from: config.from,
           to: config.to,
           replyTo: email,
@@ -917,12 +969,7 @@ async function handleInquiryRequest(req, res) {
           html: buildInquiryEmailHtml({ customerEmail: email, summary: emailSummary }),
         });
 
-        console.log("[Inquiry] Internal email sent", {
-          messageId: internalInfo.messageId,
-          accepted: internalInfo.accepted,
-          rejected: internalInfo.rejected,
-          response: internalInfo.response,
-        });
+        console.log("[Inquiry] Internal email sent via Brevo", internalInfo);
 
       } catch (error) {
         console.error("Inquiry email background send error:", {
