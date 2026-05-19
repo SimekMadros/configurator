@@ -150,10 +150,23 @@ function createMailTransport(config) {
     host: config.host,
     port: config.port,
     secure: config.secure,
+
+    /*
+      DŮLEŽITÉ PRO RENDER:
+      mail.webglobe.cz se může resolvnout na IPv6 adresu.
+      Render pak padá na ENETUNREACH, protože se na IPv6 SMTP nedostane.
+      Tímhle vynutíme IPv4.
+    */
+    family: 4,
+
     auth: {
       user: config.user,
       pass: config.pass,
     },
+
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
   });
 }
 
