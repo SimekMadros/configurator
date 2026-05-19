@@ -231,6 +231,17 @@ function parseEmailAddress(value, fallbackEmail = "") {
   };
 }
 
+function toAttachmentBuffer(content) {
+  if (Buffer.isBuffer(content)) return content;
+  if (content instanceof Uint8Array) return Buffer.from(content);
+  if (content instanceof ArrayBuffer) return Buffer.from(new Uint8Array(content));
+  if (ArrayBuffer.isView(content)) {
+    return Buffer.from(content.buffer, content.byteOffset, content.byteLength);
+  }
+
+  return Buffer.from(String(content || ""), "utf8");
+}
+
 async function sendBrevoEmail({ from, to, replyTo, subject, text, html, attachments = [] }) {
   const apiKey = process.env.BREVO_API_KEY;
 
@@ -265,9 +276,7 @@ async function sendBrevoEmail({ from, to, replyTo, subject, text, html, attachme
   if (attachments.length) {
     payload.attachment = attachments.map((item) => ({
       name: item.filename || "priloha.pdf",
-      content: Buffer.isBuffer(item.content)
-        ? item.content.toString("base64")
-        : Buffer.from(String(item.content || ""), "utf8").toString("base64"),
+      content: toAttachmentBuffer(item.content).toString("base64"),
     }));
   }
 
@@ -630,7 +639,7 @@ async function renderPdfFromHtml(html) {
       },
     });
 
-    return pdfBuffer;
+    return toAttachmentBuffer(pdfBuffer);
   } finally {
     await page.close().catch(() => {});
   }
@@ -779,6 +788,10 @@ function decodePdfBase64Attachment(value) {
 async function buildInquiryPdfAttachment({ pdfBuffer, pdfBase64, html, safeFilename }) {
   const uploadedPdf = pdfBuffer || decodePdfBase64Attachment(pdfBase64);
   const attachmentBuffer = uploadedPdf || await renderPdfFromHtml(html);
+
+  if (attachmentBuffer.subarray(0, 5).toString("utf8") !== "%PDF-") {
+    throw new Error("Vygenerovaná PDF příloha nemá platný PDF formát.");
+  }
 
   return {
     filename: safeFilename,
