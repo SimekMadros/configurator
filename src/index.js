@@ -1217,9 +1217,8 @@ function pdfPerfMs(start) {
 }
 
 function pdfPerfLog(label, data = {}) {
-  try {
-    console.log(`[PDF PERF] ${label}`, data);
-  } catch (e) {}
+  void label;
+  void data;
 }
 
 async function applyCurrentMaterialsBeforeRecapCapture() {
@@ -3393,6 +3392,18 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1200);
 }
 
+function blobToBase64Content(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      resolve(dataUrl.split(",")[1] || "");
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function stringToBytes(value) {
   return new TextEncoder().encode(value);
 }
@@ -4519,6 +4530,15 @@ function setButtonSendingState(button, busy, {
   }
 }
 
+function setRecapPdfMessage(message = "", tone = "") {
+  const el = document.getElementById("recapPdfMessage");
+  if (!el) return;
+
+  el.textContent = message;
+  el.dataset.tone = tone;
+  el.classList.toggle("is-visible", Boolean(message));
+}
+
 function setRecapInquiryModalState(modal, { busy = false, message = "", tone = "" } = {}) {
   const submit = modal.querySelector("#recapInquirySubmit");
   const input = modal.querySelector("#recapInquiryEmail");
@@ -4695,8 +4715,21 @@ async function sendRecapInquiry(customerEmail) {
     }
   }
 
-  const pdfDoc = await buildRecapPdfHtml();
-  if (!pdfDoc) throw new Error("Rekapitulace není dostupná.");
+  let pdfDoc = null;
+  let pdfAttachment = null;
+
+  try {
+    const rasterDoc = await buildRecapRasterPdfDocument();
+    pdfAttachment = {
+      filename: rasterDoc.fileName,
+      base64: await blobToBase64Content(rasterDoc.blob),
+    };
+  } catch (error) {
+    console.warn("Client PDF attachment failed, falling back to server render:", error);
+    pdfDoc = await buildRecapPdfHtml();
+  }
+
+  if (!pdfAttachment && !pdfDoc) throw new Error("Rekapitulace není dostupná.");
 
   const summary = await getRecapInquirySummary(shareState, configurationUrl);
   let lastError = null;
@@ -4710,8 +4743,9 @@ async function sendRecapInquiry(customerEmail) {
         },
         body: JSON.stringify({
           customerEmail,
-          filename: pdfDoc.fileName,
-          html: pdfDoc.html,
+          filename: pdfAttachment?.filename || pdfDoc?.fileName || getRecapPdfFilename(),
+          html: pdfDoc?.html || "",
+          pdfBase64: pdfAttachment?.base64 || "",
           summary,
 
           // Pořád posíláme i state, aby si ho server případně uměl uložit / ověřit.
@@ -19459,14 +19493,19 @@ window.addEventListener("DOMContentLoaded", async () => {
     const btn = document.getElementById("recapPrintBtn");
     const originalText = btn?.textContent || "";
     if (btn) {
-      btn.disabled = true;
-      btn.textContent = "Vytvářím PDF...";
+      setButtonSendingState(btn, true, {
+        busyLabel: "Vytvářím PDF",
+        idleLabel: originalText || "Uložit / vytisknout PDF",
+      });
     }
+    setRecapPdfMessage("PDF připravujeme. U větších sestav to může zabrat několik sekund.");
 
     try {
       await downloadRecapPdfDocument();
+      setRecapPdfMessage("");
     } catch (e) {
       console.error("Recap PDF download failed:", e);
+      setRecapPdfMessage("PDF se nepodařilo vytvořit. Zkuste to prosím znovu.", "error");
       if (typeof showPlacementMessage === "function") {
         showPlacementMessage("PDF se nepodařilo vytvořit. Zkuste to prosím znovu.", 4500);
       } else {
@@ -19474,8 +19513,9 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
     } finally {
       if (btn) {
-        btn.disabled = false;
-        btn.textContent = originalText || "ULOŽIT / VYTISKNOUT PDF";
+        setButtonSendingState(btn, false, {
+          idleLabel: originalText || "Uložit / vytisknout PDF",
+        });
       }
     }
   });
