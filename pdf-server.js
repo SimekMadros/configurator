@@ -159,16 +159,21 @@ function assertMailConfigured() {
 function createMailTransport(config) {
   const smtpHost = String(config.host || "").trim();
   const smtpServername = String(config.servername || smtpHost).trim();
+  const isSecurePort = Number(config.port) === 465;
 
   return nodemailer.createTransport({
     host: smtpHost,
     port: config.port,
-    secure: config.secure,
+
+    /*
+      465 = přímé TLS, secure true
+      587 = STARTTLS, secure false + requireTLS true
+    */
+    secure: isSecurePort,
 
     /*
       DŮLEŽITÉ PRO RENDER:
-      Render se přes IPv6 na mail.webglobe.cz nedostane.
-      family: 4 někdy nestačí, proto přidáváme i vlastní DNS lookup.
+      vynutíme IPv4, aby se znovu nepoužil IPv6 záznam.
     */
     family: 4,
 
@@ -177,9 +182,11 @@ function createMailTransport(config) {
     },
 
     /*
-      Když host bude IPv4 adresa, TLS musí pořád ověřovat certifikát
-      proti mail.webglobe.cz.
+      Pro 587 chceme STARTTLS.
+      Pro 465 už je TLS od začátku.
     */
+    requireTLS: !isSecurePort,
+
     tls: {
       servername: smtpServername,
       minVersion: "TLSv1.2",
