@@ -934,7 +934,7 @@ async function handleInquiryRequest(req, res) {
 
   try {
     await loadLocalEnv();
-    const { customerEmail, filename, html, summary, shareState, shareUrlBase } = await readJsonBody(req);
+    const { customerEmail, filename, html, pdfBase64, summary, shareState, shareUrlBase } = await readJsonBody(req);
     const email = String(customerEmail || "").trim();
 
     if (!isValidEmail(email)) {
@@ -942,10 +942,14 @@ async function handleInquiryRequest(req, res) {
       return;
     }
 
-    if (!html || typeof html !== "string") {
+    const hasPdfAttachment = Boolean(String(pdfBase64 || "").trim());
+
+    if (!hasPdfAttachment && (!html || typeof html !== "string")) {
       sendText(res, 400, "Missing HTML");
       return;
     }
+
+    const uploadedPdfBuffer = hasPdfAttachment ? decodePdfBase64Attachment(pdfBase64) : null;
 
     const config = assertMailConfigured();
     const emailSummary = { ...(summary || {}) };
