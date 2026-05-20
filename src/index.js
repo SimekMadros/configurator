@@ -4667,29 +4667,16 @@ async function sendRecapInquiry(customerEmail) {
   }
 
   /*
-    Nejdřív se pokusíme vytvořit krátký odkaz přes Render.
-    Když Render spí / timeoutne / endpoint selže, nesmí to zastavit poptávku.
+    Email musí fungovat i ve chvíli, kdy krátký token na serveru zmizí
+    nebo Render vrátí 404. Proto posíláme stav sestavy přímo v URL jako config.
   */
   let configurationUrl = "";
 
   try {
-    configurationUrl = await createShortConfigurationShareUrl(shareState);
+    configurationUrl = buildEncodedConfigurationShareUrl(shareState);
   } catch (error) {
-    console.warn("Short configuration URL failed, using encoded fallback URL:", error);
-  }
-
-  /*
-    Fallback bez serverového krátkého odkazu:
-    uložíme konfiguraci přímo do URL jako config.
-    Bude to delší URL, ale poptávka se nezastaví a odkaz pořád umí obnovit sestavu.
-  */
-  if (!configurationUrl) {
-    try {
-      configurationUrl = buildEncodedConfigurationShareUrl(shareState);
-    } catch (error) {
-      console.warn("Encoded fallback URL failed, using plain base URL:", error);
-      configurationUrl = getShareUrlBase();
-    }
+    console.warn("Encoded configuration URL failed, using plain base URL:", error);
+    configurationUrl = getShareUrlBase();
   }
 
   const pdfDoc = await buildRecapPdfHtml();
@@ -6181,6 +6168,9 @@ function analyzeCanonicalLayoutForStep3() {
       const hasRealRightDepth = rightDepthOutsideWidth.length > 0;
 
       const isRealCornerNode = (n) => isCornerNode(n);
+      const hasDualAxisPivot = nodes.some((n) => isDualAxisNode(n));
+      const hasRealCornerPivot = nodes.some((n) => isRealCornerNode(n));
+      const hasDualAxisOnlyLPivot = hasDualAxisPivot && !hasRealCornerPivot;
 
       const widthStraightForLength = widthAxisNodes.filter((n) => !isRealCornerNode(n));
       const leftStraightForLength = leftDepthOutsideWidth.filter((n) => !isRealCornerNode(n));
@@ -6227,23 +6217,41 @@ function analyzeCanonicalLayoutForStep3() {
 
         hasRightDepth,
         hasRealRightDepth,
+        hasDualAxisPivot,
+        hasRealCornerPivot,
+        hasDualAxisOnlyLPivot,
       });
 
       // L pravidla:
       // 1) rebuild když je FYZICKY delší depth větev než width větev
       // 2) nebo když sestava není ve "front" orientaci
       // 3) nebo když existuje skutečná pravá depth větev mimo width axis
+      //    Pozor: u L sestav vytvořených přes 1D/1XD je "pravá depth větev"
+      //    validní topologie. Typicky 1D_L + 1M + 1M už leží na world ose,
+      //    takže rebuild by byl falešný a mohl by při přestavbě zahodit 1D.
+      const physicalDepthRequiresRebuild =
+        physicalDepthLongerThanWidth &&
+        !hasDualAxisOnlyLPivot;
+
+      const orientationRequiresRebuild =
+        orientation !== "front" &&
+        !hasDualAxisOnlyLPivot;
+
+      const rightDepthRequiresRebuild =
+        hasRealRightDepth &&
+        !hasDualAxisOnlyLPivot;
+
       const needsRebuild =
-        physicalDepthLongerThanWidth ||
-        orientation !== "front" ||
-        hasRealRightDepth;
+        physicalDepthRequiresRebuild ||
+        orientationRequiresRebuild ||
+        rightDepthRequiresRebuild;
 
       let reason = "l_shape_ok";
-      if (physicalDepthLongerThanWidth) reason = "l_shape_longer_physical_depth_than_width";
-      else if (orientation !== "front") reason = "l_shape_not_front";
-      else if (hasRealRightDepth) reason = "l_shape_depth_on_right";
+      if (physicalDepthRequiresRebuild) reason = "l_shape_longer_physical_depth_than_width";
+      else if (orientationRequiresRebuild) reason = "l_shape_not_front";
+      else if (rightDepthRequiresRebuild) reason = "l_shape_depth_on_right";
 
-      return {
+      const result = {
         ok: true,
         needsRebuild,
         reason,
@@ -6257,7 +6265,13 @@ function analyzeCanonicalLayoutForStep3() {
         widthMin,
         leftMin,
         rightMin,
+        hasDualAxisOnlyLPivot,
+        physicalDepthRequiresRebuild,
+        orientationRequiresRebuild,
+        rightDepthRequiresRebuild,
       };
+
+      return result;
     }
 
     // 3 vÄ›tve = U
@@ -6515,6 +6529,10 @@ function installCanonicalRebuildDebugTools() {
       widthMin: analysis?.widthMin,
       leftMin: analysis?.leftMin,
       rightMin: analysis?.rightMin,
+      hasDualAxisOnlyLPivot: analysis?.hasDualAxisOnlyLPivot,
+      physicalDepthRequiresRebuild: analysis?.physicalDepthRequiresRebuild,
+      orientationRequiresRebuild: analysis?.orientationRequiresRebuild,
+      rightDepthRequiresRebuild: analysis?.rightDepthRequiresRebuild,
       dualAxisWorldCheck: analysis?.dualAxisWorldCheck,
     };
 
@@ -20322,6 +20340,14 @@ function prepareSharedConfigurationStateForRestore(state) {
 async function getSharedConfigurationStateFromUrl() {
   try {
     const url = new URL(window.location.href);
+    const encoded =
+      url.searchParams.get(SHARE_STATE_PARAM) ||
+      url.searchParams.get(LEGACY_SHARE_STATE_PARAM);
+
+    if (encoded) {
+      return prepareSharedConfigurationStateForRestore(decodeSharedConfigurationState(encoded));
+    }
+
     const token = url.searchParams.get(SHARE_TOKEN_PARAM);
 
     if (token) {
@@ -20336,11 +20362,7 @@ async function getSharedConfigurationStateFromUrl() {
       }
     }
 
-    const encoded =
-      url.searchParams.get(SHARE_STATE_PARAM) ||
-      url.searchParams.get(LEGACY_SHARE_STATE_PARAM);
-    if (!encoded) return null;
-    return prepareSharedConfigurationStateForRestore(decodeSharedConfigurationState(encoded));
+    return null;
   } catch (e) {
     console.warn("Shared configuration restore failed:", e);
     return null;
@@ -20407,7 +20429,7 @@ async function createShortConfigurationShareUrl(state) {
         }),
       });
 
-      if (result?.url) return result.url;
+      if (result?.url) return ensureConfigurationShareUrlHasState(result.url, state);
     } catch (error) {
       console.warn("Short share URL create failed:", error);
     }
@@ -20427,6 +20449,24 @@ function buildEncodedConfigurationShareUrl(state) {
   url.searchParams.set(SHARE_STATE_PARAM, encodeSharedConfigurationState(state));
 
   return url.href;
+}
+
+function ensureConfigurationShareUrlHasState(urlValue, state) {
+  if (!state) return String(urlValue || "");
+
+  try {
+    const url = new URL(String(urlValue || getShareUrlBase()));
+    url.searchParams.set("view", "configurator");
+    url.searchParams.set("step", "5");
+    url.searchParams.set("unlocked", String(Math.max(5, Number(state.route?.unlockedStep || 5))));
+    if (state.route?.model) url.searchParams.set("model", state.route.model);
+    if (!url.searchParams.has(SHARE_STATE_PARAM)) {
+      url.searchParams.set(SHARE_STATE_PARAM, encodeSharedConfigurationState(state));
+    }
+    return url.href;
+  } catch (error) {
+    return buildEncodedConfigurationShareUrl(state);
+  }
 }
 
 async function getCurrentConfigurationShareUrl(state = getCurrentSharedConfigurationState()) {

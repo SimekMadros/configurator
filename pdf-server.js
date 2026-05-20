@@ -420,14 +420,30 @@ function buildShareUrl(urlBase, token, state) {
   url.hash = "";
   url.search = "";
   url.searchParams.set("share", token);
+  url.searchParams.set("config", encodeSharedConfigurationState(state));
   if (model) url.searchParams.set("model", model);
 
   return url.href;
 }
 
+function encodeSharedConfigurationState(state) {
+  return Buffer
+    .from(JSON.stringify({ v: 1, state }), "utf8")
+    .toString("base64url");
+}
+
 function hasShareTokenUrl(urlValue) {
   try {
     return Boolean(new URL(urlValue).searchParams.get("share"));
+  } catch (error) {
+    return false;
+  }
+}
+
+function hasEmbeddedShareStateUrl(urlValue) {
+  try {
+    const url = new URL(urlValue);
+    return Boolean(url.searchParams.get("config") || url.searchParams.get("shareState"));
   } catch (error) {
     return false;
   }
@@ -877,7 +893,7 @@ async function handleInquiryRequestLegacy(req, res) {
     const transporter = createMailTransport(config);
     const emailSummary = { ...(summary || {}) };
 
-    if (shareState && !hasShareTokenUrl(emailSummary.url)) {
+    if (shareState && !hasShareTokenUrl(emailSummary.url) && !hasEmbeddedShareStateUrl(emailSummary.url)) {
       const token = await saveSharedConfigurationState(shareState);
       emailSummary.url = buildShareUrl(shareUrlBase || summary?.url, token, shareState);
     }
@@ -1020,7 +1036,7 @@ async function handleInquiryRequest(req, res) {
     const config = assertMailConfigured();
     const emailSummary = { ...(summary || {}) };
 
-    if (shareState && !hasShareTokenUrl(emailSummary.url)) {
+    if (shareState && !hasShareTokenUrl(emailSummary.url) && !hasEmbeddedShareStateUrl(emailSummary.url)) {
       const token = await saveSharedConfigurationState(shareState);
       emailSummary.url = buildShareUrl(shareUrlBase || summary?.url, token, shareState);
     }
