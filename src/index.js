@@ -19,6 +19,7 @@ import {
 } from "./connectionRules.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { getVariantIdsForSofa, normalizeSofaKey } from "./catalogue.js";
+import { FABRIC_SWATCH_COLORS } from "./fabricSwatchColors.generated.js";
 
 const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/sw.js"];
 
@@ -10716,6 +10717,42 @@ function buildFabricFamilyFromFiles({
   };
 }
 
+function normalizeFabricSwatchColorKey(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+
+  try {
+    const parsed = new URL(raw, window.location.href);
+    let path = decodeURIComponent(parsed.pathname || "");
+    const base = getAppBasePath();
+
+    if (base && base !== "/" && path.startsWith(base)) {
+      path = `/${path.slice(base.length).replace(/^\/+/, "")}`;
+    }
+
+    return path || raw;
+  } catch (e) {
+    return raw.replace(/^\.?\//, "/");
+  }
+}
+
+function getFabricSwatchColor(url, fallbackSeed = "") {
+  const key = normalizeFabricSwatchColorKey(url);
+  const direct = FABRIC_SWATCH_COLORS[key];
+  if (direct) return direct;
+
+  const fileName = key.split("/").pop() || String(fallbackSeed || "fabric");
+  let hash = 0;
+  for (let i = 0; i < fileName.length; i++) {
+    hash = ((hash << 5) - hash + fileName.charCodeAt(i)) | 0;
+  }
+
+  const hue = Math.abs(hash) % 360;
+  const sat = 18 + (Math.abs(hash >> 4) % 22);
+  const light = 42 + (Math.abs(hash >> 8) % 24);
+  return `hsl(${hue} ${sat}% ${light}%)`;
+}
+
 const FABRIC_BRAND_INFO = {
   aquaclean: {
     label: "Aquaclean",
@@ -12055,25 +12092,6 @@ function renderFabricBrowser({
   const renderShades = (fabric) => {
     shadesEl.innerHTML = "";
 
-    // âś… loader jen pro thumbnails, kterĂ© jeĹˇtÄ› NEJSOU v cache
-    const urlsToLoad = (fabric.shades || [])
-      .filter(s => s.available)
-      .map(s => s.baseColorUrl)
-      .filter(url => url && !fabricThumbCache.has(url));
-
-    const total = urlsToLoad.length;
-    if (total > 0) loadingBegin(10, "Načítám náhledy látek…");
-    let pending = total;
-
-    const oneDone = () => {
-      pending--;
-      if (pending <= 0) loadingEnd();
-    };
-
-    if (total === 0) {
-      loadingEnd();
-    }
-
     fabric.shades.forEach((shadeObj) => {
       const { code2, available, baseColorUrl, normalUrl, roughnessUrl } = shadeObj;
 
@@ -12108,30 +12126,14 @@ function renderFabricBrowser({
         return;
       }
 
-      // 1) placeholder (aĹĄ tam nenĂ­ "prĂˇzdno")
-      sw.classList.remove("is-loaded");
-      sw.style.backgroundImage = "none";
-      sw.style.backgroundColor = "rgba(255,255,255,0.08)";
-
-      const apply = () => {
-        sw.style.backgroundImage = `url("${assetUrl(baseColorUrl)}")`;
-        sw.style.backgroundSize = "cover";
-        sw.style.backgroundPosition = "center";
-        sw.style.backgroundRepeat = "no-repeat";
-        sw.style.backgroundColor = "transparent";
-        sw.classList.add("is-loaded");
-      };
-
-      // âś… kdyĹľ uĹľ je URL v cache, neÄŤekej, nic nenaÄŤĂ­tej, rovnou apply
-      if (fabricThumbCache.has(baseColorUrl)) {
-        apply();
-      } else {
-        // âś… jinak naÄŤti a uloĹľ do cache (jen jednou pro danou URL)
-        loadThumbCached(baseColorUrl)
-          .then(apply)
-          .catch(apply)
-          .finally(oneDone);
-      }
+      const swatchColor = getFabricSwatchColor(baseColorUrl, `${fabric.key}-${code2}`);
+      sw.classList.add("is-loaded");
+      sw.style.setProperty("--fabric-swatch-color", swatchColor);
+      sw.style.backgroundColor = swatchColor;
+      sw.style.backgroundImage = `linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%, rgba(0,0,0,0.16))`;
+      sw.style.backgroundSize = "cover";
+      sw.style.backgroundPosition = "center";
+      sw.style.backgroundRepeat = "no-repeat";
 
       btn.addEventListener("click", async () => {
         // active state jen v gridu odstĂ­nĹŻ
@@ -12229,9 +12231,10 @@ function renderFabricBrowser({
 
     // thumb: vezmeme prvnĂ­ odstĂ­n jako preview
     const thumb = fabric.shades?.[0]?.baseColorUrl || "";
+    const thumbColor = getFabricSwatchColor(thumb, fabric.key);
 
     tab.innerHTML = `
-      <div class="fabricFamilyThumb" style="background-image:url('${escapeHtmlText(assetUrl(thumb))}')"></div>
+      <div class="fabricFamilyThumb" style="background-color:${escapeHtmlText(thumbColor)}"></div>
       <div class="fabricFamilyName">${fabric.name}</div>
     `;
 
@@ -19129,6 +19132,7 @@ function startConfigurator(modelName, presetKey = null) {
 
   showView("configurator", { push: false });
   setStep(2, { push: false });
+  ensureStartButton().catch(console.error);
 
   pushRoute(false);
 
@@ -19775,12 +19779,36 @@ window.addEventListener("popstate", (e) => {
 // nasobi timto cislem. 1.5 znamena 150 %: repeat 2 -> 3, repeat 3 -> 4.5.
 // Plati pouze pro hlavni fabric na pohovce, ne pro paspule, kov, drevo ani doplnky.
 const MANILA_FABRIC_REPEAT_MULTIPLIER = 1.5;
+const appliedTextureCache = new Map();
 
 function getSofaFabricRepeatForActiveModel(repeat) {
   const baseRepeat = Number.isFinite(Number(repeat)) ? Number(repeat) : 1;
   return getModelKey() === "MANILA"
     ? baseRepeat * MANILA_FABRIC_REPEAT_MULTIPLIER
     : baseRepeat;
+}
+
+function loadAppliedTextureCached(url, isColor, repeat) {
+  if (!url) return Promise.resolve(null);
+
+  const finalUrl = assetUrl(url);
+  const key = `${finalUrl}|${isColor ? "color" : "data"}|${Number(repeat) || 1}`;
+  if (appliedTextureCache.has(key)) return appliedTextureCache.get(key);
+
+  const promise = new Promise((resolve, reject) => {
+    texLoader.load(
+      finalUrl,
+      (t) => resolve(setupTex(t, isColor, repeat)),
+      undefined,
+      (err) => reject({ url: finalUrl, err })
+    );
+  }).catch((error) => {
+    appliedTextureCache.delete(key);
+    throw error;
+  });
+
+  appliedTextureCache.set(key, promise);
+  return promise;
 }
 
 async function applyFabricToSofaByMaterialMap({
@@ -19795,24 +19823,13 @@ async function applyFabricToSofaByMaterialMap({
 
   const fabricRepeat = getSofaFabricRepeatForActiveModel(repeat);
 
-  const loadTex = (url, isColor) =>
-    new Promise((resolve, reject) => {
-      if (!url) return resolve(null);
-      texLoader.load(
-        url,
-        (t) => resolve(setupTex(t, isColor, fabricRepeat)),
-        undefined,
-        (err) => reject({ url, err })
-      );
-    });
-
   let baseMap = null, normalMap = null, roughMap = null;
 
   try {
     [baseMap, normalMap, roughMap] = await Promise.all([
-      loadTex(baseColorUrl, true),
-      loadTex(normalUrl, false),
-      loadTex(roughnessUrl, false),
+      loadAppliedTextureCached(baseColorUrl, true, fabricRepeat),
+      loadAppliedTextureCached(normalUrl, false, fabricRepeat),
+      loadAppliedTextureCached(roughnessUrl, false, fabricRepeat),
     ]);
   } catch (e) {
     console.error("Texture load failed:", e);
@@ -19876,24 +19893,13 @@ async function applyFabricToPaspuleByMaterialMap({
 }) {
   if (!scene) return;
 
-  const loadTex = (url, isColor) =>
-    new Promise((resolve, reject) => {
-      if (!url) return resolve(null);
-      texLoader.load(
-        url,
-        (t) => resolve(setupTex(t, isColor, repeat)),
-        undefined,
-        (err) => reject({ url, err })
-      );
-    });
-
   let baseMap = null, normalMap = null, roughMap = null;
 
   try {
     [baseMap, normalMap, roughMap] = await Promise.all([
-      loadTex(baseColorUrl, true),
-      loadTex(normalUrl, false),
-      loadTex(roughnessUrl, false),
+      loadAppliedTextureCached(baseColorUrl, true, repeat),
+      loadAppliedTextureCached(normalUrl, false, repeat),
+      loadAppliedTextureCached(roughnessUrl, false, repeat),
     ]);
   } catch (e) {
     console.error("Paspule texture load failed:", e);
@@ -22088,6 +22094,48 @@ function loadingEnd() {
   }
 }
 
+function decodeImageElement(img) {
+  if (!img) return Promise.resolve();
+  if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const done = () => resolve();
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+  }).then(() => {
+    if (img.decode) return img.decode().catch(() => {});
+    return undefined;
+  });
+}
+
+function finishLandingBootOverlay() {
+  document.documentElement.classList.remove("is-first-landing-boot");
+}
+
+function prepareFirstLandingPaint() {
+  if (!document.documentElement.classList.contains("is-first-landing-boot")) return;
+
+  const criticalImages = [
+    document.querySelector(".brandLogo"),
+    document.querySelector(".filterBannerImg"),
+    document.querySelector('#viewLanding .modelCard[data-model="MANILA"] .modelHeroImg'),
+  ].filter(Boolean);
+
+  const decodePromise = Promise.allSettled(criticalImages.map(decodeImageElement));
+  const maxWait = new Promise((resolve) => setTimeout(resolve, 1400));
+
+  Promise.race([decodePromise, maxWait])
+    .then(() => nextFrame())
+    .then(finishLandingBootOverlay)
+    .catch(finishLandingBootOverlay);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", prepareFirstLandingPaint, { once: true });
+} else {
+  prepareFirstLandingPaint();
+}
+
 function nextFrame() {
   return new Promise((r) => requestAnimationFrame(() => r()));
 }
@@ -23038,18 +23086,28 @@ MAT_METAL.needsUpdate = true;
 pmrem.dispose();
 
 // -----------------------------------------------------
-//  START BUTTON (vytvoĹ™ aĹľ kdyĹľ existuje scene)
+//  START BUTTON (lazy: vytvoří se až při vstupu do konfigurátoru)
 // -----------------------------------------------------
 let modulesReady = false;
+let startButtonPromise = null;
 
-(async () => {
-  if (!startButton) {
-    const btn = await createButtonAt(new THREE.Vector3(0, 0, 0));
-    startButton = btn;
-    startButton.userData.isStartButton = true;
-    startButton.visible = (activeModules.length === 0);
-  }
-})();
+async function ensureStartButton() {
+  if (startButton) return startButton;
+  if (startButtonPromise) return startButtonPromise;
+
+  startButtonPromise = createButtonAt(new THREE.Vector3(0, 0, 0))
+    .then((btn) => {
+      startButton = btn;
+      startButton.userData.isStartButton = true;
+      startButton.visible = activeModules.length === 0 && isBuildStepActive();
+      return btn;
+    })
+    .finally(() => {
+      startButtonPromise = null;
+    });
+
+  return startButtonPromise;
+}
 
 // -----------------------------------------------------
 //  PREFETCH MODULĹ® NA POZADĂŤ (NEBLOKUJE UI)
@@ -23184,9 +23242,13 @@ function enqueueIdleJob(fn) {
   scheduleIdle(runIdleQueue);
 }
 
+let cameraCollisionCheckFrame = 0;
+
 function preventCameraInsideModules() {
   // kdyĹľ nejsou moduly, nic
   if (!activeModules.length) return;
+  cameraCollisionCheckFrame = (cameraCollisionCheckFrame + 1) % 3;
+  if (cameraCollisionCheckFrame !== 0) return;
 
   // aura kolem modulĹŻ (30 cm)
   const aura = CAMERA_AURA; // 0.30
@@ -29911,6 +29973,10 @@ async function createButtonInstance() {
 
 function animate() {
   requestAnimationFrame(animate);
+
+  if (!document.getElementById("viewConfigurator")?.classList.contains("activeView")) {
+    return;
+  }
 
   updateButtonHoverAnimations();
   updateHeadrestAnimations();
