@@ -229,13 +229,7 @@ function showView(viewName, { push = true } = {}) {
 
     setTimeout(() => {
       if (renderer && camera) {
-        const root = document.getElementById("threeRoot");
-        const w = root.clientWidth;
-        const h = root.clientHeight;
-
-        renderer.setSize(w, h);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
+        resizeRendererToThreeRoot();
       }
     }, 50);
   }
@@ -22965,11 +22959,27 @@ function getThreeRootSize() {
   return { width, height };
 }
 
+function getRendererPixelRatio() {
+  /*
+    Mobilní displeje mají často devicePixelRatio 2 nebo 3.
+    Bez toho se canvas vykreslí v nízkém rozlišení a na mobilu působí kostičkovaně.
+    Limit 2 je dobrý kompromis kvalita / výkon.
+  */
+  return Math.min(window.devicePixelRatio || 1, 2);
+}
+
 function resizeRendererToThreeRoot() {
   const { width, height } = getThreeRootSize();
+
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
+
+  renderer.setPixelRatio(getRendererPixelRatio());
+  renderer.setSize(width, height, false);
+
+  if (typeof applyStep4MobileCameraFramingOffset === "function") {
+    applyStep4MobileCameraFramingOffset();
+  }
 }
 
 const STEP4_MOBILE_CAMERA_SHIFT_MIN = 76;
@@ -23044,8 +23054,14 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(0, 1.2, 5);
 
 // Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.setSize(initialThreeRootSize.width, initialThreeRootSize.height);
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  preserveDrawingBuffer: true,
+  powerPreference: "high-performance"
+});
+
+renderer.setPixelRatio(getRendererPixelRatio());
+renderer.setSize(initialThreeRootSize.width, initialThreeRootSize.height, false);
 renderer.setClearColor(0xf7f5f2, 1);
 
 renderer.shadowMap.enabled = true;
