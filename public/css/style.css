@@ -13172,3 +13172,54 @@ body{
 html[data-step="4"] #bottomBar .fabricShadeSwatch.is-loaded{
   background-color: var(--fabric-swatch-color, transparent) !important;
 }
+
+/* =========================================================
+   STEP 3 MOBILE – pevná šířka područky bez dalších voleb
+   - když má područka jen jednu pevnou šířku, zobrazí se jen ta
+   - schová 10 / 15 / 20 / 25 cm i tlačítko Jiné
+   ========================================================= */
+
+@media (max-width: 760px){
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single .armrestWidthPanel{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    min-height: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single #armrestWidthQuick,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single .armrestWidthQuickGrid,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single .armrestWidthCustomCol,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single #armrestWidthCustomBtn,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single #armrestWidthCustom{
+    display: none !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single #armrestWidthFixed,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single .armrestWidthFixed{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"]
+  #armrestWidthBlock.is-fixed-single #armrestWidthFixedBtn{
+    min-width: 72px !important;
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+  }
+}
