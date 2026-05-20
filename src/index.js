@@ -4678,25 +4678,12 @@ async function sendRecapInquiry(customerEmail) {
 
   /*
     Fallback bez serverového krátkého odkazu:
-    uložíme konfiguraci přímo do URL jako shareState.
+    uložíme konfiguraci přímo do URL jako config.
     Bude to delší URL, ale poptávka se nezastaví a odkaz pořád umí obnovit sestavu.
   */
   if (!configurationUrl) {
     try {
-      const fallbackUrl = new URL(getShareUrlBase());
-
-      fallbackUrl.searchParams.delete("share");
-      fallbackUrl.searchParams.set("shareState", encodeSharedConfigurationState(shareState));
-
-      const model =
-        String(shareState?.route?.model || "").trim().toUpperCase() ||
-        String(getModelKey?.() || "").trim().toUpperCase();
-
-      if (model) {
-        fallbackUrl.searchParams.set("model", model);
-      }
-
-      configurationUrl = fallbackUrl.href;
+      configurationUrl = buildEncodedConfigurationShareUrl(shareState);
     } catch (error) {
       console.warn("Encoded fallback URL failed, using plain base URL:", error);
       configurationUrl = getShareUrlBase();
@@ -20075,6 +20062,7 @@ const ACTIVE_SESSION_KEY = "madros_config_active_session_v1";
 const LAST_ACTIVE_AT_KEY = "madros_config_last_active_at_v1";
 const CURRENT_DRAFT_ID_KEY = "madros_config_current_draft_id_v1";
 const SHARE_STATE_PARAM = "config";
+const LEGACY_SHARE_STATE_PARAM = "shareState";
 const SHARE_TOKEN_PARAM = "share";
 const ACTIVE_SESSION_TTL_MS = 10 * 60 * 1000;
 const MAX_SAVED_DRAFTS = 10;
@@ -20310,7 +20298,9 @@ async function getSharedConfigurationStateFromUrl() {
       }
     }
 
-    const encoded = url.searchParams.get(SHARE_STATE_PARAM);
+    const encoded =
+      url.searchParams.get(SHARE_STATE_PARAM) ||
+      url.searchParams.get(LEGACY_SHARE_STATE_PARAM);
     if (!encoded) return null;
     return prepareSharedConfigurationStateForRestore(decodeSharedConfigurationState(encoded));
   } catch (e) {
@@ -20388,27 +20378,39 @@ async function createShortConfigurationShareUrl(state) {
   return "";
 }
 
-async function getCurrentConfigurationShareUrl(state = getCurrentSharedConfigurationState()) {
-  if (!state) return window.location.href;
-
-  const shortUrl = await createShortConfigurationShareUrl(state);
-  if (shortUrl) return shortUrl;
+function buildEncodedConfigurationShareUrl(state) {
+  if (!state) return getShareUrlBase();
 
   const url = new URL(getShareUrlBase());
   url.searchParams.set("view", "configurator");
   url.searchParams.set("step", "5");
   url.searchParams.set("unlocked", String(Math.max(5, Number(state.route?.unlockedStep || 5))));
   if (state.route?.model) url.searchParams.set("model", state.route.model);
+  url.searchParams.set(SHARE_STATE_PARAM, encodeSharedConfigurationState(state));
 
   return url.href;
+}
+
+async function getCurrentConfigurationShareUrl(state = getCurrentSharedConfigurationState()) {
+  if (!state) return window.location.href;
+
+  const shortUrl = await createShortConfigurationShareUrl(state);
+  if (shortUrl) return shortUrl;
+
+  return buildEncodedConfigurationShareUrl(state);
 }
 
 function clearSharedConfigurationParamFromUrl() {
   try {
     const url = new URL(window.location.href);
-    if (!url.searchParams.has(SHARE_STATE_PARAM) && !url.searchParams.has(SHARE_TOKEN_PARAM)) return;
+    if (
+      !url.searchParams.has(SHARE_STATE_PARAM) &&
+      !url.searchParams.has(LEGACY_SHARE_STATE_PARAM) &&
+      !url.searchParams.has(SHARE_TOKEN_PARAM)
+    ) return;
 
     url.searchParams.delete(SHARE_STATE_PARAM);
+    url.searchParams.delete(LEGACY_SHARE_STATE_PARAM);
     url.searchParams.delete(SHARE_TOKEN_PARAM);
     url.searchParams.set("view", "configurator");
     url.searchParams.set("step", "5");
