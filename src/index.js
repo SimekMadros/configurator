@@ -5035,6 +5035,7 @@ function syncRenderedFabricBrowserSelection(tabKey) {
         : selectedFabricCat1;
 
   const paspuleContext = tabKey === "paspule" ? getPaspuleFabricContext() : null;
+
   const activeFabricKey =
     (tabKey === "paspule" ? paspuleContext?.family?.key : null) ||
     getActiveFabricFamilyForTab(tabKey) ||
@@ -5043,23 +5044,30 @@ function syncRenderedFabricBrowserSelection(tabKey) {
 
   const tabsEl = document.getElementById(`fabricFamilyTabs${suffix}`);
   const shadesEl = document.getElementById(`fabricShadesGrid${suffix}`);
+
   if (!tabsEl || !shadesEl) return false;
 
   const wantedTab = activeFabricKey
     ? tabsEl.querySelector(`.fabricFamilyTab[data-fabric-key="${CSS.escape(activeFabricKey)}"]`)
     : null;
 
-  if (wantedTab && !wantedTab.classList.contains("is-active")) {
-    wantedTab.click();
+  /* Aktivní druh látky – bez čekání na klik */
+  tabsEl
+    .querySelectorAll(".fabricFamilyTab.is-active")
+    .forEach((x) => x.classList.remove("is-active"));
+
+  if (wantedTab) {
+    wantedTab.classList.add("is-active");
   }
 
-  // Aktivní odstín označ jen pokud patří do právě otevřeného druhu látky.
-  const selectedBelongsToOpenFamily =
-    selected?.fabricKey && selected.fabricKey === activeFabricKey;
-
+  /* Aktivní odstín – vždycky přepočítat z uloženého výběru */
   shadesEl
     .querySelectorAll(".fabricShadeBtn.is-active")
     .forEach((x) => x.classList.remove("is-active"));
+
+  const selectedBelongsToOpenFamily =
+    !!selected?.fabricKey &&
+    selected.fabricKey === activeFabricKey;
 
   if (selectedBelongsToOpenFamily && selected?.shade) {
     const wantedShade = shadesEl.querySelector(
@@ -5072,6 +5080,41 @@ function syncRenderedFabricBrowserSelection(tabKey) {
   }
 
   return !!wantedTab;
+}
+
+function forceStep4MaterialActiveState() {
+  if (appState.step !== 4) return;
+
+  let key = currentFabricTabKey || getAppliedFabricTabKey() || "cat1";
+
+  if (key === "paspule") {
+    key = getAppliedFabricTabKey() || "cat1";
+    currentFabricTabKey = key;
+  }
+
+  /* Kategorie nahoře – Kategorie 1 / 2 / 3 / Kůže */
+  document.querySelectorAll("#bottomBar .bottomTab").forEach((tab) => {
+    const isForStep4 = Number(tab.dataset.step || 3) === 4;
+
+    if (!isForStep4) {
+      tab.classList.remove("active");
+      return;
+    }
+
+    tab.classList.toggle("active", tab.dataset.tab === key);
+  });
+
+  /* Viditelný panel */
+  document.querySelectorAll("#bottomBar .bottomSection").forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.tabpanel !== key);
+  });
+
+  /* Když ještě není vykresleno, vykresli. Když je, jen sesynchronizuj. */
+  renderFabricsForTab(key);
+  syncRenderedFabricBrowserSelection(key);
+
+  updateFabricSelectionIndicators?.();
+  updateStep4ContinueUI?.();
 }
 
 function updateHeadrestDotsVisibility() {
@@ -9920,10 +9963,11 @@ function syncEquipLayout(){
 
   const isHidden = bottomBarEl.classList.contains("is-hidden");
   const isCollapsed = bottomBarEl.classList.contains("is-collapsed");
-  document.documentElement.classList.toggle("equip-menu-open", !isHidden && !isCollapsed);
+  const isHiding = bottomBarEl.classList.contains("is-hiding");
+  document.documentElement.classList.toggle("equip-menu-open", !isHidden && !isCollapsed && !isHiding);
 
   // KdyĹľ je bar skrytĂ˝ nebo "sbalenĂ˝", SummaryUI mĂˇ bĂ˝t dole jako ve 2. kroku
-  if(isHidden || isCollapsed){
+  if(isHidden || isCollapsed || isHiding){
     document.documentElement.style.setProperty("--equip-raise", "0px");
     document.documentElement.style.removeProperty("--step3-continue-bottom");
     document.documentElement.style.removeProperty("--bottom-toggle-bottom");
@@ -10099,6 +10143,17 @@ function updateBottomBarUI() {
   } else {
     setBottomPanelByKey(currentFabricTabKey);
     renderFabricsForTab(currentFabricTabKey);
+
+    /* Po reloadu / restore stavu dotáhnout aktivní kategorii, druh látky i odstín */
+    forceStep4MaterialActiveState();
+
+    requestAnimationFrame(() => {
+      forceStep4MaterialActiveState();
+    });
+
+    setTimeout(() => {
+      forceStep4MaterialActiveState();
+    }, 180);
   }
 }
 
@@ -10203,6 +10258,73 @@ const CLARA_BASECOLOR_URL = (code2) =>
   `/textures/fabric/1/Clara/CLARA_215_${code2}.png`;
 
 const FABRICS_CAT1 = [
+
+  buildFabricFamilyFromFiles({
+    key: "rugia",
+    name: "Rugia",
+    folder: "Rugia",
+    categoryFolder: "1",
+
+    repeat: 2,
+    normalScale: 1,
+
+    normalFile: "FabricLinenUpholstery012_NRM_2K_METALNESS.png",
+    roughnessFile: "FabricLinenUpholstery012_ROUGHNESS_2K_METALNESS.png",
+
+    resolveCode: (_fileName, shadeStem) => {
+      return shadeStem.replace(/^RUGIA_/i, "");
+    },
+
+    info: {
+      brandKey: "toptextilwaterrepellent",
+      summary: "Rugia je jemnější žinylková potahová látka s měkkým povrchem a příjemným omakem. Patří do základní kategorie látek a je vhodná pro běžné domácí používání.",
+      stats: [
+        { label: "Složení", value: "100% polyester" },
+        { label: "Odolnost", value: "80 000 cyklů" },
+        { label: "Gramáž", value: "250 g/m²" },
+      ],
+      sections: [
+        {
+          title: "Technické vlastnosti",
+          rows: [
+            { label: "Odolnost proti oděru", value: "80 000 cyklů" },
+            { label: "Žmolkování", value: "4–5/5" },
+            { label: "Stálost barvy v otěru", value: "4/5" },
+            { label: "Stálost barvy na světle", value: "5/8" },
+          ],
+        },
+      ],
+    },
+
+    shadeFiles: [
+      "RUGIA_218.01.png",
+      "RUGIA_218.02.png",
+      "RUGIA_218.03.png",
+      "RUGIA_218.04.png",
+      "RUGIA_218.05.png",
+      "RUGIA_218.06.png",
+      "RUGIA_218.07.png",
+      "RUGIA_218.08.png",
+      "RUGIA_218.09.png",
+      "RUGIA_218.10.png",
+
+      "RUGIA_218.11.png",
+      "RUGIA_218.12.png",
+      "RUGIA_218.13.png",
+      "RUGIA_218.14.png",
+      "RUGIA_218.15.png",
+      "RUGIA_218.16.png",
+      "RUGIA_218.17.png",
+      "RUGIA_218.18.png",
+      "RUGIA_218.19.png",
+      "RUGIA_218.20.png",
+
+      "RUGIA_218.21.png",
+    ],
+
+    desc: "Tkaná čalounická látka s jemnou lněnou strukturou a elegantními přírodními odstíny.",
+    care: "Doporučeno běžné šetrné čištění čalouněných látek.",
+  }),
 
   buildFabricFamilyFromFiles({
     key: "clara",
@@ -10404,73 +10526,6 @@ const FABRICS_CAT1 = [
     ],
 
     desc: "Jemná textilní látka s čistým povrchem a širokou škálou neutrálních i barevných odstínů.",
-    care: "Doporučeno běžné šetrné čištění čalouněných látek.",
-  }),
-
-  buildFabricFamilyFromFiles({
-    key: "rugia",
-    name: "Rugia",
-    folder: "Rugia",
-    categoryFolder: "1",
-
-    repeat: 2,
-    normalScale: 1,
-
-    normalFile: "FabricLinenUpholstery012_NRM_2K_METALNESS.png",
-    roughnessFile: "FabricLinenUpholstery012_ROUGHNESS_2K_METALNESS.png",
-
-    resolveCode: (_fileName, shadeStem) => {
-      return shadeStem.replace(/^RUGIA_/i, "");
-    },
-
-    info: {
-      brandKey: "toptextilwaterrepellent",
-      summary: "Rugia je jemnější žinylková potahová látka s měkkým povrchem a příjemným omakem. Patří do základní kategorie látek a je vhodná pro běžné domácí používání.",
-      stats: [
-        { label: "Složení", value: "100% polyester" },
-        { label: "Odolnost", value: "80 000 cyklů" },
-        { label: "Gramáž", value: "250 g/m²" },
-      ],
-      sections: [
-        {
-          title: "Technické vlastnosti",
-          rows: [
-            { label: "Odolnost proti oděru", value: "80 000 cyklů" },
-            { label: "Žmolkování", value: "4–5/5" },
-            { label: "Stálost barvy v otěru", value: "4/5" },
-            { label: "Stálost barvy na světle", value: "5/8" },
-          ],
-        },
-      ],
-    },
-
-    shadeFiles: [
-      "RUGIA_218.01.png",
-      "RUGIA_218.02.png",
-      "RUGIA_218.03.png",
-      "RUGIA_218.04.png",
-      "RUGIA_218.05.png",
-      "RUGIA_218.06.png",
-      "RUGIA_218.07.png",
-      "RUGIA_218.08.png",
-      "RUGIA_218.09.png",
-      "RUGIA_218.10.png",
-
-      "RUGIA_218.11.png",
-      "RUGIA_218.12.png",
-      "RUGIA_218.13.png",
-      "RUGIA_218.14.png",
-      "RUGIA_218.15.png",
-      "RUGIA_218.16.png",
-      "RUGIA_218.17.png",
-      "RUGIA_218.18.png",
-      "RUGIA_218.19.png",
-      "RUGIA_218.20.png",
-
-      "RUGIA_218.21.png",
-    ],
-
-    desc: "Tkaná čalounická látka s jemnou lněnou strukturou a elegantními přírodními odstíny.",
     care: "Doporučeno běžné šetrné čištění čalouněných látek.",
   }),
 
@@ -11708,9 +11763,9 @@ function renderFabricBrowser({
               <button type="button" class="fabricTargetBtn" data-fabric-target="sofa">Potah</button>
               <button type="button" class="fabricTargetBtn" data-fabric-target="paspule">Paspule</button>
             </div>
-            <button type="button" class="fabricInfoBtn is-hidden" id="fabricInfoBtn${suffix}" aria-expanded="false">
+            <button type="button" class="fabricInfoBtn is-hidden" id="fabricInfoBtn${suffix}" aria-expanded="false" aria-label="Informace o látce" title="Informace o látce">
               <span class="fabricInfoBtnIcon" aria-hidden="true">i</span>
-              <span>Informace o látce</span>
+              <span class="fabricInfoBtnText">Informace o látce</span>
             </button>
           </div>
           <div class="fabricShadesScroll">
@@ -11888,6 +11943,10 @@ function renderFabricBrowser({
     const canOpenPaspule = !!ctx?.family && ctx.tabKey === tabKey;
 
     targetToggleEl.classList.toggle("is-hidden", !isMelbourne);
+
+    // Melbourne má vedle Potah/Paspule jen ikonku "i".
+    // Ostatní pohovky mají celé tlačítko "Informace o látce".
+    infoBtnEl.classList.toggle("is-icon-only", isMelbourne);
 
     targetToggleEl
       .querySelectorAll(".fabricTargetBtn")
@@ -12431,6 +12490,7 @@ function bindBottomToggle(){
 
     // 1) okamĹľitÄ› zaÄŤni animaci (tabs+panel+Ĺˇipka) + summary pohyb
     bottomBarEl.classList.add("is-hiding");
+    syncEquipLayout();
     animateEquipLayout(ANIM_TIME);
 
     // 2) po dobÄ›hnutĂ­ animace ĂşplnÄ› â€śsbalâ€ť
@@ -12454,6 +12514,7 @@ function bindBottomToggle(){
     // pĹ™iprav: vraĹĄ do layoutu, ale nech zatĂ­m "hiding"
     bottomBarEl.classList.remove("is-collapsed");
     bottomBarEl.classList.add("is-hiding");
+    syncEquipLayout();
 
     // po od-collapsed uĹľ znĂˇme reĂˇlnĂ© vĂ˝Ĺˇky â†’ spoÄŤĂ­tej dy znovu
     const dy = calcDockDy();
@@ -12885,13 +12946,36 @@ function bindBottomTabs() {
       scheduleEquipLayoutSync();
     }
 
-    // 4) krok 4: render lĂˇtek
+    // 4) krok 4: render látek
     if (appState.step === 4) {
       saveStateDebounced?.(80);
+
+      /*
+        DŮLEŽITÉ:
+        Po ručním kliknutí na kategorii musí proběhnout stejná synchronizace
+        jako po reloadu. Jinak se UI chvíli tváří jinak než obnovený stav.
+      */
       renderFabricsForTab(key);
-      updateFabricSelectionIndicators?.();
-      updateStep4ContinueUI?.();
-      // (kamera pro lĂˇtky klidnÄ› zatĂ­m neĹ™eĹˇ)
+      syncRenderedFabricBrowserSelection?.(key);
+      forceStep4MaterialActiveState?.();
+
+      requestAnimationFrame(() => {
+        syncRenderedFabricBrowserSelection?.(key);
+        forceStep4MaterialActiveState?.();
+        updateFabricSelectionIndicators?.();
+        updateStep4ContinueUI?.();
+        scheduleEquipLayoutSync();
+      });
+
+      setTimeout(() => {
+        syncRenderedFabricBrowserSelection?.(key);
+        forceStep4MaterialActiveState?.();
+        updateFabricSelectionIndicators?.();
+        updateStep4ContinueUI?.();
+        scheduleEquipLayoutSync();
+      }, 120);
+
+      // kamera pro látky zatím neřešíme
       scheduleEquipLayoutSync();
     }
   }
@@ -20585,7 +20669,25 @@ function formatDraftUpdatedAt(ts) {
   }
 }
 
+function isMobileDraftsLayout() {
+  return !!window.matchMedia?.("(max-width: 760px)")?.matches;
+}
+
+function getDraftDisplayTitle(draft, isMobile = isMobileDraftsLayout()) {
+  const title = String(draft?.title || "Rozestavěná sestava").trim();
+  if (!isMobile) return title;
+
+  const model = String(draft?.model || getDraftModelFromPayload(draft?.state) || "").trim();
+  if (model && model.toUpperCase() !== "CUSTOM") {
+    const key = model.charAt(0).toUpperCase() + model.slice(1).toLowerCase();
+    return SOFA_SUMMARY_META[key]?.title || key;
+  }
+
+  return title.replace(/^Sedací\s+souprava\s+/i, "").trim() || title;
+}
+
 function renderDraftsProfileUI() {
+  const isMobile = isMobileDraftsLayout();
   const drafts = readDraftsFromStorage()
     .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
 
@@ -20604,16 +20706,18 @@ function renderDraftsProfileUI() {
       : `<div class="draftThumbPlaceholder">Náhled</div>`;
 
     const moduleCount = Number(draft.moduleCount || draft.state?.modules?.length || 0);
-    const metaParts = [
-      moduleCount ? `${moduleCount} modulů` : "",
-      `Uloženo ${formatDraftUpdatedAt(draft.updatedAt)}`,
-    ].filter(Boolean);
+    const metaParts = isMobile
+      ? [`Uloženo ${formatDraftUpdatedAt(draft.updatedAt)}`]
+      : [
+          moduleCount ? `${moduleCount} modulů` : "",
+          `Uloženo ${formatDraftUpdatedAt(draft.updatedAt)}`,
+        ].filter(Boolean);
 
     return `
       <article class="draftItem" data-draft-id="${escapeHtmlText(draft.id)}" tabindex="0">
         <div class="draftThumb">${imageHtml}</div>
         <div class="draftBody">
-          <div class="draftName">${escapeHtmlText(draft.title || "Rozestavěná sestava")}</div>
+          <div class="draftName">${escapeHtmlText(getDraftDisplayTitle(draft, isMobile))}</div>
           <div class="draftPrice">Celkem ${escapeHtmlText(draft.priceText || formatCzk(draft.price || 0))} včetně DPH</div>
           <div class="draftMeta">${escapeHtmlText(metaParts.join(" · "))}</div>
         </div>
@@ -21139,9 +21243,15 @@ async function loadStateFromStorage(sourceState = null) {
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        try { forceStep4MaterialActiveState?.(); } catch (e) {}
         try { updateFabricSelectionIndicators?.(); } catch (e) {}
       });
     });
+
+    setTimeout(() => {
+      try { forceStep4MaterialActiveState?.(); } catch (e) {}
+      try { updateFabricSelectionIndicators?.(); } catch (e) {}
+    }, 250);
 
     try { updateBuildModeUI(); } catch (e) {}
     try { if (isBuildStepActive()) updateButtons(); } catch (e) {}
@@ -22810,6 +22920,65 @@ function resizeRendererToThreeRoot() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
+}
+
+const STEP4_MOBILE_CAMERA_SHIFT_MIN = 76;
+const STEP4_MOBILE_CAMERA_SHIFT_MAX = 140;
+const STEP4_MOBILE_CAMERA_SHIFT_RATIO = 0.38;
+
+let step4MobileCameraViewKey = "";
+
+function isStep4MobileBottomMenuOpen() {
+  if (!isMobileCameraView?.()) return false;
+  if (Number(appState?.step) !== 4) return false;
+
+  const configurator = document.getElementById("viewConfigurator");
+  if (!configurator?.classList.contains("activeView")) return false;
+
+  const bottomBar = document.getElementById("bottomBar");
+  if (!bottomBar) return false;
+
+  return (
+    !bottomBar.classList.contains("is-hidden") &&
+    !bottomBar.classList.contains("is-collapsed")
+  );
+}
+
+function getStep4MobileCameraShiftPx() {
+  const bottomBar = document.getElementById("bottomBar");
+  const panel = bottomBar?.querySelector(".bottomPanel");
+  const panelHeight = panel?.getBoundingClientRect?.().height || 0;
+
+  if (panelHeight <= 0) return STEP4_MOBILE_CAMERA_SHIFT_MIN;
+
+  return Math.round(THREE.MathUtils.clamp(
+    panelHeight * STEP4_MOBILE_CAMERA_SHIFT_RATIO,
+    STEP4_MOBILE_CAMERA_SHIFT_MIN,
+    STEP4_MOBILE_CAMERA_SHIFT_MAX
+  ));
+}
+
+function applyStep4MobileCameraFramingOffset() {
+  if (!camera || !renderer) return;
+
+  if (!isStep4MobileBottomMenuOpen()) {
+    if (step4MobileCameraViewKey) {
+      camera.clearViewOffset();
+      step4MobileCameraViewKey = "";
+    }
+    return;
+  }
+
+  const size = renderer.getSize(new THREE.Vector2());
+  const width = Math.max(1, Math.round(size.x || 1));
+  const height = Math.max(1, Math.round(size.y || 1));
+  const yOffset = Math.min(height - 1, getStep4MobileCameraShiftPx());
+  const key = `${width}x${height}:${yOffset}`;
+
+  if (key === step4MobileCameraViewKey) return;
+
+  camera.setViewOffset(width, height, 0, yOffset, width, height);
+  step4MobileCameraViewKey = key;
 }
 
 const initialThreeRootSize = getThreeRootSize();
@@ -29760,6 +29929,7 @@ function animate() {
 
   controls.update();
   preventCameraInsideModules();
+  applyStep4MobileCameraFramingOffset();
 
   renderer.render(scene, camera);
 }
@@ -31623,4 +31793,207 @@ window.addEventListener("resize", () => {
   }
 
   window.__refreshMadrosScrollHints = refresh;
+})();
+
+/* =========================================================
+   STEP 4 MOBILE – vlastní scrollbar pouze pro látky
+   - NEUPRAVUJE krok 3
+   - používá stejný vzhled .madrosScrollTrack jako krok 3
+   - funguje jen v kroku 4 a jen na mobilu
+   ========================================================= */
+
+(function initStep4FabricScrollbars(){
+  const MOBILE_MAX = 520;
+
+  const TARGET_SELECTORS = [
+    "#bottomBar .fabricFamilyTabs",
+    "#bottomBar .fabricShadesScroll"
+  ];
+
+  const overlays = new Map();
+  let raf = 0;
+
+  function isEnabled(){
+    return (
+      window.innerWidth <= MOBILE_MAX &&
+      document.documentElement.dataset.step === "4" &&
+      !document.getElementById("bottomBar")?.classList.contains("is-hidden") &&
+      !document.getElementById("bottomBar")?.classList.contains("is-collapsed")
+    );
+  }
+
+  function isVisible(el){
+    if (!el) return false;
+
+    const rect = el.getBoundingClientRect();
+    const style = window.getComputedStyle(el);
+
+    return (
+      rect.width > 8 &&
+      rect.height > 8 &&
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      style.opacity !== "0" &&
+      !el.closest(".hidden")
+    );
+  }
+
+  function canScrollY(el){
+    return el.scrollHeight > el.clientHeight + 3;
+  }
+
+  function createOverlay(){
+    const track = document.createElement("div");
+    track.className = "madrosScrollTrack is-y is-step4-fabric";
+
+    const thumb = document.createElement("div");
+    thumb.className = "madrosScrollThumb";
+
+    track.appendChild(thumb);
+    document.body.appendChild(track);
+
+    return { track, thumb };
+  }
+
+  function getOverlay(el){
+    let overlay = overlays.get(el);
+
+    if (!overlay) {
+      overlay = createOverlay();
+      overlays.set(el, overlay);
+    }
+
+    return overlay;
+  }
+
+  function hideOverlay(overlay){
+    if (!overlay) return;
+    overlay.track.classList.add("is-hidden");
+  }
+
+  function hideAll(){
+    overlays.forEach(hideOverlay);
+  }
+
+  function updateOne(el){
+    const overlay = getOverlay(el);
+
+    if (!isEnabled() || !isVisible(el) || !canScrollY(el)) {
+      hideOverlay(overlay);
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+
+    if (
+      rect.bottom < 0 ||
+      rect.top > window.innerHeight ||
+      rect.right < 0 ||
+      rect.left > window.innerWidth
+    ) {
+      hideOverlay(overlay);
+      return;
+    }
+
+    const pad = 9;
+    const trackTop = rect.top + pad;
+    const trackHeight = Math.max(34, rect.height - pad * 2);
+    const trackLeft = rect.right - 8;
+
+    const maxScroll = Math.max(1, el.scrollHeight - el.clientHeight);
+    const ratio = el.clientHeight / Math.max(el.scrollHeight, 1);
+
+    const thumbHeight = Math.max(28, Math.round(trackHeight * ratio));
+    const maxThumbMove = Math.max(1, trackHeight - thumbHeight - 2);
+    const thumbTop = Math.round((el.scrollTop / maxScroll) * maxThumbMove);
+
+    overlay.track.style.left = `${Math.round(trackLeft)}px`;
+    overlay.track.style.top = `${Math.round(trackTop)}px`;
+    overlay.track.style.width = "7px";
+    overlay.track.style.height = `${Math.round(trackHeight)}px`;
+
+    overlay.thumb.style.width = "5px";
+    overlay.thumb.style.height = `${thumbHeight}px`;
+    overlay.thumb.style.transform = `translateY(${thumbTop}px)`;
+
+    overlay.track.classList.remove("is-hidden");
+  }
+
+  function getTargets(){
+    const targets = [];
+    const seen = new Set();
+
+    TARGET_SELECTORS.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((el) => {
+        if (seen.has(el)) return;
+        seen.add(el);
+        targets.push(el);
+      });
+    });
+
+    return targets;
+  }
+
+  function bindScrollEvents(){
+    getTargets().forEach((el) => {
+      if (el.__step4FabricScrollbarBound) return;
+
+      el.__step4FabricScrollbarBound = true;
+      el.addEventListener("scroll", requestUpdate, { passive: true });
+    });
+  }
+
+  function updateAll(){
+    raf = 0;
+
+    if (!isEnabled()) {
+      hideAll();
+      return;
+    }
+
+    bindScrollEvents();
+    getTargets().forEach(updateOne);
+  }
+
+  function requestUpdate(){
+    if (raf) return;
+    raf = requestAnimationFrame(updateAll);
+  }
+
+  function refreshSoon(){
+    setTimeout(requestUpdate, 30);
+    setTimeout(requestUpdate, 180);
+    setTimeout(requestUpdate, 420);
+  }
+
+  function start(){
+    bindScrollEvents();
+    requestUpdate();
+
+    window.addEventListener("resize", requestUpdate, { passive: true });
+    window.addEventListener("orientationchange", refreshSoon, { passive: true });
+
+    document.addEventListener("click", refreshSoon, true);
+    document.addEventListener("input", refreshSoon, true);
+
+    const observer = new MutationObserver(refreshSoon);
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      attributeFilter: ["class", "style", "data-step", "hidden", "aria-hidden"]
+    });
+
+    window.setInterval(() => {
+      if (isEnabled()) requestUpdate();
+      else hideAll();
+    }, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
 })();
