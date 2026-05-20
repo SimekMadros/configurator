@@ -1009,6 +1009,8 @@ html.is-first-landing-boot .landingBootOverlay{
 
 #viewConfigurator canvas {
   display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ===== Step 2: Pokračovat (vpravo dole ve scéně) ===== */

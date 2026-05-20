@@ -233,6 +233,7 @@ function showView(viewName, { push = true } = {}) {
         const w = root.clientWidth;
         const h = root.clientHeight;
 
+        renderer.setPixelRatio(getRendererPixelRatio());
         renderer.setSize(w, h);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
@@ -19093,66 +19094,95 @@ function refreshEquipmentUiForCurrentModel() {
   try { updateBottomBarUI(); } catch (e) {}
 }
 
-function startConfigurator(modelName, presetKey = null) {
+function getPresetVariantIds(presetKey) {
+  const preset = PRESETS[presetKey];
+  return Array.isArray(preset?.steps)
+    ? preset.steps.map((step) => step?.variantId).filter(Boolean)
+    : [];
+}
+
+async function warmSofaEntryAssets(sofaKey, presetKey = null) {
+  const presetIds = getPresetVariantIds(presetKey);
+  const priorityIds = getPriorityVariantIdsForSofa(sofaKey, 12);
+  const ids = [...presetIds, ...priorityIds].filter((id, index, arr) => id && arr.indexOf(id) === index);
+
+  if (!ids.length) return;
+
+  await waitWithTimeout(Promise.allSettled([
+    prefetchVariantModelsNow(ids, presetIds.length ? Math.max(5, presetIds.length) : 5),
+    preloadThumbsForVariantIds(ids, 14),
+  ]), presetIds.length ? 2200 : 1500);
+}
+
+async function startConfigurator(modelName, presetKey = null) {
 
   if (isRestoringState) return;
 
-  currentDraftId = null;
-  hasUserTouchedLegs = false;
+  loadingBegin(80, presetKey ? "Připravuji sestavu…" : "Připravuji pohovku…");
 
-  resetFabricSelectionState({ save: false });
+  try {
+    currentDraftId = null;
+    hasUserTouchedLegs = false;
 
-  clearSceneForPreset();
-  cameraPinned = false;  
-  hardResetCameraToDefault();
+    resetFabricSelectionState({ save: false });
 
-  // âś… VĹ˝DYCKY zaÄŤni ÄŤistou scĂ©nou (aĹĄ jdeĹˇ z landing na cokoliv)
-  clearSceneForPreset(); // maĹľe activeModules + activeButtons + vracĂ­ startButton
+    clearSceneForPreset();
+    cameraPinned = false;  
+    hardResetCameraToDefault();
 
-  // volitelnÄ›: zavĹ™i UI vÄ›ci, kdyby zĹŻstaly otevĹ™enĂ©
-  try { closePicker(); } catch(e) {}
-  try { closeActionMenu(); } catch(e) {}
+    // âś… VĹ˝DYCKY zaÄŤni ÄŤistou scĂ©nou (aĹĄ jdeĹˇ z landing na cokoliv)
+    clearSceneForPreset(); // maĹľe activeModules + activeButtons + vracĂ­ startButton
 
-  appState.model = modelName;
+    // volitelnÄ›: zavĹ™i UI vÄ›ci, kdyby zĹŻstaly otevĹ™enĂ©
+    try { closePicker(); } catch(e) {}
+    try { closeActionMenu(); } catch(e) {}
 
-  try { updateSummaryUI(); } catch (e) {}
+    appState.model = modelName;
 
-  // âś… po nastavenĂ­ modelu pĹ™ekresli vybavení pro daný model
-  refreshEquipmentUiForCurrentModel();
+    try { updateSummaryUI(); } catch (e) {}
 
-  // âś… a teprve potom aplikuj default vybavenĂ­ PODLE MODELU
-  applyDefaultEquipForNewConfig(modelName);
-  window.__refreshSofaPlanEverywhere?.();
+    // âś… po nastavenĂ­ modelu pĹ™ekresli vybavení pro daný model
+    refreshEquipmentUiForCurrentModel();
 
-  // âś… pĹ™epoÄŤĂ­tej "Manila/Mendoza" a spusĹĄ prefetch jen pro tuhle sedaÄŤku
-  const sofaKey = normalizeSofaKey(appState.model);
-  if (sofaKey) queuePrefetchForSofa(sofaKey);
+    // âś… a teprve potom aplikuj default vybavenĂ­ PODLE MODELU
+    applyDefaultEquipForNewConfig(modelName);
+    window.__refreshSofaPlanEverywhere?.();
 
-  setUnlockedStep(2);
+    // âś… pĹ™epoÄŤĂ­tej "Manila/Mendoza" a spusĹĄ prefetch jen pro tuhle sedaÄŤku
+    const sofaKey = normalizeSofaKey(appState.model);
+    if (sofaKey) {
+      queuePrefetchForSofa(sofaKey);
+      await warmSofaEntryAssets(sofaKey, presetKey);
+    }
 
-  showView("configurator", { push: false });
-  setStep(2, { push: false });
-  ensureStartButton().catch(console.error);
+    setUnlockedStep(2);
 
-  pushRoute(false);
+    showView("configurator", { push: false });
+    setStep(2, { push: false });
+    ensureStartButton().catch(console.error);
 
-  pendingCanonicalAnalysis = null;
-  needsCanonicalRebuild = false;
+    pushRoute(false);
 
-  if (isBuildStepActive()) {
-    scheduleCanonicalRebuildAnalysis();
-  }
+    pendingCanonicalAnalysis = null;
+    needsCanonicalRebuild = false;
 
-  debugLog("Start configurator for:", modelName, "preset:", presetKey);
+    if (isBuildStepActive()) {
+      scheduleCanonicalRebuildAnalysis();
+    }
 
-  // âś… kdyĹľ je preset, tak ho rovnou postav do scĂ©ny
-  if (presetKey) {
-    requestAnimationFrame(() => {
-      loadPresetIntoScene(presetKey).catch(console.error);
-    });
-  } else {
-    // âś… custom / prĂˇzdnĂˇ scĂ©na â†’ pĹ™epoÄŤĂ­tej summary (aĹĄ se hned ukĂˇĹľe 0 KÄŤ, 0Ă—0)
-    try { scheduleSummaryRecalc(); } catch(e) {}
+    debugLog("Start configurator for:", modelName, "preset:", presetKey);
+
+    // âś… kdyĹľ je preset, tak ho rovnou postav do scĂ©ny
+    if (presetKey) {
+      requestAnimationFrame(() => {
+        loadPresetIntoScene(presetKey).catch(console.error);
+      });
+    } else {
+      // âś… custom / prĂˇzdnĂˇ scĂ©na â†’ pĹ™epoÄŤĂ­tej summary (aĹĄ se hned ukĂˇĹľe 0 KÄŤ, 0Ă—0)
+      try { scheduleSummaryRecalc(); } catch(e) {}
+    }
+  } finally {
+    loadingEnd();
   }
 }
 
@@ -19456,12 +19486,14 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // landing start custom
   const btnStartCustom = document.getElementById("btnStartCustom");
-  if (btnStartCustom) btnStartCustom.addEventListener("click", () => startConfigurator("CUSTOM"));
+  if (btnStartCustom) btnStartCustom.addEventListener("click", () => {
+    startConfigurator("CUSTOM").catch(console.error);
+  });
 
   // landing presets
   document.querySelectorAll(".startPreset").forEach(btn => {
     btn.addEventListener("click", () => {
-      startConfigurator(btn.dataset.model, btn.dataset.preset || null);
+      startConfigurator(btn.dataset.model, btn.dataset.preset || null).catch(console.error);
     });
   });
 
@@ -22118,11 +22150,17 @@ function prepareFirstLandingPaint() {
   const criticalImages = [
     document.querySelector(".brandLogo"),
     document.querySelector(".filterBannerImg"),
-    document.querySelector('#viewLanding .modelCard[data-model="MANILA"] .modelHeroImg'),
+    ...document.querySelectorAll('#viewLanding .modelHeroImg'),
+    ...document.querySelectorAll('#viewLanding .modelCard[data-model="MANILA"] .presetThumb'),
   ].filter(Boolean);
 
+  criticalImages.forEach((img) => {
+    try { img.loading = "eager"; } catch (e) {}
+    try { img.fetchPriority = "high"; } catch (e) {}
+  });
+
   const decodePromise = Promise.allSettled(criticalImages.map(decodeImageElement));
-  const maxWait = new Promise((resolve) => setTimeout(resolve, 1400));
+  const maxWait = new Promise((resolve) => setTimeout(resolve, 2200));
 
   Promise.race([decodePromise, maxWait])
     .then(() => nextFrame())
@@ -22187,6 +22225,13 @@ function prefetchFirstModels(variantIds) {
 
     loadGLBCached(modelGlbUrl(cat.model)).catch(() => {});
   });
+}
+
+function waitWithTimeout(promise, timeoutMs = 1600) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
 }
 
 const addButtonLoader = new GLTFLoader();
@@ -22965,10 +23010,23 @@ function getThreeRootSize() {
   return { width, height };
 }
 
+function getRendererPixelRatio() {
+  const dpr = Number(window.devicePixelRatio || 1);
+  if (!Number.isFinite(dpr) || dpr <= 1) return 1;
+
+  const width = Math.max(1, window.innerWidth || 1);
+  const height = Math.max(1, window.innerHeight || 1);
+  const isSmallMobile = Math.min(width, height) <= 430;
+  const maxRatio = isSmallMobile ? 2 : 1.75;
+
+  return Math.min(dpr, maxRatio);
+}
+
 function resizeRendererToThreeRoot() {
   const { width, height } = getThreeRootSize();
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(getRendererPixelRatio());
   renderer.setSize(width, height);
 }
 
@@ -23045,6 +23103,7 @@ camera.position.set(0, 1.2, 5);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(getRendererPixelRatio());
 renderer.setSize(initialThreeRootSize.width, initialThreeRootSize.height);
 renderer.setClearColor(0xf7f5f2, 1);
 
@@ -23196,6 +23255,8 @@ function prefetchModelGLBForSofa(sofaKey, moduleName) {
 function queuePrefetchForSofa(sofaKey) {
   if (!sofaKey) return;
 
+  preloadThumbsForVariantIds(getPriorityVariantIdsForSofa(sofaKey, 12), 12).catch(() => {});
+
   const priority = SOFA_PRIORITY[sofaKey] || [];
   const all = SOFA_MODULES[sofaKey] || [];
 
@@ -23240,6 +23301,47 @@ function scheduleIdle(fn) {
 function enqueueIdleJob(fn) {
   idleQueue.push(fn);
   scheduleIdle(runIdleQueue);
+}
+
+function getPriorityVariantIdsForSofa(sofaKey, limit = 8) {
+  if (!sofaKey) return [];
+
+  const priorityModels = SOFA_PRIORITY[sofaKey] || [];
+  const allIds = (typeof getVariantIdsForSofa === "function")
+    ? (getVariantIdsForSofa(sofaKey) || [])
+    : [];
+
+  const byModel = new Map(
+    allIds
+      .map((id) => [getCatalog?.(id)?.model, id])
+      .filter(([model, id]) => model && id)
+  );
+
+  const out = [];
+  for (const modelName of priorityModels) {
+    const id = byModel.get(modelName);
+    if (id && !out.includes(id)) out.push(id);
+    if (out.length >= limit) return out;
+  }
+
+  for (const id of allIds) {
+    if (!out.includes(id)) out.push(id);
+    if (out.length >= limit) break;
+  }
+
+  return out;
+}
+
+function prefetchVariantModelsNow(variantIds, limit = 5) {
+  const jobs = (variantIds || [])
+    .slice(0, limit)
+    .map((variantId) => {
+      const modelName = getCatalog?.(variantId)?.model;
+      return modelName ? loadGLBCachedSilent(modelGlbUrl(modelName)).catch(() => null) : null;
+    })
+    .filter(Boolean);
+
+  return Promise.allSettled(jobs);
 }
 
 let cameraCollisionCheckFrame = 0;
@@ -25300,6 +25402,7 @@ function openModulePicker(worldPos) {
   // âś… PREFETCH â€“ co se mĂˇ hned ukĂˇzat v default tabu
   const firstIds = filterIdsByTab(defaultTab, sourceIds);
   prefetchFirstModels(firstIds);
+  preloadThumbsForVariantIds(firstIds, 14).catch(() => {});
 
   // prvnĂ­ render
   renderPickerList(firstIds);
@@ -25319,6 +25422,7 @@ function openModulePicker(worldPos) {
 
       // âś… DOPLNIT: prefetch pro prĂˇvÄ› zobrazenĂ© vÄ›ci
       prefetchFirstModels(ids);
+      preloadThumbsForVariantIds(ids, 14).catch(() => {});
 
       renderPickerList(ids);
     };
@@ -26311,7 +26415,7 @@ document.getElementById("btnCamClearAll")?.addEventListener("click", async () =>
   resetLegsUntouchedWarningForCurrentBuild();
 
   // Stejné jako kdyby v kroku 1 vybrali „postavit vlastní tvar“
-  startConfigurator(appState.model, null);
+  startConfigurator(appState.model, null).catch(console.error);
 });
 
 function storeUserViewDir() {
@@ -26916,6 +27020,34 @@ function getThumbUrlForVariant(variantId) {
   return assetUrl(url);
 }
 
+const thumbImagePreloadCache = new Map();
+
+function preloadThumbUrl(url) {
+  const finalUrl = String(url || "");
+  if (!finalUrl) return Promise.resolve(null);
+  if (thumbImagePreloadCache.has(finalUrl)) return thumbImagePreloadCache.get(finalUrl);
+
+  const img = new Image();
+  img.decoding = "async";
+  img.loading = "eager";
+  img.src = finalUrl;
+
+  const promise = decodeImageElement(img)
+    .then(() => img)
+    .catch(() => null);
+
+  thumbImagePreloadCache.set(finalUrl, promise);
+  return promise;
+}
+
+function preloadThumbsForVariantIds(variantIds, limit = 12) {
+  const jobs = (variantIds || [])
+    .slice(0, limit)
+    .map((variantId) => preloadThumbUrl(getThumbUrlForVariant(variantId)));
+
+  return Promise.allSettled(jobs);
+}
+
 function attachThumbToImg(variantId, imgEl) {
   imgEl.dataset.variantId = variantId;
 
@@ -26927,7 +27059,11 @@ function attachThumbToImg(variantId, imgEl) {
     imgEl.onerror = null;
   };
 
-  imgEl.src = getThumbUrlForVariant(variantId);
+  const thumbUrl = getThumbUrlForVariant(variantId);
+  imgEl.loading = "eager";
+  imgEl.decoding = "async";
+  imgEl.src = thumbUrl;
+  preloadThumbUrl(thumbUrl).catch(() => null);
 }
 
 async function placeAddButton(position) {
