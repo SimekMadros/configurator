@@ -8,14 +8,7 @@
   <script>
     (function () {
       document.documentElement.setAttribute("data-view", "landing");
-      try {
-        if (sessionStorage.getItem("madrosLandingBootSeen") !== "1") {
-          document.documentElement.classList.add("is-first-landing-boot");
-          sessionStorage.setItem("madrosLandingBootSeen", "1");
-        }
-      } catch (e) {
-        document.documentElement.classList.add("is-first-landing-boot");
-      }
+      document.documentElement.classList.add("is-first-landing-boot");
     })();
   </script>
 
