@@ -1,6 +1,6 @@
-const RUNTIME_CACHE = "runtime-assets-v2";
+const RUNTIME_CACHE = "runtime-assets-v3";
 const RUNTIME_CACHE_PREFIX = "runtime-assets-";
-const RUNTIME_ASSET_PATHS = ["images/", "models/", "textures/", "thumbs/"];
+const RUNTIME_ASSET_PATHS = ["images/", "models/", "textures/", "thumbs/", "thumbs-webp/"];
 
 function getScopePathname() {
   const scopePath = new URL(self.registration.scope).pathname;

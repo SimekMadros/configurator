@@ -790,6 +790,12 @@ html[data-view="configurator"] #viewLanding { display: none; }
   }
 }
 
+/* Step 4: priblizeni textury uvnitr nahledu druhu latky bez zmeny velikosti prvku. */
+html[data-step="4"] #bottomBar .fabricFamilyThumb{
+  background-size: 190% 190% !important;
+  background-position: center !important;
+}
+
 .filterPanel h3 {
   margin: 0 0 12px;
 }
@@ -13173,6 +13179,46 @@ body{
 
 html[data-step="4"] #bottomBar .fabricShadeSwatch.is-loaded{
   background-color: var(--fabric-swatch-color, transparent) !important;
+}
+
+/* Step 4: loading state while a fabric shade is being applied to the 3D sofa. */
+#bottomBar .fabricShadeBtn.is-loading .fabricShadeSwatch{
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 2px rgba(88, 205, 238, 0.85),
+    0 0 18px rgba(88, 205, 238, 0.42);
+}
+
+#bottomBar .fabricShadeBtn.is-loading .fabricShadeSwatch::before{
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(255,255,255,0),
+      rgba(255,255,255,0.82),
+      rgba(88,205,238,0.46),
+      rgba(255,255,255,0)
+    );
+  animation: fabricShadeSpin 0.85s linear infinite;
+}
+
+#bottomBar .fabricShadeBtn.is-loading .fabricShadeSwatch::after{
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0) 42%, rgba(0,0,0,0.18)),
+    var(--fabric-swatch-color, rgba(255,255,255,0.12));
+  background-size: cover;
+  background-position: center;
+}
+
+@keyframes fabricShadeSpin{
+  to { transform: rotate(360deg); }
 }
 
 /* =========================================================
