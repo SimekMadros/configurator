@@ -13,7 +13,6 @@
   </script>
 
   <link rel="preload" as="image" href="./images/madros-logo.png" fetchpriority="high">
-  <link rel="preload" as="image" href="./images/Filtr-banner.png" fetchpriority="high">
   <link rel="preload" as="image" href="./images/models/manila/manila-hero4.png" fetchpriority="high">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:,">
@@ -86,9 +85,13 @@
     <aside class="filterPanel filterBannerPanel" aria-label="MADROS konfigurátor - pohovka na míru">
       <img
         class="filterBannerImg"
-        src="./images/Filtr-banner.png"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='1040' viewBox='0 0 520 1040'%3E%3Crect width='520' height='1040' fill='%23f3e2ca'/%3E%3C/svg%3E"
+        data-deferred-src="./images/landing/Filtr-banner.webp"
         alt="MADROS konfigurátor. Pohovka na míru. Navrhněte si vlastní sestavu podle prostoru, stylu i potřeb."
-        fetchpriority="high"
+        width="520"
+        height="1040"
+        loading="lazy"
+        fetchpriority="low"
         decoding="async"
       />
     </aside>
@@ -100,17 +103,17 @@
 
       <!-- ===== MANILA ===== -->
       <section class="modelCard" data-model="MANILA">
-        <div class="modelHero heroWithChips" style="--hero-img: url('./images/models/manila/manila-hero.png');">
+        <div class="modelHero heroWithChips">
           <img class="modelHeroImg" src="./images/models/manila/manila-hero4.png" alt="Manila" fetchpriority="high" decoding="async">
 
           <!-- malé náhledy vpravo (jen vizuál) -->
           <div class="heroChips" aria-hidden="true">
             <div class="heroChip">
-              <img src="./images/models/manila/manila-herochip-3.png" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/manila/manila-herochip-3.webp" alt="" loading="lazy" decoding="async">
             </div>
 
             <div class="heroChip">
-              <img src="./images/models/manila/manila-herochip-4.png" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/manila/manila-herochip-4.webp" alt="" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -150,31 +153,31 @@
           <div class="presetRow presetRowTiles">
             <!-- Vlastní tvar = žádný preset (jen otevřít konfigurátor prázdný) -->
             <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="">
-              <img class="presetThumb" src="./images/models/manila/manila-2.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manila/manila-2.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Vlastní tvar</span>
             </button>
 
             <!-- Manila 2-1D -->
             <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-1d">
-              <img class="presetThumb" src="./images/models/manila/manila-1DL-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manila/manila-1DL-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manila 2-1D</span>
             </button>
 
             <!-- Manila 2-roh-1 -->
             <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-roh-1">
-              <img class="presetThumb" src="./images/models/manila/manila-2P-roh-1L.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manila/manila-2P-roh-1L.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manila 2-roh-1</span>
             </button>
 
             <!-- Manila 2-roh-1MO -->
             <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-roh-1mo">
-              <img class="presetThumb" src="./images/models/manila/manila-2L-roh-1MO.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manila/manila-2L-roh-1MO.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manila 2-roh-1MO</span>
             </button>
 
             <!-- Manila 2-roh-2 -->
             <button class="presetBtn presetTile startPreset" data-model="MANILA" data-preset="manila-2-roh-2">
-              <img class="presetThumb" src="./images/models/manila/manila-2L-roh-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manila/manila-2L-roh-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manila 2-roh-2</span>
             </button>
           </div>
@@ -185,17 +188,17 @@
       <section class="modelCard" data-model="MENDOZA">
 
         <!-- HERO (stejný styl jako Manila) -->
-        <div class="modelHero heroWithChips" style="--hero-img: url('./images/models/mendoza/Mendoza-hero.png');">
+        <div class="modelHero heroWithChips">
           <img class="modelHeroImg" src="./images/models/mendoza/Mendoza-hero.png" alt="Mendoza" loading="lazy" decoding="async">
 
           <!-- malé náhledy vpravo (jen vizuál) -->
           <div class="heroChips" aria-hidden="true">
             <div class="heroChip">
-              <img src="./images/models/mendoza/Mendoza-herochip-1.png" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/mendoza/Mendoza-herochip-1.webp" alt="" loading="lazy" decoding="async">
             </div>
 
             <div class="heroChip">
-              <img src="./images/models/mendoza/Mendoza-herochip-2.png" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/mendoza/Mendoza-herochip-2.webp" alt="" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -238,38 +241,38 @@
 
             <!-- Vlastní tvar (data-preset prázdné = otevře konfigurátor prázdný) -->
             <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="">
-              <img class="presetThumb" src="./images/models/mendoza/Mendoza-2.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/mendoza/Mendoza-2.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Vlastní tvar</span>
             </button>
 
             <!-- Mendoza 2-1D -->
             <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-1d">
-              <img class="presetThumb" src="./images/models/mendoza/mendoza-1DL-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/mendoza/mendoza-1DL-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Mendoza 2-1D</span>
             </button>
 
             <!-- Mendoza 2-roh-1 -->
             <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-roh-1">
-              <img class="presetThumb" src="./images/models/mendoza/mendoza-2P-roh-1L.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/mendoza/mendoza-2P-roh-1L.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Mendoza 2-roh-1</span>
             </button>
 
             <!-- Mendoza 2-roh-1MO -->
             <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-roh-1mo">
-              <img class="presetThumb" src="./images/models/mendoza/mendoza-2L-roh-1MO.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/mendoza/mendoza-2L-roh-1MO.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Mendoza 2-roh-1MO</span>
             </button>
 
             <!-- Mendoza 2-roh-2 -->
             <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="mendoza-2-roh-2">
-              <img class="presetThumb" src="./images/models/mendoza/mendoza-2L-roh-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/mendoza/mendoza-2L-roh-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Mendoza 2-roh-2</span>
             </button>
 
             <!-- (Volitelně) Mendoza 2-roh-2 – přidej si další tlačítko když budeš mít obrázek + preset -->
             <!--
             <button class="presetBtn presetTile startPreset" data-model="MENDOZA" data-preset="MENDOZA_ROH_2">
-              <img class="presetThumb" src="./images/models/mendoza/mendoza-2L-roh-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/mendoza/mendoza-2L-roh-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Mendoza 2-roh-2</span>
             </button>
             -->
@@ -286,10 +289,10 @@
 
           <div class="heroChips" aria-hidden="true">
             <div class="heroChip">
-              <img src="./images/models/melbourne/Melbourne-herochip-1.jpg" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/melbourne/Melbourne-herochip-1.webp" alt="" loading="lazy" decoding="async">
             </div>
             <div class="heroChip">
-              <img src="./images/models/melbourne/Melbourne-herochip-2.jpg" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/melbourne/Melbourne-herochip-2.webp" alt="" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -330,31 +333,31 @@
 
             <!-- Vlastní tvar -->
             <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="">
-              <img class="presetThumb" src="./images/models/melbourne/Melbourne-2.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/melbourne/Melbourne-2.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Vlastní tvar</span>
             </button>
 
             <!-- Melbourne 2-1D -->
             <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_1D">
-              <img class="presetThumb" src="./images/models/melbourne/melbourne-1D-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/melbourne/melbourne-1D-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Melbourne 2-1D</span>
             </button>
 
             <!-- Melbourne 2-roh-1 -->
             <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_ROH_1">
-              <img class="presetThumb" src="./images/models/melbourne/melbourne-2P-roh-1L.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/melbourne/melbourne-2P-roh-1L.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Melbourne 2-roh-1</span>
             </button>
 
             <!-- Melbourne 2-roh-1MO -->
             <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_ROH_1MO">
-              <img class="presetThumb" src="./images/models/melbourne/melbourne-2L-roh-1MO.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/melbourne/melbourne-2L-roh-1MO.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Melbourne 2-roh-1MO</span>
             </button>
 
             <!-- Melbourne 2-roh-2 -->
             <button class="presetBtn presetTile startPreset" data-model="MELBOURNE" data-preset="MELBOURNE_2_ROH_2">
-              <img class="presetThumb" src="./images/models/melbourne/melbourne-2L-roh-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/melbourne/melbourne-2L-roh-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Melbourne 2-roh-2</span>
             </button>
           </div>
@@ -371,10 +374,10 @@
           <!-- malé náhledy vpravo (pokud je nechceš, smaž celý div heroChips) -->
           <div class="heroChips" aria-hidden="true">
             <div class="heroChip">
-              <img src="./images/models/manchester/Manchester-herochip-1.jpg" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/manchester/Manchester-herochip-1.webp" alt="" loading="lazy" decoding="async">
             </div>
             <div class="heroChip">
-              <img src="./images/models/manchester/Manchester-herochip-2.jpg" alt="" loading="lazy" decoding="async">
+              <img src="./images/landing/models/manchester/Manchester-herochip-2.webp" alt="" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -417,31 +420,31 @@
 
             <!-- Vlastní tvar -->
             <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="">
-              <img class="presetThumb" src="./images/models/manchester/Manchester-2.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manchester/Manchester-2.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Vlastní tvar</span>
             </button>
 
             <!-- Manchester 2-1D -->
             <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_1D">
-              <img class="presetThumb" src="./images/models/manchester/Manchester-1D-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manchester/Manchester-1D-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manchester 2-1D</span>
             </button>
 
             <!-- Manchester 2-roh-1 -->
             <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_ROH_1">
-              <img class="presetThumb" src="./images/models/manchester/Manchester-2P-roh-1L.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manchester/Manchester-2P-roh-1L.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manchester 2-roh-1</span>
             </button>
 
             <!-- Manchester 2-roh-1MO -->
             <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_ROH_1MO">
-              <img class="presetThumb" src="./images/models/manchester/Manchester-2L-roh-1MO.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manchester/Manchester-2L-roh-1MO.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manchester 2-roh-1MO</span>
             </button>
 
             <!-- Manchester 2-roh-2 -->
             <button class="presetBtn presetTile startPreset" data-model="MANCHESTER" data-preset="MANCHESTER_2_ROH_2">
-              <img class="presetThumb" src="./images/models/manchester/Manchester-2L-roh-2P.png" alt="" loading="lazy" decoding="async">
+              <img class="presetThumb" src="./images/landing/models/manchester/Manchester-2L-roh-2P.webp" alt="" loading="lazy" decoding="async">
               <span class="presetLabel">Manchester 2-roh-2</span>
             </button>
           </div>
@@ -807,12 +810,12 @@
 
                   <div class="legGrid4" id="hingesCardRow">
                     <button type="button" class="tileCard is-active" data-hinge="standard">
-                      <img class="tileImg" src="./images/panty/panty-leskle.png" alt="Standard" / loading="lazy" decoding="async">
+                      <img class="tileImg" src="./images/equipment/panty/panty-leskle.webp" alt="Standard" / loading="lazy" decoding="async">
                       <div class="tileTitle">Lesklé</div>
                     </button>
 
                     <button type="button" class="tileCard" data-hinge="softclose">
-                      <img class="tileImg" src="./images/panty/panty-black.png" alt="Soft-close" / loading="lazy" decoding="async">
+                      <img class="tileImg" src="./images/equipment/panty/panty-black.webp" alt="Soft-close" / loading="lazy" decoding="async">
                       <div class="tileTitle">Černé</div>
                     </button>
                   </div>

@@ -21,7 +21,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { getVariantIdsForSofa, normalizeSofaKey } from "./catalogue.js";
 import { FABRIC_SWATCH_COLORS } from "./fabricSwatchColors.generated.js";
 
-const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/sw.js"];
+const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/thumbs-webp/", "/sw.js"];
 
 const API_BASE_URL = "https://madros-configurator-api.onrender.com";
 
@@ -4791,6 +4791,7 @@ function normalizeEquipmentTabKey(key) {
 }
 let currentFabricTargetMode = "sofa";
 const renderedFabricTabs = new Set();
+let fabricApplyRequestId = 0;
 
 let activeFabricFamilyByTab = {
   cat1: null,
@@ -10179,8 +10180,8 @@ const MODEL_EQUIP_CONFIG = {
     ],
 
     armrests: [
-      { code: "smooth", label: "Kulatá", img: "./images/podrucky/Manila_kulata.png" },
-      { code: "sharp",   label: "Hranatá", img: "./images/podrucky/Manila_hranata.png" },
+      { code: "smooth", label: "Kulatá", img: "./images/equipment/podrucky/Manila_kulata.webp" },
+      { code: "sharp",   label: "Hranatá", img: "./images/equipment/podrucky/Manila_hranata.webp" },
     ],
 
     hinges: [
@@ -10197,8 +10198,8 @@ const MODEL_EQUIP_CONFIG = {
     ],
 
     armrests: [
-      { code: "smooth",    label: "Hranatá",    img: "./images/podrucky/Mendoza_hranata.png" },
-      { code: "sharp", label: "Polohovací", img: "./images/podrucky/Mendoza_polohovaci.png" },
+      { code: "smooth",    label: "Hranatá",    img: "./images/equipment/podrucky/Mendoza_hranata.webp" },
+      { code: "sharp", label: "Polohovací", img: "./images/equipment/podrucky/Mendoza_polohovaci.webp" },
     ],
 
     hinges: [
@@ -10215,7 +10216,7 @@ const MODEL_EQUIP_CONFIG = {
     ],
 
     armrests: [
-      { code: "smooth", label: "Melbourne", img: "./images/podrucky/Melbourne_normal.png" },
+      { code: "smooth", label: "Melbourne", img: "./images/equipment/podrucky/Melbourne_normal.webp" },
     ],
 
     hinges: [
@@ -10233,8 +10234,8 @@ const MODEL_EQUIP_CONFIG = {
     ],
 
     armrests: [
-      { code: "smooth", label: "Polohovací", img: "./images/podrucky/Manchester_polohovaci.png" },
-      { code: "sharp",  label: "Hranatá",    img: "./images/podrucky/Manchester_hranata.png" },
+      { code: "smooth", label: "Polohovací", img: "./images/equipment/podrucky/Manchester_polohovaci.webp" },
+      { code: "sharp",  label: "Hranatá",    img: "./images/equipment/podrucky/Manchester_hranata.webp" },
     ],
 
     hinges: []
@@ -10732,6 +10733,7 @@ function buildFabricFamilyFromFiles({
     normalScale,
     specs,
     info,
+    thumbUrl: `/images/fabric-family/${key}.webp`,
     shades,
   };
 }
@@ -12155,11 +12157,15 @@ function renderFabricBrowser({
       sw.style.backgroundRepeat = "no-repeat";
 
       btn.addEventListener("click", async () => {
+        const requestId = ++fabricApplyRequestId;
+
         // active state jen v gridu odstĂ­nĹŻ
         shadesEl
-          .querySelectorAll(".fabricShadeBtn.is-active")
-          .forEach((x) => x.classList.remove("is-active"));
+          .querySelectorAll(".fabricShadeBtn.is-active, .fabricShadeBtn.is-loading")
+          .forEach((x) => x.classList.remove("is-active", "is-loading"));
         btn.classList.add("is-active");
+        btn.classList.add("is-loading");
+        btn.setAttribute("aria-busy", "true");
 
         if (applyTarget !== "paspule") {
           appliedFabricPriceGroup = getFabricPriceGroupFromTabKey(tabKey);
@@ -12179,25 +12185,32 @@ function renderFabricBrowser({
 
         const selected = selectedGetter();
 
-        if (applyTarget === "paspule") {
-          await applyFabricToPaspuleByMaterialMap({
-            fabricKey: fabric.key,
-            baseColorUrl: selected?.baseColorUrl,
-            normalUrl: selected?.normalUrl,
-            roughnessUrl: selected?.roughnessUrl,
-            repeat: fabric.repeat ?? 2,
-            normalScale: fabric.normalScale,
-          });
-        } else {
-          // âś… bez tintovĂˇnĂ­ â€“ uĹľ mĂˇĹˇ hotovĂ© obrĂˇzky
-          await applyFabricToSofaByMaterialMap({
-            fabricKey: fabric.key,
-            baseColorUrl: selected?.baseColorUrl,
-            normalUrl: selected?.normalUrl,
-            roughnessUrl: selected?.roughnessUrl,
-            repeat: fabric.repeat ?? 2,
-            normalScale: fabric.normalScale,
-          });
+        try {
+          if (applyTarget === "paspule") {
+            await applyFabricToPaspuleByMaterialMap({
+              fabricKey: fabric.key,
+              baseColorUrl: selected?.baseColorUrl,
+              normalUrl: selected?.normalUrl,
+              roughnessUrl: selected?.roughnessUrl,
+              repeat: fabric.repeat ?? 2,
+              normalScale: fabric.normalScale,
+            });
+          } else {
+            // âś… bez tintovĂˇnĂ­ â€“ uĹľ mĂˇĹˇ hotovĂ© obrĂˇzky
+            await applyFabricToSofaByMaterialMap({
+              fabricKey: fabric.key,
+              baseColorUrl: selected?.baseColorUrl,
+              normalUrl: selected?.normalUrl,
+              roughnessUrl: selected?.roughnessUrl,
+              repeat: fabric.repeat ?? 2,
+              normalScale: fabric.normalScale,
+            });
+          }
+        } finally {
+          if (requestId === fabricApplyRequestId) {
+            btn.classList.remove("is-loading");
+            btn.removeAttribute("aria-busy");
+          }
         }
 
         scheduleSummaryRecalc?.();
@@ -12250,10 +12263,11 @@ function renderFabricBrowser({
 
     // thumb: vezmeme prvnĂ­ odstĂ­n jako preview
     const thumb = fabric.shades?.[0]?.baseColorUrl || "";
+    const familyThumb = fabric.thumbUrl || thumb;
     const thumbColor = getFabricSwatchColor(thumb, fabric.key);
 
     tab.innerHTML = `
-      <div class="fabricFamilyThumb" style="background-color:${escapeHtmlText(thumbColor)}"></div>
+      <div class="fabricFamilyThumb" style="background-color:${escapeHtmlText(thumbColor)}; background-image:url('${escapeHtmlText(assetUrl(familyThumb))}')"></div>
       <div class="fabricFamilyName">${fabric.name}</div>
     `;
 
@@ -13138,20 +13152,20 @@ function bindLegsEquipmentUI() {
   // KovovĂ© barvy podle nohy (pĹ™esnÄ› jak jsi psal)
   const METAL_BY_LEG = {
     N11: [
-      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/textures/metal/chrome/chrome-image.jpg" },
-      { id: "metal_matte_black", label: "Černý matný kov", img: "/textures/metal/matte_black/mate-black-image.png" },
+      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/images/equipment/metal/chrome.webp" },
+      { id: "metal_matte_black", label: "Černý matný kov", img: "/images/equipment/metal/matte-black.webp" },
     ],
     N8: [
-      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/textures/metal/chrome/chrome-image.jpg" },
-      { id: "metal_matte_black", label: "Černý matný kov", img: "/textures/metal/matte_black/mate-black-image.png" },
+      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/images/equipment/metal/chrome.webp" },
+      { id: "metal_matte_black", label: "Černý matný kov", img: "/images/equipment/metal/matte-black.webp" },
     ],
     N1: [
-      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/textures/metal/chrome/chrome-image.jpg" },
-      { id: "metal_matte", label: "Matný kov", img: "/textures/metal/matte/matte-image.jpg" },
+      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/images/equipment/metal/chrome.webp" },
+      { id: "metal_matte", label: "Matný kov", img: "/images/equipment/metal/matte.webp" },
     ],
     N21: [
-      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/textures/metal/chrome/chrome-image.jpg" },
-      { id: "meta_graphite", label: "Graphite", img: "/textures/metal/graphite/graphite-image.jpg" },
+      { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/images/equipment/metal/chrome.webp" },
+      { id: "meta_graphite", label: "Graphite", img: "/images/equipment/metal/graphite.webp" },
     ],
   };
 
@@ -19830,6 +19844,11 @@ window.addEventListener("popstate", (e) => {
 // Plati pouze pro hlavni fabric na pohovce, ne pro paspule, kov, drevo ani doplnky.
 const MANILA_FABRIC_REPEAT_MULTIPLIER = 1.5;
 const appliedTextureCache = new Map();
+const appliedFabricAuxCache = new Map();
+const appliedFabricAuxState = {
+  sofa: null,
+  paspule: null,
+};
 
 function getSofaFabricRepeatForActiveModel(repeat) {
   const baseRepeat = Number.isFinite(Number(repeat)) ? Number(repeat) : 1;
@@ -19861,6 +19880,51 @@ function loadAppliedTextureCached(url, isColor, repeat) {
   return promise;
 }
 
+function getAppliedFabricAuxKey({ fabricKey = "", normalUrl = "", roughnessUrl = "", repeat = 1 }) {
+  return [
+    String(fabricKey || ""),
+    assetUrl(normalUrl || ""),
+    assetUrl(roughnessUrl || ""),
+    Number(repeat) || 1,
+  ].join("|");
+}
+
+async function getAppliedFabricMapsForTarget({
+  target = "sofa",
+  fabricKey = "",
+  baseColorUrl,
+  normalUrl,
+  roughnessUrl,
+  repeat = 2,
+}) {
+  const baseMapPromise = loadAppliedTextureCached(baseColorUrl, true, repeat);
+  const auxKey = getAppliedFabricAuxKey({ fabricKey, normalUrl, roughnessUrl, repeat });
+  let aux = appliedFabricAuxState[target];
+
+  if (!aux || aux.key !== auxKey) {
+    if (!appliedFabricAuxCache.has(auxKey)) {
+      appliedFabricAuxCache.set(
+        auxKey,
+        Promise.all([
+          loadAppliedTextureCached(normalUrl, false, repeat),
+          loadAppliedTextureCached(roughnessUrl, false, repeat),
+        ])
+          .then(([normalMap, roughMap]) => ({ key: auxKey, normalMap, roughMap }))
+          .catch((error) => {
+            appliedFabricAuxCache.delete(auxKey);
+            throw error;
+          })
+      );
+    }
+
+    aux = await appliedFabricAuxCache.get(auxKey);
+    appliedFabricAuxState[target] = aux;
+  }
+
+  const baseMap = await baseMapPromise;
+  return { baseMap, normalMap: aux?.normalMap || null, roughMap: aux?.roughMap || null };
+}
+
 async function applyFabricToSofaByMaterialMap({
   fabricKey = "",
   baseColorUrl,
@@ -19873,14 +19937,15 @@ async function applyFabricToSofaByMaterialMap({
 
   const fabricRepeat = getSofaFabricRepeatForActiveModel(repeat);
 
-  let baseMap = null, normalMap = null, roughMap = null;
-
   try {
-    [baseMap, normalMap, roughMap] = await Promise.all([
-      loadAppliedTextureCached(baseColorUrl, true, fabricRepeat),
-      loadAppliedTextureCached(normalUrl, false, fabricRepeat),
-      loadAppliedTextureCached(roughnessUrl, false, fabricRepeat),
-    ]);
+    var { baseMap, normalMap, roughMap } = await getAppliedFabricMapsForTarget({
+      target: "sofa",
+      fabricKey,
+      baseColorUrl,
+      normalUrl,
+      roughnessUrl,
+      repeat: fabricRepeat,
+    });
   } catch (e) {
     console.error("Texture load failed:", e);
     return;
@@ -19943,14 +20008,15 @@ async function applyFabricToPaspuleByMaterialMap({
 }) {
   if (!scene) return;
 
-  let baseMap = null, normalMap = null, roughMap = null;
-
   try {
-    [baseMap, normalMap, roughMap] = await Promise.all([
-      loadAppliedTextureCached(baseColorUrl, true, repeat),
-      loadAppliedTextureCached(normalUrl, false, repeat),
-      loadAppliedTextureCached(roughnessUrl, false, repeat),
-    ]);
+    var { baseMap, normalMap, roughMap } = await getAppliedFabricMapsForTarget({
+      target: "paspule",
+      fabricKey,
+      baseColorUrl,
+      normalUrl,
+      roughnessUrl,
+      repeat,
+    });
   } catch (e) {
     console.error("Paspule texture load failed:", e);
     return;
@@ -22182,6 +22248,18 @@ function decodeImageElement(img) {
 
 function finishLandingBootOverlay() {
   document.documentElement.classList.remove("is-first-landing-boot");
+  loadDeferredLandingBanner();
+}
+
+function loadDeferredLandingBanner() {
+  const banner = document.querySelector(".filterBannerImg[data-deferred-src]");
+  if (!banner) return;
+
+  const src = banner.getAttribute("data-deferred-src");
+  if (!src) return;
+
+  banner.src = src;
+  banner.removeAttribute("data-deferred-src");
 }
 
 function prepareFirstLandingPaint() {
@@ -22189,9 +22267,7 @@ function prepareFirstLandingPaint() {
 
   const criticalImages = [
     document.querySelector(".brandLogo"),
-    document.querySelector(".filterBannerImg"),
-    ...document.querySelectorAll('#viewLanding .modelHeroImg'),
-    ...document.querySelectorAll('#viewLanding .modelCard[data-model="MANILA"] .presetThumb'),
+    ...document.querySelectorAll('#viewLanding img:not([data-deferred-src])'),
   ].filter(Boolean);
 
   criticalImages.forEach((img) => {
@@ -22200,7 +22276,7 @@ function prepareFirstLandingPaint() {
   });
 
   const decodePromise = Promise.allSettled(criticalImages.map(decodeImageElement));
-  const maxWait = new Promise((resolve) => setTimeout(resolve, 2200));
+  const maxWait = new Promise((resolve) => setTimeout(resolve, 7000));
 
   Promise.race([decodePromise, maxWait])
     .then(() => nextFrame())
@@ -27060,6 +27136,13 @@ function getThumbUrlForVariant(variantId) {
   return assetUrl(url);
 }
 
+function getOptimizedThumbUrlForVariant(variantId) {
+  const pngUrl = getThumbUrlForVariant(variantId);
+  return String(pngUrl || "")
+    .replace("/thumbs/", "/thumbs-webp/")
+    .replace(/\.png($|\?)/i, ".webp$1");
+}
+
 const thumbImagePreloadCache = new Map();
 
 function preloadThumbUrl(url) {
@@ -27083,7 +27166,7 @@ function preloadThumbUrl(url) {
 function preloadThumbsForVariantIds(variantIds, limit = 12) {
   const jobs = (variantIds || [])
     .slice(0, limit)
-    .map((variantId) => preloadThumbUrl(getThumbUrlForVariant(variantId)));
+    .map((variantId) => preloadThumbUrl(getOptimizedThumbUrlForVariant(variantId)));
 
   return Promise.allSettled(jobs);
 }
@@ -27099,9 +27182,17 @@ function attachThumbToImg(variantId, imgEl) {
     imgEl.onerror = null;
   };
 
-  const thumbUrl = getThumbUrlForVariant(variantId);
+  const thumbUrl = getOptimizedThumbUrlForVariant(variantId);
+  const fallbackThumbUrl = getThumbUrlForVariant(variantId);
   imgEl.loading = "eager";
   imgEl.decoding = "async";
+  imgEl.fetchPriority = "high";
+  imgEl.onerror = () => {
+    imgEl.onerror = null;
+    if (fallbackThumbUrl && imgEl.src !== fallbackThumbUrl) {
+      imgEl.src = fallbackThumbUrl;
+    }
+  };
   imgEl.src = thumbUrl;
   preloadThumbUrl(thumbUrl).catch(() => null);
 }
