@@ -4780,9 +4780,29 @@ function isHeadrestStepActive() {
 let currentEquipTabKey = "armrests";
 let currentFabricTabKey = "cat1";
 
+function isTabletLandscapeConfiguratorLayout() {
+  if (typeof window === "undefined") return false;
+  return (
+    Number(appState?.step || document.documentElement?.dataset?.step || 0) === 3 &&
+    isTabletLandscapeViewport()
+  );
+}
+
+function isTabletLandscapeViewport() {
+  if (typeof window === "undefined") return false;
+  return (
+    (window.matchMedia?.("(min-width: 900px) and (max-width: 1280px) and (max-height: 899px)")?.matches || false)
+  );
+}
+
+function isTabletConfiguratorLayout() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(min-width: 761px) and (max-width: 899px)")?.matches || false;
+}
+
 function isMobileEquipmentLayout() {
   if (typeof window === "undefined") return false;
-  return window.matchMedia?.("(max-width: 760px)")?.matches || false;
+  return window.matchMedia?.("(max-width: 899px)")?.matches || isTabletLandscapeConfiguratorLayout();
 }
 
 function normalizeEquipmentTabKey(key) {
@@ -9724,10 +9744,15 @@ function renderExtrasModuleList() {
   const eligible = (activeModules || []).filter(isModuleEligibleForExtras);
 
   const orderedEligible = orderExtrasModulesSpatialSnake(eligible);
+  listEl.dataset.count = String(orderedEligible.length);
+  listEl.classList.toggle("has-three-plus", orderedEligible.length >= 3);
+  listEl.classList.toggle("has-one-row", orderedEligible.length > 0 && orderedEligible.length <= 2);
 
   // empty
   if (!eligible.length) {
     listEl.innerHTML = "";
+    listEl.dataset.count = "0";
+    listEl.classList.remove("has-three-plus", "has-one-row");
     if (emptyEl) emptyEl.classList.remove("hidden");
     return;
   } else {
@@ -20097,10 +20122,25 @@ let modulePickerIgnoreClicksUntil = 0;
    zůstane zesvětlený jen na mobilu. */
 let actionMenuHighlightedModule = null;
 
+function isPhoneModuleActionMenuLayout() {
+  return window.matchMedia?.("(max-width: 760px)")?.matches || false;
+}
+
+function isTabletLandscapeModuleActionLayout() {
+  if (typeof window === "undefined") return false;
+
+  return (
+    window.matchMedia?.("(orientation: landscape)")?.matches &&
+    window.matchMedia?.("(min-width: 900px)")?.matches &&
+    window.matchMedia?.("(max-width: 1280px)")?.matches &&
+    window.matchMedia?.("(max-height: 899px)")?.matches
+  );
+}
+
 function isMobileModuleActionHighlightEnabled() {
   return (
-    window.matchMedia?.("(max-width: 760px)")?.matches ||
-    window.matchMedia?.("(pointer: coarse)")?.matches
+    window.matchMedia?.("(max-width: 899px)")?.matches ||
+    isTabletLandscapeModuleActionLayout()
   );
 }
 
@@ -20816,7 +20856,7 @@ function formatDraftUpdatedAt(ts) {
 }
 
 function isMobileDraftsLayout() {
-  return !!window.matchMedia?.("(max-width: 760px)")?.matches;
+  return !!window.matchMedia?.("(max-width: 899px)")?.matches;
 }
 
 function getDraftDisplayTitle(draft, isMobile = isMobileDraftsLayout()) {
@@ -21459,7 +21499,7 @@ const MOBILE_CAMERA_MAX_DIRECTION_Y = 0.16;
 function isMobileCameraView() {
   if (typeof window === "undefined") return false;
   return (
-    window.matchMedia?.("(max-width: 760px)")?.matches ||
+    window.matchMedia?.("(max-width: 899px)")?.matches ||
     window.matchMedia?.("(pointer: coarse)")?.matches
   );
 }
@@ -23152,9 +23192,17 @@ const STEP4_MOBILE_CAMERA_SHIFT_RATIO = 0.38;
 
 let step4MobileCameraViewKey = "";
 
-function isStep4MobileBottomMenuOpen() {
-  if (!isMobileCameraView?.()) return false;
-  if (Number(appState?.step) !== 4) return false;
+function isTabletViewportForConfigurator() {
+  return isTabletConfiguratorLayout() || isTabletLandscapeViewport();
+}
+
+function shouldShiftCameraForOpenBottomMenu() {
+  const tabletViewport = isTabletViewportForConfigurator();
+  if (!isMobileCameraView?.() && !tabletViewport) return false;
+
+  const step = Number(appState?.step);
+  if (step === 3 && !tabletViewport) return false;
+  if (step !== 3 && step !== 4) return false;
 
   const configurator = document.getElementById("viewConfigurator");
   if (!configurator?.classList.contains("activeView")) return false;
@@ -23168,7 +23216,7 @@ function isStep4MobileBottomMenuOpen() {
   );
 }
 
-function getStep4MobileCameraShiftPx() {
+function getOpenBottomMenuCameraShiftPx() {
   const bottomBar = document.getElementById("bottomBar");
   const panel = bottomBar?.querySelector(".bottomPanel");
   const panelHeight = panel?.getBoundingClientRect?.().height || 0;
@@ -23182,10 +23230,10 @@ function getStep4MobileCameraShiftPx() {
   ));
 }
 
-function applyStep4MobileCameraFramingOffset() {
+function applyOpenBottomMenuCameraFramingOffset() {
   if (!camera || !renderer) return;
 
-  if (!isStep4MobileBottomMenuOpen()) {
+  if (!shouldShiftCameraForOpenBottomMenu()) {
     if (step4MobileCameraViewKey) {
       camera.clearViewOffset();
       step4MobileCameraViewKey = "";
@@ -23196,8 +23244,8 @@ function applyStep4MobileCameraFramingOffset() {
   const size = renderer.getSize(new THREE.Vector2());
   const width = Math.max(1, Math.round(size.x || 1));
   const height = Math.max(1, Math.round(size.y || 1));
-  const yOffset = Math.min(height - 1, getStep4MobileCameraShiftPx());
-  const key = `${width}x${height}:${yOffset}`;
+  const yOffset = Math.min(height - 1, getOpenBottomMenuCameraShiftPx());
+  const key = `${Number(appState?.step) || 0}:${width}x${height}:${yOffset}`;
 
   if (key === step4MobileCameraViewKey) return;
 
@@ -24831,12 +24879,22 @@ function closeActionMenu() {
 
 function positionModuleActionMenuAt(clientX, clientY) {
   if (!moduleActionMenu) return;
+  const isPhoneActionMenu = isPhoneModuleActionMenuLayout();
+  const stylePriority = isPhoneActionMenu ? "" : "important";
+  if (isPhoneActionMenu) {
+    moduleActionMenu.style.removeProperty("right");
+    moduleActionMenu.style.removeProperty("bottom");
+  }
 
   // DŮLEŽITÉ:
   // Menu musí být počítané vůči viewportu, ne vůči žádnému parent elementu.
   // Tím se opraví posunutí menu mimo kurzor.
-  moduleActionMenu.style.position = "fixed";
+  moduleActionMenu.style.setProperty("position", "fixed", stylePriority);
   moduleActionMenu.style.transform = "none";
+  if (!isPhoneActionMenu) {
+    moduleActionMenu.style.setProperty("right", "auto", "important");
+    moduleActionMenu.style.setProperty("bottom", "auto", "important");
+  }
 
   const offsetX = 10;
   const offsetY = 10;
@@ -24847,8 +24905,8 @@ function positionModuleActionMenuAt(clientX, clientY) {
 
   // Nejdřív ho dočasně zobrazíme / nastavíme, aby šla změřit velikost.
   moduleActionMenu.classList.add("visible");
-  moduleActionMenu.style.left = `${left}px`;
-  moduleActionMenu.style.top = `${top}px`;
+  moduleActionMenu.style.setProperty("left", `${left}px`, stylePriority);
+  moduleActionMenu.style.setProperty("top", `${top}px`, stylePriority);
 
   const rect = moduleActionMenu.getBoundingClientRect();
 
@@ -24860,8 +24918,8 @@ function positionModuleActionMenuAt(clientX, clientY) {
     top = window.innerHeight - rect.height - pad;
   }
 
-  moduleActionMenu.style.left = `${Math.round(left)}px`;
-  moduleActionMenu.style.top = `${Math.round(top)}px`;
+  moduleActionMenu.style.setProperty("left", `${Math.round(left)}px`, stylePriority);
+  moduleActionMenu.style.setProperty("top", `${Math.round(top)}px`, stylePriority);
 }
 
 function getVisibleRaycastMeshesFromRoot(root) {
@@ -30264,7 +30322,7 @@ function animate() {
 
   controls.update();
   preventCameraInsideModules();
-  applyStep4MobileCameraFramingOffset();
+  applyOpenBottomMenuCameraFramingOffset();
 
   renderer.render(scene, camera);
 }
@@ -31837,7 +31895,22 @@ window.addEventListener("resize", () => {
    ========================================================= */
 
 (function initMadrosMobileScrollHints(){
-  const MOBILE_MAX = 760;
+  const MOBILE_MAX = 899;
+  const TABLET_LANDSCAPE_MIN = 900;
+  const TABLET_LANDSCAPE_MAX = 1280;
+  const TABLET_LANDSCAPE_MAX_HEIGHT = 899;
+
+  function isScrollHintViewport(){
+    const isMobile = window.innerWidth <= MOBILE_MAX;
+
+    const isTabletLandscape =
+      window.matchMedia("(orientation: landscape)").matches &&
+      window.innerWidth >= TABLET_LANDSCAPE_MIN &&
+      window.innerWidth <= TABLET_LANDSCAPE_MAX &&
+      window.innerHeight <= TABLET_LANDSCAPE_MAX_HEIGHT;
+
+    return isMobile || isTabletLandscape;
+  }
 
   const SCROLL_SELECTORS = [
     "#bottomBar .bottomTabs",
@@ -31877,7 +31950,7 @@ window.addEventListener("resize", () => {
 
   function isMobileStep3(){
     return (
-      window.innerWidth <= MOBILE_MAX &&
+      isScrollHintViewport() &&
       document.documentElement.dataset.step === "3" &&
       !document.getElementById("bottomBar")?.classList.contains("is-hidden") &&
       !document.getElementById("bottomBar")?.classList.contains("is-collapsed")
@@ -32138,7 +32211,22 @@ window.addEventListener("resize", () => {
    ========================================================= */
 
 (function initStep4FabricScrollbars(){
-  const MOBILE_MAX = 520;
+  const MOBILE_MAX = 899;
+  const TABLET_LANDSCAPE_MIN = 900;
+  const TABLET_LANDSCAPE_MAX = 1280;
+  const TABLET_LANDSCAPE_MAX_HEIGHT = 899;
+
+  function isScrollHintViewport(){
+    const isMobile = window.innerWidth <= MOBILE_MAX;
+
+    const isTabletLandscape =
+      window.matchMedia("(orientation: landscape)").matches &&
+      window.innerWidth >= TABLET_LANDSCAPE_MIN &&
+      window.innerWidth <= TABLET_LANDSCAPE_MAX &&
+      window.innerHeight <= TABLET_LANDSCAPE_MAX_HEIGHT;
+
+    return isMobile || isTabletLandscape;
+  }
 
   const TARGET_SELECTORS = [
     "#bottomBar .fabricFamilyTabs",
@@ -32150,7 +32238,7 @@ window.addEventListener("resize", () => {
 
   function isEnabled(){
     return (
-      window.innerWidth <= MOBILE_MAX &&
+      isScrollHintViewport() &&
       document.documentElement.dataset.step === "4" &&
       !document.getElementById("bottomBar")?.classList.contains("is-hidden") &&
       !document.getElementById("bottomBar")?.classList.contains("is-collapsed")
