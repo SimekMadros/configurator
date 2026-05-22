@@ -1,5 +1,4 @@
-﻿
-import * as THREE from "three";
+﻿import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
@@ -4805,9 +4804,15 @@ function isMobileEquipmentLayout() {
   return window.matchMedia?.("(max-width: 899px)")?.matches || isTabletLandscapeConfiguratorLayout();
 }
 
+function shouldSplitArmrestsDimensionsLayout() {
+  if (typeof window === "undefined" || appState.step !== 3) return false;
+  const splitUntil = shouldShowArmrestsTab() ? 1700 : 1450;
+  return window.innerWidth < splitUntil;
+}
+
 function normalizeEquipmentTabKey(key) {
   if (appState.step !== 3) return key;
-  return !isMobileEquipmentLayout() && key === "dimensions" ? "armrests" : key;
+  return !shouldSplitArmrestsDimensionsLayout() && key === "dimensions" ? "armrests" : key;
 }
 let currentFabricTargetMode = "sofa";
 const renderedFabricTabs = new Set();
@@ -10122,7 +10127,8 @@ function updateBottomBarUI() {
   }
 
   const shelfAvailable = shouldShowMelbourneShelfTab();
-  const mobileEquipment = isMobileEquipmentLayout();
+  const splitArmrestsDimensions = shouldSplitArmrestsDimensionsLayout();
+  document.documentElement.classList.toggle("split-armrests-dimensions", splitArmrestsDimensions);
   if (appState.step === 3 && currentEquipTabKey === "shelf" && !shelfAvailable) {
     currentEquipTabKey = "legs";
   }
@@ -10131,10 +10137,10 @@ function updateBottomBarUI() {
     currentEquipTabKey = "legs";
   }
   const armrestsAvailable = shouldShowArmrestsTab();
-  if (appState.step === 3 && currentEquipTabKey === "armrests" && !armrestsAvailable && mobileEquipment) {
+  if (appState.step === 3 && currentEquipTabKey === "armrests" && !armrestsAvailable && splitArmrestsDimensions) {
     currentEquipTabKey = "dimensions";
   }
-  if (appState.step === 3 && currentEquipTabKey === "dimensions" && !mobileEquipment) {
+  if (appState.step === 3 && currentEquipTabKey === "dimensions" && !splitArmrestsDimensions) {
     currentEquipTabKey = "armrests";
   }
   const extrasAvailable = shouldShowExtrasTab();
@@ -10154,13 +10160,13 @@ function updateBottomBarUI() {
       step === appState.step &&
       (!isShelfTab || shelfAvailable) &&
       (!isHingesTab || hingesAvailable) &&
-      (!isArmrestsTab || armrestsAvailable || !mobileEquipment) &&
-      (!isDimensionsTab || mobileEquipment) &&
+      (!isArmrestsTab || armrestsAvailable || !splitArmrestsDimensions) &&
+      (!isDimensionsTab || splitArmrestsDimensions) &&
       (!isExtrasTab || extrasAvailable);
     t.classList.toggle("hidden", !visible);
 
     if (appState.step === 3 && isArmrestsTab) {
-      t.textContent = mobileEquipment ? "Područky" : "Područky a rozměry";
+      t.textContent = splitArmrestsDimensions ? "Područky" : "Područky a rozměry";
     }
   });
 
@@ -10168,7 +10174,7 @@ function updateBottomBarUI() {
   if (appState.step === 3) {
     currentEquipTabKey = normalizeEquipmentTabKey(currentEquipTabKey);
     setBottomPanelByKey(currentEquipTabKey);
-    if (currentEquipTabKey === "dimensions" || (!mobileEquipment && currentEquipTabKey === "armrests")) {
+    if (currentEquipTabKey === "dimensions" || (!splitArmrestsDimensions && currentEquipTabKey === "armrests")) {
       try { window.refreshSofaDimsUI?.(); } catch (e) {}
       try { window.__refreshSofaPlanEverywhere?.(); } catch (e) {}
     }
@@ -12430,7 +12436,7 @@ function setBottomPanelByKey(key) {
   const showDesktopCombinedDims =
     appState.step === 3 &&
     key === "armrests" &&
-    !isMobileEquipmentLayout();
+    !shouldSplitArmrestsDimensionsLayout();
 
   document.querySelectorAll(".bottomTab").forEach((x) => {
     const step = Number(x.dataset.step || 3);
@@ -12917,8 +12923,9 @@ function bindBottomTabs() {
 
   function setActiveTab(key) {
     key = normalizeEquipmentTabKey(key);
+    const splitArmrestsDimensions = shouldSplitArmrestsDimensionsLayout();
 
-    if (appState.step === 3 && key === "armrests" && !shouldShowArmrestsTab() && isMobileEquipmentLayout()) {
+    if (appState.step === 3 && key === "armrests" && !shouldShowArmrestsTab() && splitArmrestsDimensions) {
       key = "dimensions";
     }
     if (appState.step === 3 && key === "shelf" && !shouldShowMelbourneShelfTab()) {
@@ -12948,7 +12955,7 @@ function bindBottomTabs() {
     const showDesktopCombinedDims =
       appState.step === 3 &&
       key === "armrests" &&
-      !isMobileEquipmentLayout();
+      !shouldSplitArmrestsDimensionsLayout();
 
     tabs.forEach((x) => {
       const isForThisStep = Number(x.dataset.step || 3) === appState.step;
