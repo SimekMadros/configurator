@@ -13491,6 +13491,45 @@ html[data-step="4"] #bottomBar .fabricShadeSwatch.is-loaded{
   }
 }
 
+/* 900-999 px tablet landscape: bez leveho banneru, ale sestavy zustanou 3 v rade. */
+@media (orientation: landscape) and (min-width: 900px) and (max-width: 999px) and (max-height: 899px){
+  #viewLanding .productList{
+    padding: 18px 18px 108px !important;
+  }
+
+  #viewLanding .presetRow,
+  #viewLanding .presetRowTiles{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    justify-content: stretch !important;
+  }
+
+  #viewLanding .presetBtn.presetTile{
+    width: 100% !important;
+    height: 116px !important;
+    grid-template-rows: 82px 34px !important;
+    border-radius: 16px !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetThumb{
+    object-fit: contain !important;
+    object-position: center center !important;
+    background: #f7f5f2 !important;
+    transform: none !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetLabel{
+    font-size: 13px !important;
+    padding: 0 6px !important;
+    line-height: 1.05 !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-preset=""] .presetThumb{
+    object-fit: cover !important;
+  }
+}
+
 /* 1000–1149 px = menší tablet na šířku, ale pořád desktop/tablet layout */
 @media (min-width: 1000px) and (max-width: 1149px){
   #viewLanding .landingLayout{
@@ -14471,3 +14510,271 @@ html[data-step="4"] #bottomBar .fabricFamilyThumb{
   }
 }
 
+/* 621-760 px: stejne dvousloupcove preset karty jako na mobilu, bez prerostlych fotek. */
+@media (min-width: 621px) and (max-width: 760px){
+  #viewLanding .presetRow,
+  #viewLanding .presetRowTiles{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    justify-content: stretch !important;
+  }
+
+  #viewLanding .presetBtn.presetTile{
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 132px !important;
+    grid-template-rows: 94px 38px !important;
+    background: #f7f5f2 !important;
+    border-color: rgba(255,255,255,0.28) !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetThumb{
+    object-fit: contain !important;
+    object-position: center center !important;
+    box-sizing: border-box !important;
+    padding: 4px 6px !important;
+    background: #f7f5f2 !important;
+    transform: none !important;
+    transform-origin: center center !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetLabel{
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    font-size: 13px !important;
+    letter-spacing: 0 !important;
+    line-height: 1.05 !important;
+    background: #E2D4C333 !important;
+    color: rgba(0,0,0,0.62) !important;
+    white-space: nowrap !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-preset=""] .presetThumb{
+    object-fit: cover !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+}
+
+/* Uzke mobily: do 354 px nazvy podrucek zacinaji od leveho okraje karty. */
+@media (max-width: 354px){
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle{
+    justify-content: flex-start !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    text-align: left !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText{
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+}
+
+/* Od 355 px uz je na nazvy podrucek dost mista, tak se mohou centrovat. */
+@media (min-width: 355px) and (max-width: 479px){
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle{
+    justify-content: center !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    text-align: center !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText{
+    flex: 0 1 auto !important;
+    width: auto !important;
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+}
+
+/* 320-350 px: drobne zmenseni textu podrucek, aby se cele nazvy vesly. */
+@media (min-width: 320px) and (max-width: 350px){
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText{
+    font-size: 10px !important;
+    line-height: 1.02 !important;
+  }
+}
+
+/* 320-339 px: nejuzsi mobily potrebuji jeste mensi titulek podrucek. */
+@media (min-width: 320px) and (max-width: 339px){
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle{
+    gap: 2px !important;
+  }
+
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitle,
+  html[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #viewConfigurator[data-step="3"] #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText,
+  #bottomBar .bottomSection[data-tabpanel="armrests"] #armrestsCardRow .tileTitleText{
+    font-size: 9px !important;
+    line-height: 1 !important;
+  }
+}
+
+/* 761-999 px tablet: final override, aby stary max-width:1100 breakpoint nevracel 2 sloupce. */
+@media (min-width: 761px) and (max-width: 999px){
+  #viewLanding .productList{
+    padding: 18px 18px 108px !important;
+  }
+
+  #viewLanding .presetRow,
+  #viewLanding .presetRowTiles{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    justify-content: stretch !important;
+  }
+
+  #viewLanding .presetBtn.presetTile{
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 116px !important;
+    grid-template-rows: 82px 34px !important;
+    border-radius: 16px !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetThumb{
+    object-fit: contain !important;
+    object-position: center center !important;
+    box-sizing: border-box !important;
+    padding: 4px 6px !important;
+    background: #f7f5f2 !important;
+    transform: none !important;
+  }
+
+  #viewLanding .presetBtn.presetTile .presetLabel{
+    font-size: 13px !important;
+    padding: 0 6px !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+  }
+
+  #viewLanding .presetBtn.presetTile[data-preset=""] .presetThumb{
+    object-fit: cover !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+}
+
+/* Step 3: vynucene oddeleni "Podrucky" a "Rozmery" pro sirky pod JS breakpointem. */
+html.split-armrests-dimensions[data-step="3"] #bottomBar .bottomTab[data-tab="dimensions"]{
+  display: inline-flex !important;
+}
+
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomContent,
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomContent{
+  display: block !important;
+  grid-template-columns: none !important;
+  overflow: hidden !important;
+}
+
+html.split-armrests-dimensions[data-step="3"] #bottomBar .bottomSection.hidden{
+  display: none !important;
+}
+
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"],
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+  display: none !important;
+}
+
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="armrests"]{
+  display: none !important;
+}
+
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"],
+html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+  display: grid !important;
+}
+
+@media (min-width: 900px){
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomContent{
+    display: flex !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="armrests"]{
+    width: min(100%, 760px) !important;
+    margin: 0 auto !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="armrests"] .armrestsLeftRow{
+    justify-content: center !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomContent{
+    display: flex !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"]{
+    width: min(100%, 1080px) !important;
+    margin: 0 auto !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"] .dimensionsLayout{
+    display: grid !important;
+    grid-template-columns: minmax(360px, 1fr) minmax(420px, 520px) !important;
+    gap: 22px !important;
+    align-items: center !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"] .dimensionsPlanToggle{
+    display: none !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"] #sofaPlanBlock{
+    display: flex !important;
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    justify-content: center !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"] .sofaPlanWrap{
+    width: min(100%, 430px) !important;
+    max-width: 430px !important;
+    margin: 0 auto !important;
+  }
+
+  html.split-armrests-dimensions[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="dimensions"]) .bottomSection[data-tabpanel="dimensions"] #sofaDimsBlock{
+    width: 100% !important;
+    max-width: 520px !important;
+    justify-self: end !important;
+    margin: 0 !important;
+  }
+}
+
+/* 1600-1849 px: ve spojenem tabu posunout pudorys tesneji k rozmerum. */
+@media (min-width: 1600px) and (max-width: 1849px){
+  html:not(.split-armrests-dimensions)[data-step="3"] #bottomBar:has(.bottomTab.active[data-tab="armrests"]) .bottomSection[data-tabpanel="dimensions"] #sofaPlanBlock{
+    left: calc(50% + 56px) !important;
+  }
+}
