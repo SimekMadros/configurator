@@ -24,6 +24,42 @@ const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/t
 
 const API_BASE_URL = "https://madros-configurator-api.onrender.com";
 
+const GA_MEASUREMENT_ID = "G-NH9E7MVG3C";
+
+function trackAnalyticsEvent(eventName, params = {}) {
+  if (typeof window === "undefined") return;
+  if (typeof window.gtag !== "function") {
+    if (DEBUG_LOGS) console.log("[GA missing]", eventName, params);
+    return;
+  }
+
+  window.gtag("event", eventName, {
+    ...params,
+    app_name: "madros_configurator",fdocument.querySelectorAll(".startPreset").forEach(btn => {
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("DOMContentLoaded", () => {
+    trackAnalyticsEvent("configurator_visit", {
+      page_location: window.location.href,
+      page_path: window.location.pathname,
+    });
+  });
+}
+
+function getStepName(step) {
+  const names = {
+    1: "Model",
+    2: "Sestava",
+    3: "Vybavení",
+    4: "Materiál",
+    5: "Rekapitulace",
+  };
+
+  return names[Number(step)] || `Krok ${step}`;
+}
+
 function apiUrl(path) {
   const raw = String(path || "");
   if (!raw) return API_BASE_URL;
@@ -554,6 +590,12 @@ async function setStep(step, { push = true } = {}) {
 
   appState.step = step;
   document.documentElement.setAttribute("data-step", String(step));
+
+  trackAnalyticsEvent("configurator_step_view", {
+    step_number: Number(step),
+    step_name: getStepName(step),
+    sofa_model: appState.model || "",
+  });
 
   // update step bar in configurator
   document.querySelectorAll("#stepBar .step").forEach(el => {
@@ -19557,7 +19599,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   // landing presets
   document.querySelectorAll(".startPreset").forEach(btn => {
     btn.addEventListener("click", () => {
-      startConfigurator(btn.dataset.model, btn.dataset.preset || null).catch(console.error);
+      const model = btn.dataset.model || "";
+      const preset = btn.dataset.preset || "";
+
+      trackAnalyticsEvent("select_sofa", {
+        sofa_model: model,
+        preset: preset || "vlastni_tvar",
+      });
+
+      startConfigurator(model, preset || null).catch(console.error);
     });
   });
 
@@ -19635,6 +19685,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   document.getElementById("recapPrintBtn")?.addEventListener("click", async () => {
+
+    trackAnalyticsEvent("download_pdf_click", {
+      sofa_model: appState.model || "",
+      step_number: appState.step,
+    });
+
     const btn = document.getElementById("recapPrintBtn");
     const originalText = btn?.textContent || "";
     if (btn) {
@@ -19705,6 +19761,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("recapEmailBtn")?.addEventListener("click", async () => {
+
+    trackAnalyticsEvent("inquiry_submit_click", {
+      sofa_model: appState.model || "",
+      step_number: appState.step,
+    });
+
     const btn = document.getElementById("recapEmailBtn");
     const originalText = btn?.textContent?.trim() || "";
     const customerEmail = await askForRecapCustomerEmail();
@@ -19719,6 +19781,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     try {
       await sendRecapInquiry(customerEmail);
+
+      trackAnalyticsEvent("inquiry_submit_success", {
+        sofa_model: appState.model || "",
+        step_number: appState.step,
+      });
+
       if (typeof showPlacementMessage === "function") {
         showPlacementMessage("Poptávku jsme přijali a odesíláme email. Děkujeme.", 4500);
       } else {
@@ -19726,6 +19794,13 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
     } catch (e) {
       console.error("Recap inquiry failed:", e);
+
+      trackAnalyticsEvent("inquiry_submit_error", {
+        sofa_model: appState.model || "",
+        step_number: appState.step,
+        error_message: e?.message || "unknown_error",
+      });
+      
       const message = e?.message || "Poptávku se nepodařilo odeslat. Zkuste to prosím znovu.";
       if (typeof showPlacementMessage === "function") showPlacementMessage(message, 6500);
       else alert(message);
