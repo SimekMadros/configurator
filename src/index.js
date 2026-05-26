@@ -35,7 +35,7 @@ function trackAnalyticsEvent(eventName, params = {}) {
 
   window.gtag("event", eventName, {
     ...params,
-    app_name: "madros_configurator",fdocument.querySelectorAll(".startPreset").forEach(btn => {
+    app_name: "madros_configurator",
   });
 }
 
