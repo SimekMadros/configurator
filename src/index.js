@@ -24,19 +24,21 @@ const LOCAL_ASSET_ROOTS = ["/images/", "/textures/", "/models/", "/thumbs/", "/t
 
 const API_BASE_URL = "https://madros-configurator-api.onrender.com";
 
-const GA_MEASUREMENT_ID = "G-NH9E7MVG3C";
+const GTM_CONTAINER_ID = "GTM-MRZJZTJG";
 
 function trackAnalyticsEvent(eventName, params = {}) {
   if (typeof window === "undefined") return;
-  if (typeof window.gtag !== "function") {
-    if (DEBUG_LOGS) console.log("[GA missing]", eventName, params);
-    return;
-  }
 
-  window.gtag("event", eventName, {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: eventName,
     ...params,
     app_name: "madros_configurator",
   });
+
+  if (DEBUG_LOGS) {
+    console.log("[GTM dataLayer]", eventName, params);
+  }
 }
 
 if (typeof window !== "undefined") {
@@ -584,6 +586,9 @@ async function handleStepClick(targetStep, originBarSelector) {
 }
 
 async function setStep(step, { push = true } = {}) {
+  const previousStep = appState.step;
+  const nextStep = Number(step);
+
   if (appState.step === 5 && step !== 5 && recapDimsEditMode) {
     exitRecapDimsEditMode({ save: true, render: false });
   }
@@ -592,10 +597,18 @@ async function setStep(step, { push = true } = {}) {
   document.documentElement.setAttribute("data-step", String(step));
 
   trackAnalyticsEvent("configurator_step_view", {
-    step_number: Number(step),
+    step_number: nextStep,
     step_name: getStepName(step),
     sofa_model: appState.model || "",
   });
+
+  if (nextStep === 5 && Number(previousStep) !== 5) {
+    trackAnalyticsEvent("configurator_complete", {
+      step_number: 5,
+      step_name: "Rekapitulace",
+      sofa_model: appState.model || "",
+    });
+  }
 
   // update step bar in configurator
   document.querySelectorAll("#stepBar .step").forEach(el => {
