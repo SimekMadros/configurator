@@ -163,7 +163,7 @@ if (typeof window !== "undefined") {
 // =======================
 // DISCOUNT (jedno ÄŤĂ­slo)
 // =======================
-const DISCOUNT_PERCENT = 20; // <- zmÄ›Ĺ jen tohle (0 = bez slevy, 15 = -15%, ...)
+const DISCOUNT_PERCENT = 22; // <- zmÄ›Ĺ jen tohle (0 = bez slevy, 15 = -15%, ...)
 
 function getDiscountPercent() {
   const p = Number(DISCOUNT_PERCENT);
