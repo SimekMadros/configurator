@@ -1422,7 +1422,7 @@ addBaseAndX(modulesCatalog, {
 // ---- KĹ™eslo ----
 addBaseAndX(modulesCatalog, {
   baseId: "Manila_kreslo",
-  baseLabel: "KĹ™eslo",
+  baseLabel: "Křeslo",
   model: "Manila_kreslo",
   allowX: true,
   baseDimsCm: { w: 100, d: 103, h: 0 },
@@ -1663,7 +1663,7 @@ addBaseAndX(modulesCatalog, {
 // ---- KĹ™eslo ----
 addBaseAndX(modulesCatalog, {
   baseId: "Mendoza_kreslo",
-  baseLabel: "KĹ™eslo",
+  baseLabel: "Křeslo",
   model: "Mendoza_kreslo",
   allowX: true,
   baseDimsCm: { w: 120, d: 102, h: 0 },
@@ -1672,6 +1672,10 @@ addBaseAndX(modulesCatalog, {
   xRangeCm:   { min: 126, max: 150 },
   allowedUpgradesBase: ["storage"], // uprav dle reality
 });
+
+if (modulesCatalog["Mendoza_kresloX"]) {
+  modulesCatalog["Mendoza_kresloX"].label = "1X - Křeslo";
+}
 
 // ---- Rohy (bez X variant) ----
 addBaseAndX(modulesCatalog, {
