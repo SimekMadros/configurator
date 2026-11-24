@@ -828,29 +828,39 @@ function getVariantModelKey(variantId) {
   return value.split("_")[0].toUpperCase();
 }
 
-function isManchesterSharpArmrestSelection(armrestType = selectedArmrests, modelKey = getModelKey()) {
-  return (
-    String(modelKey || "").trim().toUpperCase() === "MANCHESTER" &&
-    String(armrestType || "").trim().toLowerCase() === "sharp"
-  );
-}
-
-function getManchesterArmrestPriceKey(
+function getConfiguredModulePrice(
   variantId,
   fabricId,
-  baseUpgradeKey = null,
+  upgradeKey,
   {
     armrestType = selectedArmrests,
     modelKey = getVariantModelKey(variantId) || getModelKey(),
-    disabled = false,
+    isExtended = false,
   } = {}
 ) {
-  if (disabled || baseUpgradeKey) return baseUpgradeKey || null;
-  if (!isManchesterSharpArmrestSelection(armrestType, modelKey)) return baseUpgradeKey || null;
+  const cat = getCatalog(variantId);
+  if (!cat) return 0;
 
-  const cat = getCatalog?.(variantId);
-  const armrestPrice = cat?.upgradePrices?.armrest?.[fabricId];
-  return Number(armrestPrice) > 0 ? "armrest" : (baseUpgradeKey || null);
+  const sharpSelected = String(armrestType || "").trim().toLowerCase() === "sharp";
+  const alternativePrice = Number(cat.upgradePrices?.armrest?.[fabricId]) || 0;
+  const useManchesterArmrest = modelKey === "MANCHESTER" && sharpSelected && !upgradeKey && alternativePrice > 0;
+  const effectiveUpgradeKey = useManchesterArmrest ? "armrest" : upgradeKey;
+  let price = getModulePrice(variantId, fabricId, effectiveUpgradeKey);
+
+  if (isExtended) {
+    const extendedKey = effectiveUpgradeKey === "armrest" ? "extendedArmrest"
+      : upgradeKey === "storage" ? "extendedStorage"
+      : !upgradeKey ? "extendedBase"
+      : null;
+    const extendedPrice = Number(cat.upgradePrices?.[extendedKey]?.[fabricId]);
+    if (Number.isFinite(extendedPrice) && extendedPrice > 0) price = extendedPrice;
+  }
+
+  if (modelKey === "MENDOZA" && sharpSelected && alternativePrice > 0 && price > 0) {
+    price += alternativePrice - cat.prices[fabricId];
+  }
+
+  return price;
 }
 
 function getConfiguredTotalPrice() {
@@ -13639,59 +13649,46 @@ function bindShelfEquipmentUI() {
   setActiveShelfColor(selectedShelfColor || "wood_buk_br_281", { fromUI: false });
 }
 
-function getManchesterSharpArmrestDiscountAmount(fabricGroup = getAppliedFabricPriceGroup()) {
-  if (getModelKey() !== "MANCHESTER") return 0;
-
-  let diff = 0;
+function getArmrestPriceDelta(targetArmrestType, modelKey) {
+  const fabricGroup = getAppliedFabricPriceGroup();
+  const currentArmrestType = selectedArmrests || "smooth";
+  let currentTotal = 0;
+  let targetTotal = 0;
 
   for (const rec of activeModules || []) {
     if (!rec?.name) continue;
     const upgradeKey = getUpgradeKeyForRec(rec);
-    const basePrice = getSummaryPriceForRecSafe(rec, fabricGroup, upgradeKey, {
-      disableManchesterArmrest: true,
-      modelKey: "MANCHESTER",
+    currentTotal += getSummaryPriceForRecSafe(rec, fabricGroup, upgradeKey, {
+      armrestType: currentArmrestType,
+      modelKey,
     });
-    const armrestPrice = getSummaryPriceForRecSafe(rec, fabricGroup, upgradeKey, {
-      armrestType: "sharp",
-      modelKey: "MANCHESTER",
+    targetTotal += getSummaryPriceForRecSafe(rec, fabricGroup, upgradeKey, {
+      armrestType: targetArmrestType,
+      modelKey,
     });
-    const itemDiff = Number(basePrice) - Number(armrestPrice);
-    if (Number.isFinite(itemDiff) && itemDiff > 0) diff += itemDiff;
   }
 
-  return diff;
+  if (modelKey === "MANCHESTER") {
+    const diff = targetTotal - currentTotal;
+    return Math.sign(diff) * getDiscountedAmount(Math.abs(diff)).final;
+  }
+
+  return getDiscountedAmount(targetTotal).final - getDiscountedAmount(currentTotal).final;
 }
 
 function getEquipTilePriceDeltaText(item, dataAttr) {
   if (dataAttr !== "armrest") return "";
-  if (getModelKey() !== "MANCHESTER") return "";
+  const modelKey = getModelKey();
+  if (modelKey !== "MANCHESTER" && modelKey !== "MENDOZA") return "";
 
   const code = String(item?.code || "").trim().toLowerCase();
   const selected = String(selectedArmrests || "smooth").trim().toLowerCase();
+  if (!["smooth", "sharp"].includes(code) || code === selected) return "";
 
-  // zobrazovat cenu jen u NEaktivní varianty
-  if (!code || code === selected) return "";
+  const diff = getArmrestPriceDelta(code, modelKey);
+  if (!Number.isFinite(diff) || diff === 0) return "";
 
-  const rawDiff = getManchesterSharpArmrestDiscountAmount();
-  const diff = getDiscountedAmount(rawDiff).final;
-
-  if (!Number.isFinite(diff) || diff <= 0) return "";
-
-  // Manchester:
-  // smooth = Polohovací
-  // sharp  = Hranatá
-
-  // když je aktivní Polohovací, ukaž u Hranaté slevu
-  if (selected === "smooth" && code === "sharp") {
-    return `(- ${formatCzk(diff)})`;
-  }
-
-  // když je aktivní Hranatá, ukaž u Polohovací příplatek
-  if (selected === "sharp" && code === "smooth") {
-    return `(+ ${formatCzk(diff)})`;
-  }
-
-  return "";
+  return `(${diff > 0 ? "+" : "-"} ${formatCzk(Math.abs(diff))})`;
 }
 
 function getEquipTileTitleHtml(item, dataAttr) {
@@ -13703,7 +13700,7 @@ function getEquipTileTitleHtml(item, dataAttr) {
   `;
 }
 
-function refreshManchesterArmrestPriceLabels() {
+function refreshArmrestPriceLabels() {
   const row = document.getElementById("armrestsCardRow");
   if (!row) return;
 
@@ -18298,7 +18295,7 @@ function bindArmrestsEquipmentUI(modelKey) {
   // 2) Render kartiÄŤek (buttony)
   // POZOR: item.code by ideĂˇlnÄ› mÄ›l bĂ˝t "smooth" nebo "sharp"
   renderEquipBlock(armrestsUiList, row, "armrest");
-  refreshManchesterArmrestPriceLabels();
+  refreshArmrestPriceLabels();
 
   // 3) naplnit hidden select
   armrestsUiList.forEach((item) => {
@@ -18361,11 +18358,11 @@ function bindArmrestsEquipmentUI(modelKey) {
       btn.classList.toggle("active", on);
     });
 
-    refreshManchesterArmrestPriceLabels();
+    refreshArmrestPriceLabels();
 
     // âś… 3D zmÄ›na + viditelnost ÄŤĂˇstĂ­ (hinge2, body1/body2â€¦)
     applyArmrestsToAllModules();
-    refreshManchesterArmrestPriceLabels();
+    refreshArmrestPriceLabels();
 
     // panel ĹˇĂ­Ĺ™ky jen pro "sharp"
     function isWidthArmrest(rawVal) {
@@ -20751,13 +20748,8 @@ function getStoredPayloadTotalPrice(payload) {
     const upgrade = (upgradeChoice === "bed" || upgradeChoice === "bed2" || upgradeChoice === "storage")
       ? upgradeChoice
       : (module?.upgrade || null);
-    const effectiveUpgrade = getManchesterArmrestPriceKey(module.variantId, group, upgrade, {
-      armrestType,
-      modelKey,
-    });
-
     try {
-      total += getModulePrice(module.variantId, group, effectiveUpgrade);
+      total += getConfiguredModulePrice(module.variantId, group, upgrade, { armrestType, modelKey });
     } catch (e) {}
   }
 
@@ -28634,53 +28626,20 @@ function getSummaryDepthDimKeyForRecSafe(rec) {
   return null;
 }
 
-function getSummaryPriceForRecSafe(rec, fabricId, baseUpgradeKey, options = {}) {
+function getSummaryPriceForRecSafe(rec, fabricId, upgradeKey, options = {}) {
   const variantId = rec?.name;
   if (!variantId) return 0;
 
-  const upgradeKey = baseUpgradeKey || null;
-  const effectiveUpgradeKey = getManchesterArmrestPriceKey(variantId, fabricId, upgradeKey, {
-    armrestType: options.armrestType ?? selectedArmrests,
-    modelKey: options.modelKey || getVariantModelKey(variantId) || getModelKey(),
-    disabled: Boolean(options.disableManchesterArmrest),
-  });
-  const fallbackPrice = getModulePrice(variantId, fabricId, effectiveUpgradeKey) || 0;
+  let isExtended = false;
+  if (isSummaryDepth1DVariant(variantId)) {
+    try {
+      const dimKey = getSummaryDepthDimKeyForRecSafe(rec);
+      const currentDepth = Number(dimKey ? window.__sofaDims?.[dimKey] : NaN);
+      isExtended = Number.isFinite(currentDepth) && currentDepth > 180;
+    } catch (e) {}
+  }
 
-  try {
-    if (!isSummaryDepth1DVariant(variantId)) return fallbackPrice;
-
-    const dimKey = getSummaryDepthDimKeyForRecSafe(rec);
-    const currentDepth = Number(dimKey ? window.__sofaDims?.[dimKey] : NaN);
-    const isExtended = Number.isFinite(currentDepth) && currentDepth > 180;
-    const cat = getCatalog?.(variantId);
-    const extendedBase = cat?.upgradePrices?.extendedBase?.[fabricId];
-    const extendedStorage = cat?.upgradePrices?.extendedStorage?.[fabricId];
-    const extendedArmrest = cat?.upgradePrices?.extendedArmrest?.[fabricId];
-
-    if (!isExtended) return fallbackPrice;
-
-    if (effectiveUpgradeKey === "armrest") {
-      if (extendedArmrest != null && Number.isFinite(Number(extendedArmrest)) && Number(extendedArmrest) > 0) {
-        return Number(extendedArmrest);
-      }
-      return fallbackPrice;
-    }
-
-    if (upgradeKey === "storage") {
-      if (extendedStorage != null && Number.isFinite(Number(extendedStorage)) && Number(extendedStorage) > 0) {
-        return Number(extendedStorage);
-      }
-      return fallbackPrice;
-    }
-
-    if (upgradeKey) return fallbackPrice;
-
-    if (extendedBase != null && Number.isFinite(Number(extendedBase)) && Number(extendedBase) > 0) {
-      return Number(extendedBase);
-    }
-  } catch (e) {}
-
-  return fallbackPrice;
+  return getConfiguredModulePrice(variantId, fabricId, upgradeKey, { ...options, isExtended });
 }
 
 function ensureSummaryRangeLayout() {
@@ -28763,6 +28722,7 @@ function updateSummaryUI() {
   // âś… kdyĹľ ve scĂ©nÄ› nic nenĂ­ â†’ vĹˇe na nulu a konec
   if (activeModules.length === 0) {
     renderPriceWithDiscount(priceEl, 0);
+    refreshArmrestPriceLabels();
     widthRangeEl.textContent = "0–0 cm";
     depthRangeEl.textContent = "0–0 cm";
     return;
@@ -28794,7 +28754,7 @@ function updateSummaryUI() {
 
   renderPriceWithDiscount(priceEl, sumPrice);
   updateFabricCategoryTabPrices();
-  refreshManchesterArmrestPriceLabels();
+  refreshArmrestPriceLabels();
 
   // ===== 2) ROZMÄšRY: NOMINĂLNĂŤ (z connections), ne z reĂˇlnĂ˝ch world pozic =====
 
