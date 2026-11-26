@@ -10291,6 +10291,7 @@ const MODEL_EQUIP_CONFIG = {
       { code: "N8",  label: "N8", img: "./images/nohy/N8.png", material: "metal" },
       { code: "N11", label: "N11",   img: "./images/nohy/N11.png", material: "metal" },
       { code: "N1",  label: "N1",  img: "./images/nohy/N1.png",  material: "metal" },
+      { code: "N9",  label: "N9",  img: "./images/nohy/N9.png",  material: "wood" },
     ],
 
     armrests: [
@@ -13258,7 +13259,7 @@ function bindLegsEquipmentUI() {
     ],
     N1: [
       { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/images/equipment/metal/chrome.webp" },
-      { id: "metal_matte", label: "Matný kov", img: "/images/equipment/metal/matte.webp" },
+      { id: "metal_matte_black", label: "Černý matný kov", img: "/images/equipment/metal/matte-black.webp" },
     ],
     N21: [
       { id: "metal_chrome", label: "Lesklý kov (chrom)", img: "/images/equipment/metal/chrome.webp" },
@@ -13527,8 +13528,11 @@ function bindLegsEquipmentUI() {
   // âś… dovolĂ­me obnovu z localStorage (po reloadu)
   window.__setLegsFromState = (legCode, colorId) => {
     if (legCode) setActiveLeg(legCode);
-    if (colorId && Array.from(colorSelect.options).some((opt) => opt.value === colorId)) {
-      setActiveColor(colorId);
+    const restoredColorId = typeSelect.value === "N1" && colorId === "metal_matte"
+      ? "metal_matte_black"
+      : colorId;
+    if (restoredColorId && Array.from(colorSelect.options).some((opt) => opt.value === restoredColorId)) {
+      setActiveColor(restoredColorId);
     }
   };
 }
@@ -22744,18 +22748,6 @@ async function applyWoodColorToAllLegs(colorId) {
     return;
   }
 
-  // stejné rozpoznání nohou jako ve forceLegsOnly()
-  const isLegThing = (name) => {
-    const n = (name || "").toLowerCase();
-    return (
-      n.includes("legs") ||
-      n.includes("noha") ||
-      n.includes("nohy") ||
-      n.includes("podnoz") ||
-      n.includes("feet")
-    );
-  };
-
   for (const rec of activeModules || []) {
     if (!rec?.mesh) continue;
 
@@ -22764,7 +22756,7 @@ async function applyWoodColorToAllLegs(colorId) {
 
       const n = (obj.name || "").toLowerCase();
 
-      if (!isLegThing(n)) return;
+      if (!isLegMeshName(n)) return;
       if (_isMetalLegMeshName(n)) return;
 
       // jen aktuálně vybraná / viditelná varianta nohou
@@ -27388,8 +27380,8 @@ function forceLegsOnly(root, legCode) {
   const isMendoza = /^mendoza/i.test(root?.userData?.moduleName || "");
   if (isMendoza) {
     const raw = String(legCode || "").toUpperCase();
-    const allowed = new Set(["N1", "N8", "N11"]);
-    const eff = allowed.has(raw) ? raw : "N8"; // fallback
+    const allowed = new Set(["N1", "N8", "N9", "N11"]);
+    const requested = allowed.has(raw) ? raw.toLowerCase() : "n8";
 
     // "smooth" = zĂˇkladnĂ­ podruÄŤka (P/L), "sharp" = polohovacĂ­ (P2/L2)
     const armMode =
@@ -27398,23 +27390,22 @@ function forceLegsOnly(root, legCode) {
         : "basic";
 
     // 1) zjisti, co v modulu fakt existuje (nÄ›kterĂ© moduly nemajĂ­ Nx duplikĂˇty)
-    const present = {
-      legs_n1: false, legs_n8: false, legs_n11: false,
-      n1: false, n8: false, n11: false,
-    };
+    const present = new Set();
 
     root.traverse((o) => {
       if (!o?.isMesh) return;
       const n = (o.name || "").toLowerCase();
       if (!n) return;
-      if (n in present) present[n] = true;
+      present.add(n);
     });
 
-    const legsName = `legs_${eff.toLowerCase()}`; // legs_n8
-    const plainName = eff.toLowerCase();          // n8
+    const plainName = requested === "n9" && !present.has("legs_n9") && !present.has("n9")
+      ? "n8"
+      : requested;
+    const legsName = `legs_${plainName}`;
 
-    const hasLegsTarget = present[legsName] === true;
-    const hasPlainTarget = present[plainName] === true;
+    const hasLegsTarget = present.has(legsName);
+    const hasPlainTarget = present.has(plainName);
 
     // 2) vyber co ukĂˇzat â€“ kdyĹľ cĂ­lovĂ˝ objekt neexistuje, NIC NEMÄšĹ‡ (zĹŻstane pĹŻvodnĂ­ viditelnost)
     let chosen = null;
@@ -27859,8 +27850,7 @@ function applyMendozaVisibility(root, { armrestType, legCode } = {}) {
         const n = (o?.name || "").toLowerCase();
         if (!n) return;
 
-        const isLegLike =
-          n.startsWith("legs_n") || n === "n1" || n === "n8" || n === "n11";
+        const isLegLike = n.startsWith("legs_n") || /^n(?:1|8|9|11)$/.test(n);
         if (!isLegLike) return;
 
         if (mode === "legs") {
